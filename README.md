@@ -88,4 +88,6 @@ MMMMMMMMMMM
 
 _That's not just any surface! Why, that's an **operating surface**, that's Git!_
 
+... You see? That's why they call it "GATOS"...
+
 **Finally.** The operating surface that's Git.
