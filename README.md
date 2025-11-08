@@ -135,7 +135,7 @@ Ask yourself...
 
 - That's the power of the gods.
 - That's the power of forever.
-- **That's** the power of **GATOS**.
+- **_That's_** the power of **GATOS**.
 
 > _It's distributed runtime, Baby!_
 
