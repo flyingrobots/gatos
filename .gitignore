@@ -1,0 +1,54 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.DocumentRevisions-V100
+.com.apple.timemachine.donotpresent
+.apdisk
+
+# Obsidian vault metadata
+.obsidian/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# C/C++ build artifacts
+*.o
+*.obj
+*.a
+*.la
+*.lo
+*.so
+*.dylib
+*.dll
+*.lib
+*.exe
+*.out
+*.app
+build/
+cmake-build-*
+
+# Lua
+*.luac
+
+# Editors/IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and dumps
+*.log
+*.pid
+*.seed
+*.core
+core
+
