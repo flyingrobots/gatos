@@ -119,13 +119,6 @@ These are just _some_ of the buzzwords that people have been using to describe w
 
 "Well, they said it couldn't be done. So, here we are, doing it. And having fun, too!" - flyingrobots, inventor of GATOS.
 
-Imagine, if you will, a world in which computers share a zero proof, distributed, deterministic, state space. 
-Every ref in the Git repo is a process, and every commit represents a snapshot of that state in time.  
-Policies are code, and woven into the very fabric of the repository's history.  
-Immutable, append-only, cryptographically-signed, state.  
-Offline-first, mergeable, forkable time-traveling, programmable privacy policies.
-Bit-for-bit determinism, distributed, and for general-purpose computing.  
-
 Ask yourself...
 
 - What if computers shared a public, zero-proof, distributed, deterministic, state space?  
