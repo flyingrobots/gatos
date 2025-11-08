@@ -95,6 +95,8 @@ _That's not just any surface! Why, that's an **operating surface**, that's also 
 
 ... You see? That's why they call it "GATOS"...
 
+They say it's the operating surface that _gits_ it! Get it?
+
 **Finally.** The operating surface that's _Git_.
 
 ---
@@ -105,26 +107,34 @@ _That's not just any surface! Why, that's an **operating surface**, that's also 
 - **policies**, and
 - **proofs.**
 
-These are just _some_ of the buzzwords that people have been using to describe what computer scientists are calling "GATOS", Git As The Operating Surface.
+These are just _some_ of the buzzwords that people have been using to describe what computer scientists are calling "GATOS", Git As The Operating Surface™.
 
 "Well, they said it couldn't be done. So, here we are, doing it. And having fun, too!" - flyingrobots, inventor of GATOS.
 
-Imagine, if you will, a world in which computers shared a zero proof, distributed, deterministic, state space. Every ref in the Git repo is a process, and every commit represents a snapshot of that state in time. Policies are code, and woven into the very fabric of the repository's history. Immutable, append-only, cryptographically-signed, state. Offline-first, mergeable, forkable time-traveling, programmable privacy policies, bit-for-bit determinism, distributed general purpose computing.
+Imagine, if you will, a world in which computers share a zero proof, distributed, deterministic, state space. 
+Every ref in the Git repo is a process, and every commit represents a snapshot of that state in time.  
+Policies are code, and woven into the very fabric of the repository's history.  
+Immutable, append-only, cryptographically-signed, state.  
+Offline-first, mergeable, forkable time-traveling, programmable privacy policies.
+Bit-for-bit determinism, distributed, and for general-purpose computing.  
 
-What if computers shared a public, zero-proof, distributed, deterministic, state space?  
-What if every ref in the Git repo was a process, and every commit represented a snapshot of its state in time?  
-What if policy was code, and it was woven into the very fabric of the repository's history? 
-What if it was **immutable**, **append-only**, **cryptographically-signed**, state? 
-**Offline-first**, **mergeable**, **forkable**, **time-travel-able**?
-What if privacy was **programmable**?
-What if it was **bit-for-bit** deterministic? 
+Ask yourself...
 
-What if there was such a thing as secure, public, distributed, general purpose computing?
-Without a blockchain?
+- What if computers shared a public, zero-proof, distributed, deterministic, state space?  
+- What if every ref in the Git repo was a process, and every commit represented a snapshot of its state in time?  
+- What if policy was code, and it was woven into the very fabric of the repository's history? 
+- What if it was **immutable**, **append-only**, **cryptographically-signed**, state? 
+- **Offline-first**, **mergeable**, **forkable**, **time-travel-able**?
+- What if privacy was **programmable**?
+- What if it was **bit-for-bit** deterministic? 
+- What if there was such a thing as secure, public, distributed, general purpose computing?
+- Without a blockchain?
 
-That's the power of the gods.
-That's the power of forever.
-**That's** the power of **GATOS**.
+... and wonder...
+
+- That's the power of the gods.
+- That's the power of forever.
+- **That's** the power of **GATOS**.
 
 > _It's distributed runtime, Baby!_
 
