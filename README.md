@@ -1,5 +1,11 @@
 # 🐈‍⬛ **GATOS**
 
+> [!WARNING]
+> This repo is brand spankin' new, and it sort of represents the _confluence*_ of many of my recent projects into one **pretty good idea™**. Working on MVP ASAP. Star the repo, follow along, and let's _git_ it!  
+> _- flyingrobots_
+> 
+> _* a little category theory joke... Eh, maybe you had to be there..._
+
 ```bash
 
 8""""8 8""""8 ""8"" 8"""88 8""""8 
@@ -144,3 +150,11 @@ Ask yourself...
 
 > [!WARNING]
 > Exposure to GATOS may include side-effects such as: feeling "badass", becoming curious about Open-Source Software, speaking to the computer, and the sensation that time has elaspsed at an abnormally fast pace. In a controlled study, 1% of participants lost their car keys, but they came back to retrieve them the following day. Please, enjoy GATOS responsibly.
+
+---
+
+## License 
+
+[Apache 2.0](./LICENSE) 
+
+*© J. Kirby Ross <james@flyingrobots.dev> [flyingrobots](https://github.com/flyingrobots)*
