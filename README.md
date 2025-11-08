@@ -97,6 +97,8 @@ _That's not just any surface! Why, that's an **operating surface**, that's also 
 
 They say it's the operating surface that _gits_ it! Get it?
 
+Gee, I just can't imagine my life without GATOS, now.
+
 **Finally.** The operating surface that's _Git_.
 
 ---
