@@ -1,4 +1,6 @@
 extern crate libc;
+#[cfg(test)]
+extern crate std;
 
 #[no_mangle]
 pub extern "C" fn hello_ffi() -> *mut libc::c_char {
@@ -17,6 +19,19 @@ pub unsafe extern "C" fn gatos_ffi_free_string(s: *mut libc::c_char) {
     }
     // SAFETY: Caller guarantees `s` originated from `hello_ffi`.
     let _ = std::ffi::CString::from_raw(s);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hello_and_free_roundtrip() {
+        // SAFETY: test boundary — verifies allocation + free path doesn't crash
+        let p = unsafe { hello_ffi() };
+        assert!(!p.is_null());
+        unsafe { gatos_ffi_free_string(p) };
+    }
 }
 
 /// Compute a BLAKE3-based commit id for a commit described by its parts and
