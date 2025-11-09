@@ -10,6 +10,11 @@ The `gatos-ledger` crate will be split into a `no_std`-compatible `gatos-ledger-
 
 A meta-crate, `gatos-ledger`, will use feature flags to provide the appropriate implementation.
 
+Additionally, the canonical commit identifier (content id) SHALL be derived from the
+canonical serialization of the unsigned `CommitCore` and SHALL remain stable regardless
+of any signatures added later. Signatures are stored separately (or alongside as
+metadata) and reference this content id; they do not affect it.
+
 ## Motivation
 
 The project requires `no_std` compatibility where practical, to allow the core logic to run in constrained environments like microcontrollers or WASM sandboxes.
