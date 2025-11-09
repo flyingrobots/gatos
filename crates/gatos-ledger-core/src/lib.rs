@@ -58,7 +58,7 @@ pub trait ObjectStore {
 }
 
 #[serde_as]
-#[derive(serde::Serialize, serde::Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
 pub struct Commit {
     /// Optional parent commit id (None for roots).
     pub parent: Option<Hash>,
