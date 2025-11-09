@@ -18,9 +18,28 @@ sequenceDiagram
     Client->>Daemon: {"type":"bus.subscribe", "id":"01C", "topic":"..."}
     Daemon-->>Client: {"ack":true, "id":"01C"}
     loop Subscription Stream
-        Daemon-->>Client: {"type":"gmb.msg", "id":"01C", "topic":"...", "payload":{...}}
+        Daemon-->>Client: {"type":"bus.message", "id":"01C", "topic":"...", "payload":{...}}
     end
 
     Client->>Daemon: {"type":"fold_state", "id":"01D", "ns":"..."}
     Daemon-->>Client: {"ok":true, "id":"01D", "state_root":"..."}
+```
+
+## Error Responses
+
+All responses include an `ok` boolean. On failure, an `error` object is present:
+
+```json
+{"ok":false, "id":"02A", "error": {"code":"ERR_INVALID_NS", "message":"namespace not found"}}
+```
+
+Example flow with an error:
+
+```mermaid
+sequenceDiagram
+    participant Client as Client (SDK/CLI)
+    participant Daemon as gatosd
+
+    Client->>Daemon: {"type":"append_event", "id":"02A", "ns":"invalid", "event":{...}}
+    Daemon-->>Client: {"ok":false, "id":"02A", "error":{"code":"ERR_INVALID_NS", "message":"namespace not found"}}
 ```

@@ -1,6 +1,5 @@
 use gatos_ledger_core::{ObjectStore, Hash, StoreError};
 use git2::Repository;
-use std::vec::Vec;
 use hex;
 use blake3;
 

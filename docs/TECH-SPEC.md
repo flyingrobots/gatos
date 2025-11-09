@@ -202,6 +202,8 @@ Expose metrics via `gatosd /metrics`:
 - Tune pack GC with size thresholds; document recommended `gc.auto`, `fetch.writeCommitGraph`.
 - For message bus topics, start with a reasonable number of shards (e.g., 64) and store the shard map in a configuration file (e.g., `gatos/mbus-config/<topic>.json`). Resharding can be achieved via a versioned shard map and a dual-write migration window.
 
+> Tuning guidance: Batch size trades off latency vs. commit churn. Start with 64 and measure p99 latency and commits/sec; reduce batch size to lower latency, or increase it to reduce ref churn. Shard count trades off per-shard throughput vs. management overhead; start with 64 shards, measure messages/sec per shard and consumer lag, and scale up/down accordingly.
+
 ---
 
 ## 12. Client SDKs

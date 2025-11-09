@@ -5,6 +5,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Git-backed storage backend for gatos-ledger (no_std core)"
+keywords = ["ledger", "git", "storage", "backend"]
 
 [dependencies]
 git2 = { workspace = true }

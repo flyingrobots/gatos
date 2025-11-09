@@ -9,6 +9,9 @@
 #[cfg(all(feature = "core-only", feature = "git2-backend"))]
 compile_error!("features `core-only` and `git2-backend` are mutually exclusive");
 
+// Re-export the selected backend's public API. We intentionally use a glob
+// export here as a façade so consumers can import from `gatos_ledger::...`
+// regardless of backend. Refer to the backend crate docs for full surface.
 #[cfg(feature = "git2-backend")]
 pub use gatos_ledger_git::*;
 

@@ -6,7 +6,7 @@ Here’s a breakdown of how the new structure maps to the original goals:
 
 ## It Directly Implements the "Four Planes" from `SPEC.md`
 
-**Ledger Plane**: This is now explicitly managed by the `?gatos-ledger-*` family of crates (core, git, and the meta-crate).
+**Ledger Plane**: This is now explicitly managed by the `gatos-ledger-*` family of crates (core, git, and the meta-crate).
 
 **State Plane**: The logic for deterministic state computation and sessions is now in `gatos-echo`, with `gatos-kv` providing a clear home for the caching and materialized view aspect.
 
