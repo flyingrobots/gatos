@@ -4,7 +4,11 @@
 //!
 //! This crate defines portable types and traits for the GATOS ledger.
 //! It intentionally avoids `std` to run in constrained environments
-//! (embedded, WASM-without-std). All serialization is deterministic.
+//! (embedded, WASM-without-std).
+//!
+//! All serialization uses bincode v2 with `config::standard()`, ensuring
+//! deterministic byte representations: identical structs produce identical
+//! bytes across platforms and architectures (given a fixed bincode version).
 
 extern crate alloc;
 use alloc::vec::Vec;
