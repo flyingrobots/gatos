@@ -660,8 +660,9 @@ Exactly-once delivery is achieved using the GATOS message bus:
     coordinator mode) observes the required quorum of `gmb.ack` messages and publishes a
     `gmb.commit` message to finalize the transaction.
 
-    Election and failover mechanisms are implementation‑specific (e.g., Raft, static
-    leader‑per‑topic). Safety is normative: coordinators MUST guarantee that retries do not
+    Election and failover mechanisms are implementation‑specific (e.g., Raft consensus, distributed
+    leader‑per‑topic with health checks, Zookeeper‑style coordination). Implementers MUST ensure the
+    chosen strategy prevents split‑brain and provides recovery after coordinator crashes. Safety is normative: coordinators MUST guarantee that retries do not
     duplicate effects by EITHER maintaining durable state OR implementing idempotent commit
     semantics. Transactions MUST carry unique identifiers, and implementations MUST define
     timeouts and retry/abort rules for recovery.
