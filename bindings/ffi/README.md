@@ -9,7 +9,7 @@ For more details on the overall architecture, see the main [GATOS Technical Spec
 To build the C-compatible shared library, run the following command from the root of the GATOS workspace:
 
 ```sh
-car go build --release -p gatos-ffi-bindings
+cargo build --release -p gatos-ffi-bindings
 ```
 
 The resulting shared library will be located at `target/release/libgatos_ffi_bindings.so` (on Linux) or `target/release/libgatos_ffi_bindings.dylib` (on macOS).
