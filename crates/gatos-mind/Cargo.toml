@@ -6,6 +6,7 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Placeholder for GATOS Message Bus implementation"
+# NOTE: Placeholder metadata until implementation lands; do not publish.
 keywords = ["gatos", "message-bus", "git"]
 categories = ["network-programming", "data-structures"]
 
