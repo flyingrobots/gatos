@@ -289,6 +289,25 @@ schemas in `SPEC.md`.
 
 The `gatos-compute` crate will provide the primary implementation of a GATOS worker process. This worker is responsible for discovering, claiming, and executing jobs defined in the Job Plane.
 
+This sequence diagram illustrates the flow of operations between the different GATOS planes.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant GATOS (Ledger)
+    participant Bus (Message Plane)
+    participant Worker
+
+    Client->>GATOS (Ledger): 1. Create Job Commit
+    GATOS (Ledger)->>Bus (Message Plane): 2. Publish Job message
+    Worker->>Bus (Message Plane): 3. Subscribe to job topic
+    Bus (Message Plane)->>Worker: 4. Receive Job message
+    Worker->>GATOS (Ledger): 5. Atomically create Claim ref
+    GATOS (Ledger)-->>Worker: 6. Claim successful
+    Worker->>Worker: 7. Execute Job
+    Worker->>GATOS (Ledger): 8. Create Result commit
+```
+
 ### Implementation Plan
 
 1.  **Subscription:** The worker will use the `gatos-mind` crate to subscribe to one or more job topics on the Message Plane (e.g., `gatos/jobs/pending`).

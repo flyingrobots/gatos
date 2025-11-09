@@ -687,10 +687,25 @@ The Job Plane provides a system for scheduling, executing, and recording the res
 
 ### 19.1 Job Lifecycle
 
+This diagram shows the standard lifecycle states for a job as it moves through the system.
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> claimed: Worker discovers & claims job
+    claimed --> running: Worker begins execution
+    running --> succeeded: Execution successful
+    running --> failed: Execution fails
+    succeeded --> [*]
+    failed --> [*]
+    claimed --> aborted: Canceled by user/policy
+    pending --> aborted: Canceled by user/policy
+```
+
 The job lifecycle is represented entirely through Git objects:
 
 -   **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
--   **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>` where `job-id` is the job’s `content_id` (BLAKE3 of the canonical unsigned job core). This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
+-   **Claim:** A ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
 -   **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
