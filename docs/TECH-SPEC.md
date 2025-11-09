@@ -265,7 +265,7 @@ Examples
 {"type":"bus.subscribe","id":"01C","topic":"gatos.jobs.pending"}
 {"type":"fold_state","id":"01D","ns":"finance","channel":"table","spec":"folds/invoices.yaml"}
 {"type":"governance.proposal.new","id":"02A","action":"publish.artifact","target":"gatos://assets/model.bin","quorum":"2-of-3@leads"}
-{"type":"governance.approval.add","id":"02B","proposal":"blake3:…"}
+{"type":"governance.approval.add","id":"02B","proposal":"<proposal-id-hash>"}
 {"type":"governance.grant.verify","id":"02C","grant":"blake3:…"}
 ```
 

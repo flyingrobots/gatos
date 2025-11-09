@@ -615,6 +615,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
   Policy-Rule: <policy id>
   Created-By: <actor>
   ```
+  (Note: `gatos://` is the canonical URI scheme for addressing resources managed within the GATOS operating surface.)
 - Approval (at `refs/gatos/approvals/…`):
   ```text
   Proposal-Id: blake3:<hex>
