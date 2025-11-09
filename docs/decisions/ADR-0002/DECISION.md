@@ -18,10 +18,10 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
 
 1. A new **Job Plane** **MUST** be introduced to the GATOS architecture.
 2. The `refs/gatos/jobs/` namespace is reserved for this plane.
-3. When a **Job** commit is created, a corresponding message **MUST** be published to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers.
+3. When a **Job** commit is created, the **Ledger Service** (e.g., `gatosd`) **MUST** publish a corresponding message to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers. Publication is an automatic system behavior on commit acceptance.
 4. The job lifecycle **MUST** be represented entirely through Git objects:
    - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
-   - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare-and-swap) to prevent race conditions.
+   - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare‑and‑swap) to prevent race conditions.
    - **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
 5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment.
 6. Each `Result` commit **MUST** include trailers for discoverability:
@@ -40,6 +40,67 @@ The canonical job identifier is the job’s `content_id` (the BLAKE3 hash of the
 
 ULIDs MAY be used as human-friendly aliases in messages (for deduplication, sorting, and UX). When present, the ULID MUST also be recorded in the job manifest. Workers MUST resolve ULIDs to the canonical `job-id` by reading the job commit and computing its `content_id`. ULIDs MUST NOT be used as ref keys for claims or results.
 
+#### Job Manifest Schema (Authoritative and Canonicalization)
+
+The job manifest is stored as `job.yaml` but the authoritative form for hashing and `content_id` computation is Canonical JSON.
+
+- Serialization for hashing: Canonical JSON (UTF‑8, sorted keys, no insignificant whitespace, lowercase hex where applicable).
+- Conversion: YAML authorship is allowed; prior to hashing, `job.yaml` MUST be converted to JSON with field order ignored and then canonicalized.
+- Required fields and types:
+  - `command: array<string>` — executable and arguments (e.g., `["/usr/bin/env", "bash", "-lc"]`).
+  - `args: array<string>` — additional arguments appended to `command` (may be empty). If omitted, treated as `[]`.
+  - `timeout: integer` — seconds (non‑negative). Implementations MAY also accept ISO‑8601 duration strings at authoring time but MUST normalize to integer seconds in Canonical JSON.
+- Optional fields:
+  - `env: object` — map<string,string>; keys unique; values UTF‑8 strings.
+  - `cwd: string` — working directory.
+  - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"…", "size":123 }`).
+  - `policy_root: string` — `sha256:<hex>` of policy bundle used.
+  - `ulid: string` — human‑friendly identifier; not used for hashing.
+
+Canonicalization rules for `content_id`:
+
+1. Build a JSON object with the fields above, omitting absent optional fields.
+2. Sort keys lexicographically; arrays preserve order.
+3. Encode as UTF‑8 without insignificant whitespace; booleans and numbers use standard JSON encoding; all hex encodings are lowercase.
+4. Compute `content_id = blake3(canonical_bytes)`.
+
+Examples
+
+Authoring YAML:
+
+```yaml
+command: ["/usr/bin/env", "bash", "-lc"]
+args: ["echo", "hello"]
+timeout: 30
+env: { GREETING: "hello" }
+```
+
+Canonical JSON used for hashing:
+
+```json
+{"args":["echo","hello"],"command":["/usr/bin/env","bash","-lc"],"env":{"GREETING":"hello"},"timeout":30}
+```
+
+#### Atomic Claim Protocol (CAS)
+
+Claim creation MUST use Git’s reference update protocol with an expected old object id:
+
+- To create `refs/gatos/jobs/<job-id>/claims/<worker-id>`, the client MUST request an atomic update with expected old = `0000000000000000000000000000000000000000` (zero OID).
+- If the reference already exists or the expected old does not match, the server MUST reject the update with a deterministic conflict error. The worker MUST treat this as a lost race and enter the retry/backoff loop.
+- Deployments MUST designate a single authoritative push endpoint (leader) for claim creation to guarantee atomicity across replicas. Retrying against non‑authoritative replicas MUST converge via eventual consistency.
+- Workers SHOULD use exponential backoff with jitter on CAS failures.
+
+#### Trailer Encoding (Result Commit)
+
+All trailers MUST use canonical, prefixed encodings:
+
+- `Job-Id: blake3:<hex>` — lowercase hex digest of the job `content_id`.
+- `Proof-Of-Execution: blake3:<hex>` — lowercase hex digest of the PoE envelope.
+- `Worker-Id: ed25519:<base64|hex>` — worker public key identifier (algorithm prefix required).
+- `Attest-Program: blake3:<hex>` — hash of runner binary or WASM module (RECOMMENDED).
+- `Attest-Sig: ed25519:<base64|hex>` — signature over attestation envelope (OPTIONAL).
+
+Encodings MUST be lowercase hex for BLAKE3 digests; key/signature encodings MUST declare algorithm via prefix and use a standard encoding (hex or base64) documented by the implementation.
 ### Diagrams
 
 #### Job Lifecycle

@@ -550,7 +550,7 @@ stateDiagram-v2
 The lifecycle is represented entirely through Git objects:
 
 -   **Job:** A commit whose tree contains a `job.yaml` manifest.
--   **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>` (see ADR‑0002 Canonical Job Identifier).
+-   **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
 -   **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
@@ -559,13 +559,13 @@ When a **Job** commit is created, a message **MUST** be published to a topic on 
 
 ### 19.3 Proof-Of-Execution
 
-The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id` (BLAKE3 of the canonical unsigned job core). Each Result commit MUST include the following trailers for discoverability:
+The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id` (BLAKE3 of the canonical unsigned job core). Trailers MUST use canonical, prefixed encodings as follows:
 
-- `Job-Id: <blake3-hex>` — canonical job identifier (content_id)
-- `Proof-Of-Execution: <blake3-hex>` — digest of the PoE envelope
-- `Worker-Id: <pubkey>` — worker public key identifier
-- `Attest-Program: <hash>` — hash of runner binary or WASM module (optional but RECOMMENDED)
-- `Attest-Sig: <sig>` — signature over the attestation envelope (optional)
+- `Job-Id: blake3:<hex>` — canonical job identifier (content_id)
+- `Proof-Of-Execution: blake3:<hex>` — digest of the PoE envelope
+- `Worker-Id: ed25519:<pubkey>` — worker public key identifier
+- `Attest-Program: blake3:<hex>` — hash of runner binary or WASM module (RECOMMENDED)
+- `Attest-Sig: ed25519:<sig>` — signature over the attestation envelope (OPTIONAL)
 
 Example (trailers):
 
