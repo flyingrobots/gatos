@@ -14,7 +14,9 @@ pub extern "C" fn hello_ffi() -> *mut libc::c_char {
 /// Rust, and not yet freed. Passing any other pointer is undefined behavior.
 #[no_mangle]
 pub extern "C" fn gatos_ffi_free_string(s: *mut libc::c_char) {
-    if s.is_null() { return }
+    if s.is_null() {
+        return;
+    }
     unsafe {
         // SAFETY: Caller guarantees `s` originated from `hello_ffi`.
         let _ = std::ffi::CString::from_raw(s);

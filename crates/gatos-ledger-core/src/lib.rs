@@ -9,8 +9,8 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
+use bincode::{config, encode_to_vec, Decode, Encode};
 use serde_with::serde_as;
-use bincode::{config, encode_to_vec, Encode, Decode};
 
 /// 256-bit BLAKE3 content hash digest.
 ///
@@ -93,7 +93,8 @@ mod tests {
     fn test_commit_roundtrip() {
         let c = fixed_commit();
         let bytes = encode_to_vec(&c, config::standard()).unwrap();
-        let (decoded, consumed): (Commit, usize) = decode_from_slice(&bytes, config::standard()).unwrap();
+        let (decoded, consumed): (Commit, usize) =
+            decode_from_slice(&bytes, config::standard()).unwrap();
         assert_eq!(consumed, bytes.len());
         assert_eq!(decoded.parent, c.parent);
         assert_eq!(decoded.tree, c.tree);

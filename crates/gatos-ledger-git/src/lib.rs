@@ -1,7 +1,7 @@
-use gatos_ledger_core::{ObjectStore, Hash, StoreError};
+use blake3;
+use gatos_ledger_core::{Hash, ObjectStore, StoreError};
 use git2::Repository;
 use hex;
-use blake3;
 
 pub struct GitStore {
     repo: Repository,
@@ -21,11 +21,18 @@ impl ObjectStore for GitStore {
         }
 
         let odb = self.repo.odb().map_err(|_| StoreError::Io)?;
-        let git_oid = odb.write(git2::ObjectType::Blob, data).map_err(|_| StoreError::Io)?;
+        let git_oid = odb
+            .write(git2::ObjectType::Blob, data)
+            .map_err(|_| StoreError::Io)?;
 
         let ref_name = format!("refs/gatos/blake3-map/{}", hex::encode(id));
         self.repo
-            .reference(&ref_name, git_oid, true, "gatos: map blake3 hash to git oid")
+            .reference(
+                &ref_name,
+                git_oid,
+                true,
+                "gatos: map blake3 hash to git oid",
+            )
             .map_err(|_| StoreError::Io)?;
         Ok(())
     }
@@ -36,11 +43,17 @@ impl ObjectStore for GitStore {
             Ok(r) => r,
             Err(e) => {
                 // If reference does not exist, treat as not found; other errors as IO
-                if e.code() == git2::ErrorCode::NotFound { return Ok(None); }
-                else { return Err(StoreError::Io); }
+                if e.code() == git2::ErrorCode::NotFound {
+                    return Ok(None);
+                } else {
+                    return Err(StoreError::Io);
+                }
             }
         };
-        let git_oid = match reference.target() { Some(oid) => oid, None => return Err(StoreError::Invariant) };
+        let git_oid = match reference.target() {
+            Some(oid) => oid,
+            None => return Err(StoreError::Invariant),
+        };
         let blob = self.repo.find_blob(git_oid).map_err(|_| StoreError::Io)?;
         Ok(Some(blob.content().to_vec()))
     }

@@ -5,7 +5,7 @@
 //! will be implemented in a subsequent iteration.
 
 use clap::Parser;
-use tracing::{info, error};
+use tracing::{error, info};
 
 #[derive(Parser, Debug)]
 #[command(name = "gatosd", version, about = "GATOS daemon (JSONL RPC)")]
