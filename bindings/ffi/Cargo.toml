@@ -2,9 +2,14 @@
 name = "gatos-ffi-bindings"
 version = "0.1.0"
 edition = "2021"
+description = "C-compatible FFI bindings for GATOS core libraries"
+license = "Apache-2.0"
+authors = ["flyingrobots"]
+repository = "https://github.com/flyingrobots/gatos"
+homepage = "https://github.com/flyingrobots/gatos"
 
 [lib]
 crate-type = ["cdylib"] # C dynamic library
 
 [dependencies]
-libc = "0.2" # For c_char
+libc = "0.2.150" # For c_char - pin to specific version for reproducibility
