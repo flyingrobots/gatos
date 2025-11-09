@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/job/proof_of_execution_envelope.schema.json",
+  "title": "GATOS Proof-Of-Execution Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["job_id", "runner", "outputs"],
+  "properties": {
+    "job_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["program"],
+      "properties": {
+        "program": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+        "version": { "type": "string" },
+        "platform": { "type": "string" }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" }
+  }
+}
+

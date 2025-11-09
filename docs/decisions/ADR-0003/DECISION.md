@@ -27,7 +27,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    Proposal → Approvals (N‑of‑M) → Grant
 
 4. Proposal (normative)
-   - A commit describing the requested action, scope/target, and required quorum.
+   - A commit describing the requested action, scope/target, and required quorum. Schema: [`schemas/governance/proposal.schema.json`](../../schemas/governance/proposal.schema.json)
    - Trailers MUST be present and canonically encoded:
      ```text
      Action: publish.artifact
@@ -41,7 +41,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    - `Proposal-Id` is the `content_id` (BLAKE3 of canonical proposal envelope).
 
 5. Approval (normative)
-   - A signed commit referencing `Proposal-Id` by digest.
+   - A signed commit referencing `Proposal-Id` by digest. Schema: [`schemas/governance/approval.schema.json`](../../schemas/governance/approval.schema.json)
    - Approver identity MUST resolve in the trust graph (`gatos/trust/…`).
    - One approval per signer per proposal is valid; duplicates MUST be ignored.
    - Trailers MUST include:
@@ -53,7 +53,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      ```
 
 6. Grant (normative)
-   - Created when quorum is satisfied per policy rule. Creation MAY be automatic (daemon) or manual (operator tool).
+   - Created when quorum is satisfied per policy rule. Creation MAY be automatic (daemon) or manual (operator tool). Schema: [`schemas/governance/grant.schema.json`](../../schemas/governance/grant.schema.json)
    - Serves as the authoritative artifact enabling the gated action.
    - Trailers MUST include:
      ```text
@@ -63,7 +63,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      ```
 
 7. Proof‑Of‑Consensus (normative)
-   - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes:
+   - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes (see schema: [`schemas/governance/proof_of_consensus_envelope.schema.json`](../../schemas/governance/proof_of_consensus_envelope.schema.json)):
      - The canonical proposal envelope (by value or by `Proposal-Id`).
      - A sorted list (by `Signer`) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
@@ -71,7 +71,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    - Storage: The canonical PoC envelope JSON SHOULD be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
 
 8. Governance schema (policy integration)
-   - Extend `.gatos/policy.yaml` to declare governance rules:
+   - Extend `.gatos/policy.yaml` to declare governance rules (JSON Schema: [`schemas/policy/governance_policy.schema.json`](../../schemas/policy/governance_policy.schema.json)):
      ```yaml
      governance:
        publish.artifact:
@@ -96,7 +96,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    | revoked  | Grant withdrawn or superseded   |
 
 10. Revocation (normative)
-    - A grant MAY be revoked by creating a `revocation` commit under `refs/gatos/revocations/` with trailers:
+    - A grant MAY be revoked by creating a `revocation` commit under `refs/gatos/revocations/` with trailers (structured schema: [`schemas/governance/revocation.schema.json`](../../schemas/governance/revocation.schema.json)):
       ```text
       Grant-Id: blake3:<hex>
       Revocation-Id: blake3:<hex>

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/governance/revocation.schema.json",
+  "title": "GATOS Governance Grant Revocation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["grant_id", "revocation_id"],
+  "properties": {
+    "grant_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "revocation_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "reason": { "type": "string" },
+    "revoked_by": { "type": "string" }
+  }
+}
+

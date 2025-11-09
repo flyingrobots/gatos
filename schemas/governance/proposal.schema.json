@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/governance/proposal.schema.json",
+  "title": "GATOS Governance Proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "target", "proposal_id", "policy_rule"],
+  "properties": {
+    "action": { "type": "string" },
+    "target": { "$ref": "../common/ids.schema.json#/$defs/uri" },
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "required_quorum": { "type": "string" },
+    "expire_at": { "type": "string", "format": "date-time" },
+    "policy_rule": { "type": "string" },
+    "created_by": { "type": "string" }
+  }
+}
+
