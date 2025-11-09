@@ -30,6 +30,35 @@ pub unsafe extern "C" fn gatos_free(s: *mut libc::c_char) {
     gatos_ffi_free_string(s)
 }
 
+// Internal helpers to deduplicate parsing and encoding logic across FFI entrypoints.
+use gatos_ledger_core::{compute_content_id, CommitCore, Hash};
+
+/// # Safety
+/// If `has` is true, `ptr` must be non-null and point to at least 32 readable bytes.
+unsafe fn parse_hash_opt(has: bool, ptr: *const u8) -> Result<Option<Hash>, ()> {
+    if has {
+        Ok(Some(parse_hash(ptr)?))
+    } else {
+        Ok(None)
+    }
+}
+
+/// # Safety
+/// `ptr` must be non-null and point to at least 32 readable bytes.
+unsafe fn parse_hash(ptr: *const u8) -> Result<Hash, ()> {
+    if ptr.is_null() { return Err(()); }
+    let mut out = [0u8; 32];
+    std::ptr::copy_nonoverlapping(ptr, out.as_mut_ptr(), 32);
+    Ok(out)
+}
+
+fn compute_and_encode(core: &CommitCore) -> *mut libc::c_char {
+    compute_content_id(core).map_or(std::ptr::null_mut(), |id| {
+        let s = hex::encode(id);
+        std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
+    })
+}
+
 /// Compute the canonical commit identifier (content id) for a commit core
 /// described by its parts and return it as a newly-allocated hex string
 /// (caller must free via `gatos_ffi_free_string`). On failure, returns NULL.
@@ -54,38 +83,14 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     tree_ptr: *const u8,
     signature_ptr: *const u8,
 ) -> *mut libc::c_char {
-    use gatos_ledger_core::{compute_content_id, CommitCore, Hash};
-
-    let parent: Option<Hash> = if has_parent {
-        if parent_ptr.is_null() {
-            return std::ptr::null_mut();
-        }
-        let mut buf = [0u8; 32];
-        std::ptr::copy_nonoverlapping(parent_ptr, buf.as_mut_ptr(), 32);
-        Some(buf)
-    } else {
-        None
-    };
-
-    if tree_ptr.is_null() || signature_ptr.is_null() {
-        return std::ptr::null_mut();
-    }
-    let mut tree = [0u8; 32];
-    let mut _signature = [0u8; 64]; // Ignored per ADR-0001; retained for API compatibility
-    std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
-    std::ptr::copy_nonoverlapping(signature_ptr, _signature.as_mut_ptr(), 64);
-
-    // For now, supply empty message and zero timestamp at the FFI boundary.
-    let core = CommitCore {
-        parent,
-        tree,
-        message: String::new(),
-        timestamp: 0,
-    };
-    compute_content_id(&core).map_or(std::ptr::null_mut(), |id| {
-        let s = hex::encode(id);
-        std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
-    })
+    // Parse inputs
+    let parent = match parse_hash_opt(has_parent, parent_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    // Signature is ignored for hashing but validated for compatibility
+    if signature_ptr.is_null() { return std::ptr::null_mut(); }
+    let tree = match parse_hash(tree_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    // Empty message + zero timestamp boundary
+    let core = CommitCore { parent, tree, message: String::new(), timestamp: 0 };
+    compute_and_encode(&core)
 }
 
 /// v2: Compute content id from core fields including message and timestamp.
@@ -110,24 +115,8 @@ pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
     msg_len: usize,
     timestamp: u64,
 ) -> *mut libc::c_char {
-    use gatos_ledger_core::{compute_content_id, CommitCore, Hash};
-
-    let parent: Option<Hash> = if has_parent {
-        if parent_ptr.is_null() {
-            return std::ptr::null_mut();
-        }
-        let mut buf = [0u8; 32];
-        std::ptr::copy_nonoverlapping(parent_ptr, buf.as_mut_ptr(), 32);
-        Some(buf)
-    } else {
-        None
-    };
-
-    if tree_ptr.is_null() {
-        return std::ptr::null_mut();
-    }
-    let mut tree = [0u8; 32];
-    std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
+    let parent = match parse_hash_opt(has_parent, parent_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    let tree = match parse_hash(tree_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
 
     let message = if msg_len == 0 {
         String::new()
@@ -142,16 +131,8 @@ pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
         }
     };
 
-    let core = CommitCore {
-        parent,
-        tree,
-        message,
-        timestamp,
-    };
-    compute_content_id(&core).map_or(std::ptr::null_mut(), |id| {
-        let s = hex::encode(id);
-        std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
-    })
+    let core = CommitCore { parent, tree, message, timestamp };
+    compute_and_encode(&core)
 }
 
 #[cfg(test)]
