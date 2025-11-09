@@ -15,3 +15,4 @@ heapless = { workspace = true } # For no_std collections
 bincode = { workspace = true, default-features = false, features = ["alloc", "derive"] } # For serialization
 serde = { workspace = true, default-features = false }
 serde_with = { workspace = true, default-features = false }
+ smallvec = { workspace = true, features = ["serde"] }
