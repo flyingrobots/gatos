@@ -31,6 +31,15 @@ GMB is the Message Plane in the GATOS hexagonal architecture. It coordinates mes
 - `crates/gatos-kv`: materialized view updates
 - `bindings/ffi` and `bindings/wasm`: cross-language event streaming
 
+### How it works (at a glance)
+
+- Depend on `gatos-mind` in your crate.
+- Use a `Publisher` to publish messages to a topic; use a `Subscriber` to consume.
+- Messages are persisted as Git commits to provide auditability and coordinate exactly-once when combined with acknowledgements/commitments.
+
+> Note: In this branch the public API is still a placeholder; the integration
+> surface will expose `Publisher`/`Subscriber` types as the bus is implemented.
+
 For protocol details, architecture rationale, and design patterns, see
 [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and
 [TECH-SPEC.md](../../docs/TECH-SPEC.md).
