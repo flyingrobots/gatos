@@ -1,8 +1,22 @@
 
-## ADR-0003: Consensus Governance for Gated Actions
+---
+Status: Accepted
+Date: 2025-11-08
+ADR: ADR-0003
+Authors: [flyingrobots]
+Requires: [ADR-0001]
+Related: [ADR-0002]
+Tags: [Governance, Consensus, Policy]
+Schemas:
+  - schemas/v1/governance/proposal.schema.json
+  - schemas/v1/governance/approval.schema.json
+  - schemas/v1/governance/grant.schema.json
+  - schemas/v1/governance/revocation.schema.json
+  - schemas/v1/governance/proof_of_consensus_envelope.schema.json
+  - schemas/v1/policy/governance_policy.schema.json
+---
 
-- **Status:** Accepted
-- **Date:** 2025-11-08
+## ADR-0003: Consensus Governance for Gated Actions
 
 ### Scope
 
