@@ -538,7 +538,8 @@ The system is organized by a `tenant` namespace to provide multi-tenancy.
 Two primary event types are used:
 
 - `jobs.enqueue`: Represents a new job being added to the queue. Includes job ID, priority, payload pointer, and policy/signature details.
-- `jobs.result`: Records the outcome of a job, including status (ok/fail), duration, and attachments for logs.
+- `jobs.result`: Records the outcome of a job, including a `status` field ("ok" | "fail" | "retry"),
+  `duration_ms`, `attempts`, and optional `error` details for failures; attachments may include logs.
 
 Example envelopes (canonical JSON shape; values abbreviated for clarity):
 
@@ -567,7 +568,12 @@ Example envelopes (canonical JSON shape; values abbreviated for clarity):
   "actor": "agent:worker-42",
   "caps": ["journal:append"],
   "labels": [],
-  "payload": {"job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7", "ok": true, "duration_ms": 5230, "attempts": 1},
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "status": "ok", // or "fail" or "retry"
+    "duration_ms": 5230,
+    "attempts": 1
+  },
   "attachments": [
     {"kind":"blobptr","algo":"blake3","hash":"de…ad","size":2048,"labels":["exportable"]}
   ],
