@@ -28,12 +28,12 @@ You must link against the compiled shared library.
 
 // Declare the functions from the Rust FFI library.
 // In a real project, you would generate a header file for this.
-const char* hello_ffi();
+char* hello_ffi(void);
 void gatos_ffi_free_string(char* s);
 
-int main() {
+int main(void) {
     // Call the Rust function
-    char* message = (char*)hello_ffi();
+    char* message = hello_ffi();
     if (message) {
         printf("Message from GATOS: %s\n", message);
 
@@ -70,10 +70,12 @@ gatos_lib.gatos_ffi_free_string.argtypes = [ctypes.c_char_p]
 
 # Call the Rust function
 message_ptr = gatos_lib.hello_ffi()
-print(f"Message from GATOS: {message_ptr.decode('utf-8')}")
-
-# IMPORTANT: Free the string that was allocated by Rust
-gatos_lib.gatos_ffi_free_string(message_ptr)
+if message_ptr:
+    print(f"Message from GATOS: {message_ptr.decode('utf-8')}")
+    # IMPORTANT: Free the string that was allocated by Rust
+    gatos_lib.gatos_ffi_free_string(message_ptr)
+else:
+    print("Error: hello_ffi returned NULL")
 ```
 
 ## Safety Considerations
