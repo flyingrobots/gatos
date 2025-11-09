@@ -7,7 +7,7 @@ pub struct GitStore {
 
 impl GitStore {
     #[must_use]
-    pub const fn new(repo: Repository) -> Self {
+    pub fn new(repo: Repository) -> Self {
         Self { repo }
     }
 }
