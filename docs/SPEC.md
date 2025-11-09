@@ -4,10 +4,10 @@
     __ ,                                                     
   ,-| ~        ,                                             
  ('||/__,  '  ||                                             
-(( |||  | \\ =||=                                            
+(( |||  | \ =||=                                            
 (( |||==| ||  ||                                             
  ( / |  , ||  ||                                             
-  -____/  \\  \\,                                            
+  -____/  \  \,                                            
                                                              
                                                              
   ___                                                        
@@ -16,34 +16,34 @@
 (  / ||   _-_,                                               
  \/==||  ||_.                                                
  /_ _||   ~ ||                                               
-(  - \\, ,-_-                                                
+(  - \, ,-_-                                                
                                                              
                                                              
  ___                                                         
 -   ---___- ,,                                               
    (' ||    ||                                               
-  ((  ||    ||/\\  _-_                                       
- ((   ||    || || || \\                                      
+  ((  ||    ||/\  _-_                                       
+ ((   ||    || || || \                                      
   (( //     || || ||/                                        
-    -____-  \\ |/ \\,/                                       
-              _/                                             
+    -____-  \ |/ \,/                                       
+              _/
                                                              
     __                                                       
   ,-||-,                             ,                       
  ('|||  )                      _    ||   '         _         
-(( |||--)) -_-_   _-_  ,._-_  < \, =||= \\ \\/\\  / \\       
-(( |||--)) || \\ || \\  ||    /-||  ||  || || || || ||       
+(( |||--)) -_-_   _-_  ,._-_  < \, =||= \ \/\  / \       
+(( |||--)) || \ || \  ||    /-||  ||  || || || || ||       
  ( / |  )  || || ||/    ||   (( ||  ||  || || || || ||       
-  -____-   ||-'  \\,/   \\,   \/\\  \\, \\ \\ \\ \\_-|       
+  -____-   ||-'  \,/   \,   \/\  \, \ \ \ \ \_-|       
            |/                                     /  \       
            '                                     '----`      
                                                              
   -_-/                /\                                     
  (_ /                ||    _                                 
-(_ --_  \\ \\ ,._-_ =||=  < \,  _-_  _-_                     
-  --_ ) || ||  ||    ||   /-|| ||   || \\                    
+(_ --_  \ \ ,._-_ =||=  < \,  _-_  _-_                     
+  --_ ) || ||  ||    ||   /-|| ||   || \                    
  _/  )) || ||  ||    ||  (( || ||   ||/                      
-(_-_-   \\/\\  \\,   \\,  \/\\ \\,/ \\,/                     
+(_-_-   \/\  \,   \,  \/\ \,/ \,/                     
                                                              
                                                              
 ```
@@ -60,7 +60,7 @@
 |  |  |
 |--|--|
 | **Status** | Draft (implementation underway) |
-| **Scope** | Normative specification of data model, on-disk layout, protocols, and behavioral guarantees. |  
+| **Scope** | Normative specification of data model, on-disk layout, protocols, and behavioral guarantees. |
 | **Audience** | Implementers, auditors, integrators. |
 
 GATOS is for anyone who's not afraid to try something new. It's for those who experiment and who ask _"What if?"_. GATOS is for innovators. Ground-breakers. It's for those that have the **GUTS** to try to see what happens.
@@ -85,12 +85,13 @@ A **GATOS node** is a Git repository with a disciplined layout of refs, notes, a
 
 A **GATOS app** is a set of **schemas**, **policies**, and **folds** that operate on **append-only journals** to produce **deterministic state**.
 
-**GATOS** defines four planes:
+**GATOS** defines five planes:
 
 1) **Ledger plane** — append‑only journals (**events**).  
 2) **State plane** — deterministic folds (**state roots**).  
 3) **Policy/Trust plane** — enforceable rules and grants.  
 4) **Message plane** — a commit‑backed pub/sub bus.
+5) **Job plane** — Distributed, verifiable job execution.
 
 All planes serialize exclusively to standard Git objects.
 
@@ -130,6 +131,9 @@ All planes serialize exclusively to standard Git objects.
 │       │   └── <topic>/<shard>/                  # message topics
 │       ├── mbus-ack/
 │       │   └── <topic>/<consumer>/               # acknowledgements
+│       ├── jobs/
+│       │   └── <job-ulid>/
+│       │       └── claims/<worker-id>            # job claims for distributed execution
 │       ├── sessions/
 │       │   └── <actor>/<ulid>/                   # ephemeral working branches
 │       ├── audit/
@@ -674,3 +678,33 @@ Exactly-once delivery is achieved using the GATOS message bus:
 - **Rate Limiting**: A fold computes a windowed count of jobs per tenant, which producers can consult before enqueueing new jobs.
 - **Delayed Jobs**: A scheduler agent reads `jobs.enqueue` events with a `next_earliest_at` field and publishes a `jobs.release` event at the appropriate time.
 - **RBAC**: Multi-tenancy and access control are handled by GATOS namespaces and capability grants, which can restrict access to specific topics and event types.
+
+---
+
+## 19. Job Plane (Compute)
+
+The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs. It makes GATOS an *active* system capable of orchestrating computation.
+
+### 19.1 Job Lifecycle
+
+The job lifecycle is represented entirely through Git objects:
+
+-   **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
+-   **Claim:** A ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
+-   **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
+
+### 19.2 Job Discovery
+
+When a **Job** commit is created, a corresponding message **MUST** be published to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers.
+
+### 19.3 Proof-Of-Execution
+
+The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. Each `Result` commit **MUST** include the following trailers for discoverability:
+
+-   `Job-Id: <hash>`
+-   `Proof-Of-Execution: <blake3:...>`
+-   `Worker-Id: <pubkey>`
+-   `Attest-Program: <hash-of-runner-binary>` (optional)
+-   `Attest-Sig: <signature>` (optional)
+
+```
