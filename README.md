@@ -303,7 +303,7 @@ GATOS will remember the context. If another process were to interact with it, my
 
 ### A Human Conversation with GATOS
 
-**Scenario**: A developer, James, wants to check on his open pull requests and then look at some automated reviews from `coderabbitai`. He uses the dp alias for git gatos.
+**Scenario**: A developer, James, wants to check on his open pull requests and then look at some automated reviews from `coderabbitai`. He uses an app built on the GATOS engine, "draft-punks" (`git dp`), which pulls down PR comments for processing.
 
 <details>
 *(Meta-commentary is in italics)*
