@@ -14,7 +14,8 @@ use serde_with::serde_as;
 
 /// 256-bit BLAKE3 content hash digest.
 ///
-/// - Size: 32 bytes (little-endian byte order as produced by `blake3`).
+/// - Size: 32 bytes (verbatim byte array as produced by `blake3` — no
+///   endianness reinterpretation).
 /// - Usage: primary identifier for content-addressed objects and commits.
 pub type Hash = [u8; 32];
 
