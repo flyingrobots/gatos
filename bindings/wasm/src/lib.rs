@@ -14,8 +14,9 @@ pub fn hello_wasm_js() -> String {
     hello_wasm().to_string()
 }
 
-/// Compute commit id from parts. Accepts optional 32-byte parent, required 32-byte tree,
-/// and 64-byte signature. Returns lowercase hex string on success.
+/// Compute commit id (content id) from parts. Accepts optional 32-byte parent,
+/// required 32-byte tree, and 64-byte signature. Returns lowercase hex string
+/// on success.
 #[wasm_bindgen]
 /// # Errors
 /// Returns `Err(JsValue)` when inputs have invalid lengths or serialization fails.
@@ -45,10 +46,14 @@ pub fn compute_commit_id_wasm(
         None => None,
     };
 
-    let core = gatos_ledger_core::CommitCore { parent: parent_arr, tree: tree_arr };
-    let core_id = gatos_ledger_core::compute_content_id(&core).map_err(|_| JsValue::from_str("serialize failure"))?;
-    let commit = gatos_ledger_core::Commit { core_id, signature: sig_arr };
-    gatos_ledger_core::compute_commit_id(&commit)
+    // For compatibility, provide empty message and zero timestamp at the WASM boundary.
+    let core = gatos_ledger_core::CommitCore {
+        parent: parent_arr,
+        tree: tree_arr,
+        message: String::new(),
+        timestamp: 0,
+    };
+    gatos_ledger_core::compute_content_id(&core)
         .map(hex::encode)
         .map_err(|_| JsValue::from_str("serialize failure"))
 }

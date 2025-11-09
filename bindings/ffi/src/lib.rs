@@ -22,36 +22,30 @@ pub unsafe extern "C" fn gatos_ffi_free_string(s: *mut libc::c_char) {
 }
 
 /// Convenience alias for freeing strings allocated by this FFI.
+///
+/// # Safety
+/// See [`gatos_ffi_free_string`]. The same preconditions apply.
 #[no_mangle]
 pub unsafe extern "C" fn gatos_free(s: *mut libc::c_char) {
     gatos_ffi_free_string(s)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn hello_and_free_roundtrip() {
-        // SAFETY: test boundary — verifies allocation + free path doesn't crash
-        let p = unsafe { hello_ffi() };
-        assert!(!p.is_null());
-        unsafe { gatos_ffi_free_string(p) };
-    }
-}
-
-/// Compute a BLAKE3-based commit id for a commit described by its parts and
-/// return it as a newly-allocated hex string (caller must free via
-/// `gatos_ffi_free_string`). On failure, returns NULL.
+/// Compute the canonical commit identifier (content id) for a commit core
+/// described by its parts and return it as a newly-allocated hex string
+/// (caller must free via `gatos_ffi_free_string`). On failure, returns NULL.
 ///
 /// `parent_ptr`: pointer to 32-byte parent hash or NULL when `has_parent=false`.
 /// `tree_ptr`: pointer to 32-byte tree hash.
-/// `signature_ptr`: pointer to 64-byte signature.
+/// `signature_ptr`: pointer to 64-byte signature (ignored for id calculation; kept for API stability).
+///
+/// NOTE: As of ADR-0001, the canonical identifier is derived solely from the
+/// unsigned core. The `signature_ptr` is ignored for hashing.
+///
 /// # Safety
 /// The caller must ensure that:
 /// - When `has_parent` is true, `parent_ptr` points to at least 32 readable bytes.
 /// - `tree_ptr` points to at least 32 readable bytes.
-/// - `signature_ptr` points to at least 64 readable bytes.
+/// - `signature_ptr` points to at least 64 readable bytes (ignored but validated).
 /// - The provided pointers remain valid for the duration of this call and do not alias.
 #[no_mangle]
 pub unsafe extern "C" fn gatos_compute_commit_id_hex(
@@ -60,7 +54,7 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     tree_ptr: *const u8,
     signature_ptr: *const u8,
 ) -> *mut libc::c_char {
-    use gatos_ledger_core::{compute_commit_id, compute_content_id, Commit, CommitCore, Hash};
+    use gatos_ledger_core::{compute_content_id, CommitCore, Hash};
 
     let parent: Option<Hash> = if has_parent {
         if parent_ptr.is_null() {
@@ -77,15 +71,32 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
         return std::ptr::null_mut();
     }
     let mut tree = [0u8; 32];
-    let mut signature = [0u8; 64];
+    let mut _signature = [0u8; 64]; // Ignored per ADR-0001; retained for API compatibility
     std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
-    std::ptr::copy_nonoverlapping(signature_ptr, signature.as_mut_ptr(), 64);
+    std::ptr::copy_nonoverlapping(signature_ptr, _signature.as_mut_ptr(), 64);
 
-    let core = CommitCore { parent, tree };
-    let Ok(core_id) = compute_content_id(&core) else { return std::ptr::null_mut() };
-    let commit = Commit { core_id, signature };
-    compute_commit_id(&commit).map_or(std::ptr::null_mut(), |id| {
+    // For now, supply empty message and zero timestamp at the FFI boundary.
+    let core = CommitCore {
+        parent,
+        tree,
+        message: String::new(),
+        timestamp: 0,
+    };
+    compute_content_id(&core).map_or(std::ptr::null_mut(), |id| {
         let s = hex::encode(id);
         std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hello_and_free_roundtrip() {
+        // Calling `hello_ffi` is safe; freeing requires `unsafe` below.
+        let p = hello_ffi();
+        assert!(!p.is_null());
+        unsafe { gatos_ffi_free_string(p) };
+    }
 }
