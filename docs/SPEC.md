@@ -104,7 +104,7 @@ graph TD
 
 ### Requirements
 
-- Journals **MUST** be fast‑forward‑only. 
+- Journals **MUST** be fast‑forward‑only.
 - State refs **MUST** be derivable from journals and policies.
 - Cache refs **MUST** be rebuildable and **MUST NOT** be authoritative.
 - Epochs **MUST** form a cryptographically-linked chain.
@@ -141,7 +141,8 @@ graph TD
 ```
 
 The normative layout is as follows:
-```
+
+```text
 .git/
 ├── refs/
 │   └── gatos/
@@ -150,7 +151,7 @@ The normative layout is as follows:
 │       ├── mbus/
 │       ├── mbus-ack/
 │       ├── jobs/
-│       │   └── <job-ulid>/
+│       │   └── <job-id>/
 │       │       └── claims/<worker-id>
 │       ├── sessions/
 │       ├── audit/
@@ -531,24 +532,25 @@ This diagram illustrates how the state of a Job transitions based on events reco
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Enqueued
+    [*] --> pending
 
-    Enqueued --> Processing: Worker consumes `bus.message`
-    Processing --> Succeeded: `jobs.result` (ok) event recorded
-    Processing --> Failed: `jobs.result` (fail) event recorded
+    pending --> claimed: Worker claims job (CAS)
+    claimed --> running: Worker begins execution
+    running --> succeeded: `jobs.result` (ok)
+    running --> failed: `jobs.result` (fail)
 
-    Succeeded --> [*]
-    Failed --> Retrying: `attempts` < max_retries
-    Failed --> DeadLetterQueue: `attempts` >= max_retries
+    succeeded --> [*]
+    failed --> [*]
 
-    Retrying --> Enqueued: Job is re-published
-    DeadLetterQueue --> [*]
+    pending --> aborted: Canceled by user/policy
+    claimed --> aborted: Canceled by user/policy
+    aborted --> [*]
 ```
 
 The lifecycle is represented entirely through Git objects:
 
 -   **Job:** A commit whose tree contains a `job.yaml` manifest.
--   **Claim:** An atomic ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`.
+-   **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>` (see ADR‑0002 Canonical Job Identifier).
 -   **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
@@ -557,4 +559,22 @@ When a **Job** commit is created, a message **MUST** be published to a topic on 
 
 ### 19.3 Proof-Of-Execution
 
-The **Proof-Of-Execution** **MUST** sign the job’s `content_id`. Each `Result` commit **MUST** include trailers for discoverability, including `Job-Id`, `Proof-Of-Execution`, and `Worker-Id`.
+The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id` (BLAKE3 of the canonical unsigned job core). Each Result commit MUST include the following trailers for discoverability:
+
+- `Job-Id: <blake3-hex>` — canonical job identifier (content_id)
+- `Proof-Of-Execution: <blake3-hex>` — digest of the PoE envelope
+- `Worker-Id: <pubkey>` — worker public key identifier
+- `Attest-Program: <hash>` — hash of runner binary or WASM module (optional but RECOMMENDED)
+- `Attest-Sig: <sig>` — signature over the attestation envelope (optional)
+
+Example (trailers):
+
+```text
+Job-Id: blake3:9f0a…
+Worker-Id: ed25519:03ab…
+Proof-Of-Execution: blake3:7c2e…
+Attest-Program: blake3:11dd…
+Attest-Sig: ed25519:8a77…
+```
+
+See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definition of `content_id` and canonical serialization.

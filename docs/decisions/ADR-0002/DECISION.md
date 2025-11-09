@@ -98,3 +98,6 @@ sequenceDiagram
 1. **External CI/CD Systems** — Rejected: breaks the self-contained, Git-native model.
 2. **Webhooks** — Rejected: less reliable and less auditable than Git-tracked claims/results.
 
+### Terminology and References
+
+- `content_id`: The BLAKE3 hash of the canonical serialization of the unsigned job core. This mirrors the definition used for commits in ADR‑0001 and applies here to the job manifest’s canonical form. See ADR‑0001 for canonical serialization rules and the `CommitCore` pattern.
