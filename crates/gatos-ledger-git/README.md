@@ -8,6 +8,7 @@ This crate provides a `std`-dependent storage backend for the GATOS ledger that 
 use git2::Repository;
 use gatos_ledger_git::GitStore;
 use gatos_ledger_core::{ObjectStore, Hash};
+use blake3;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open an existing repository
