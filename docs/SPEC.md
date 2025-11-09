@@ -517,3 +517,49 @@ git gatos epoch new <ns>
 git gatos prove <state_root> | gatos verify <state_root>
 git gatos doctor
 ```
+
+---
+
+## 18. Example Use Case: A Git-Native Work Queue
+
+This section provides a practical example of how GATOS primitives can be used to build a sophisticated, multi-tenant, and auditable work queue, replacing a traditional system like a Redis-based queue.
+
+### 18.1 Data Model & Ref Layout
+
+The system is organized by a `tenant` namespace to provide multi-tenancy.
+
+- **Journals**: `refs/gatos/journal/jobs/<tenant>/<producer>` for appending job creation and result events.
+- **State**: `refs/gatos/state/jobs/<tenant>` for deterministic materialized views of the queue state (e.g., active jobs, DLQ).
+- **Message Bus**: `refs/gatos/mbus/queue.<tenant>/<shard>` for job dispatching and `refs/gatos/mbus-ack/queue.<tenant>/<consumer>` for acknowledgements.
+- **Audit**: `refs/gatos/audit/policy` for policy decisions and `refs/gatos/audit/proofs/jobs.<tenant>` for fold/execution proofs.
+
+### 18.2 Event Schema
+
+Two primary event types are used:
+
+- `jobs.enqueue`: Represents a new job being added to the queue. Includes job ID, priority, payload pointer, and policy/signature details.
+- `jobs.result`: Records the outcome of a job, including status (ok/fail), duration, and attachments for logs.
+
+### 18.3 State Folds
+
+Deterministic folds compute the state of the work queue:
+
+- **Queue View**: A Last-Writer-Wins (LWW) map of job metadata, keyed by `job.id`.
+- **Dead-Letter-Queue (DLQ) View**: A filtered view of jobs where `status=fail` and `attempts` exceeds a defined maximum.
+- **Counters**: Grow-only (G) or PN counters for per-tenant statistics (e.g., enqueued, running, failed).
+
+### 18.4 Delivery Semantics (Exactly-Once)
+
+Exactly-once delivery is achieved using the GATOS message bus:
+
+1.  **Publish**: A producer appends a `jobs.enqueue` event to the journal and then publishes a `gmb.msg` to the message bus with `QoS=exactly_once`.
+2.  **Consume**: A worker subscribes to the topic, de-duplicates messages, and processes the job. Upon completion, it appends a `jobs.result` event to the journal and writes a `gmb.ack` to the bus.
+3.  **Commit**: A coordinator (or the original publisher) observes the `gmb.ack` and publishes a `gmb.commit` message, finalizing the transaction.
+
+### 18.5 Feature Implementation
+
+- **Priority Queues**: Implemented using separate topics for high and low priority jobs (e.g., `queue.<tenant>.high` and `queue.<tenant>.low`).
+- **Retries and Backoff**: A worker or producer can re-publish a job with a `next_earliest_at` label, which is handled by a scheduler agent.
+- **Rate Limiting**: A fold computes a windowed count of jobs per tenant, which producers can consult before enqueueing new jobs.
+- **Delayed Jobs**: A scheduler agent reads `jobs.enqueue` events with a `next_earliest_at` field and publishes a `jobs.release` event at the appropriate time.
+- **RBAC**: Multi-tenancy and access control are handled by GATOS namespaces and capability grants, which can restrict access to specific topics and event types.

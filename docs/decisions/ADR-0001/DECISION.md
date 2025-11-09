@@ -1,0 +1,95 @@
+---
+Status: Accepted
+Date: 2025-11-08
+---
+# ADR-0001: Split gatos-ledger into `no_std` Core and `std` Backends
+
+## Decision
+
+The `gatos-ledger` crate will be split into a `no_std`-compatible `gatos-ledger-core` and one or more `std`-dependent storage backends (e.g., `gatos-ledger-git`).
+
+A meta-crate, `gatos-ledger`, will use feature flags to provide the appropriate implementation.
+
+## Motivation
+
+The project requires `no_std` compatibility where practical, to allow the core logic to run in constrained environments like microcontrollers or WASM sandboxes.
+
+The original `gatos-ledger` crate's dependency on `git2` (which requires `std`) was in direct conflict with this goal.
+
+## Rationale
+
+This "`no_std` at the core, `std` at the edges" architecture resolves the conflict by decoupling the pure, portable ledger semantics (commit graph, hashing, proofs) from the I/O-heavy storage layer. This structure is illustrated below:
+
+```mermaid
+graph TD
+    Consumer("Consumer Crate") --> Meta("gatos-ledger (meta-crate)");
+    Meta -- "feature: git2-backend" --> Git("gatos-ledger-git (std)");
+    Meta -- "feature: core-only" --> Core("gatos-ledger-core (no_std)");
+    Git --> Core;
+```
+
+The `gatos-ledger-core` crate contains only the portable logic, while backends like `gatos-ledger-git` implement a common `ObjectStore` trait for specific environments.
+
+```rust
+pub trait ObjectStore {
+    fn put_object(&mut self, id: Hash, data: &[u8]);
+    fn get_object(&self, id: &Hash) -> Option<Vec<u8>>;
+}
+```
+
+This separation of concerns is demonstrated in the data flow for creating and persisting a commit:
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Core as gatos-ledger-core
+    participant Store as ObjectStore Backend
+
+    App->>Core: create_commit(parent, tree, signature)
+    Core->>Core: commit = Commit { ... }
+    Core->>Core: hash = compute_commit_id(&commit)
+    Core->>Store: put_object(hash, serialize(commit))
+    Store-->>Core: (persists object)
+    Core-->>App: return hash
+```
+
+This approach provides maximum portability and a lower attack surface for the core logic, without sacrificing the ability to use standard Git tooling on host systems.
+
+## Consequences
+
+- Core logic must remain `no_std` and avoid heap allocation unless gated by `alloc`.
+- The `gatos-ledger` meta-crate becomes the public-facing entry point, simplifying dependency management. Consumers select their desired backend via feature flags.
+- CI matrix must test both `core-only` and `git2-backend` builds.
+
+### Usage Example
+
+A `std`-aware crate would depend on `gatos-ledger` like this:
+```toml
+[dependencies]
+gatos-ledger = { version = "0.1", features = ["git2-backend"] }
+```
+
+A `no_std` crate would disable default features to use only the core logic:
+```toml
+[dependencies]
+gatos-ledger = { version = "0.1", default-features = false, features = ["core-only"] }
+```
+
+The way Cargo uses these feature flags to include the correct components at compile time is shown below:
+
+```mermaid
+graph TD
+    A[Consumer Crate] --> B{uses gatos-ledger};
+    B -- default-features = true --> C{Feature: 'git2-backend'};
+    C --> D[Includes `gatos-ledger-git`];
+    D --> E[Includes `gatos-ledger-core`];
+    E --> F[Provides `GitStore` impl of `ObjectStore`];
+
+    B -- "default-features = false, <br> features = [core-only]" --> G{Feature: 'core-only'};
+    G --> H[Includes `gatos-ledger-core` only];
+    H --> I[Provides `ObjectStore` trait and core types];
+```
+
+## Opinions
+
+- [flyingrobots](./flyingrobots.md)

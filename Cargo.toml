@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/gatos-ledger-core",
+    "crates/gatos-ledger-git",
+    "crates/gatos-ledger",
+    "crates/gatos-mind",
+    "crates/gatos-echo",
+    "crates/gatos-policy",
+    "crates/gatos-kv",
+    "crates/gatosd",
+    "bindings/wasm",
+    "bindings/ffi",
+]

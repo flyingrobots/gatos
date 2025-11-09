@@ -1,0 +1,13 @@
+[package]
+name = "gatos-ledger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gatos-ledger-core = { path = "../gatos-ledger-core", optional = true }
+gatos-ledger-git = { path = "../gatos-ledger-git", optional = true }
+
+[features]
+default = ["git2-backend"]
+core-only = ["gatos-ledger-core"]
+git2-backend = ["gatos-ledger-git", "gatos-ledger-core"]

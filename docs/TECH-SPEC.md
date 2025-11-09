@@ -6,27 +6,29 @@
 
 ---
 
-## 1. Codebase Layout (Rust workspace)
+## 1. Codebase Layout (Rust Workspace)
+
+The GATOS workspace is organized into two main directories: `crates` for the core Rust components and `bindings` for foreign language integration.
 
 ```rust
 gatos/
-crates/
-gatos-core/        # Git-backed ledger + CAS + notes
-gatos-policy/      # Gate + policy VM (RGS bytecode)
-gatos-session/     # Session engine (undo/fork/merge)
-gatos-bus/         # Message bus (QoS, shards, acks)
-gatos-proof/       # Commitment/ZK proof interfaces
-gatosd/            # JSONL RPC server + CLI
-vendor/
-libgitledger/      # (optional) C reference via FFI for parity tests
-roaring-rs/        # Roaring bitmaps (cache)
+├── crates/
+│   ├── gatos-ledger-core/ # no_std; graph + proof math
+│   ├── gatos-ledger-git/  # std; git2 backend for the ledger
+│   ├── gatos-ledger/      # feature-composed meta-crate for the ledger
+│   ├── gatos-mind/        # Async message bus (pub/sub)
+│   ├── gatos-echo/        # Deterministic state engine (folds, sessions)
+│   ├── gatos-policy/      # Compiled rule interpreter
+│   ├── gatos-kv/          # Git-backed state cache
+│   └── gatosd/            # CLI + daemon entrypoint
+└── bindings/
+    ├── wasm/              # WebAssembly bindings via wasm-bindgen
+    └── ffi/               # C ABI for integrations
 ```
 
 ### Reuse & refactor recommendations
 
 Reuse **Echo** crates for fold determinism (`rmg-core` as the fold engine).
-
-Optional: reuse **`libgitledger`** for journal append semantics or as a parity checker in tests.
 
 Adopt **`git-kv`** “Stargate” concepts for optional `push-gate` profile (separate project/service).
 
@@ -34,136 +36,32 @@ Integrate **Wesley** as a compiler target `--target gatos` to emit schemas, RLS,
 
 ---
 
-## 2. Core Crates
+## 2. Crate Architecture
 
-### 2.1 `gatos-core`
+GATOS follows a modular, "Ports and Adapters" (Hexagonal) architecture. The core logic is pure and portable (`no_std`), while I/O-dependent functionality is provided by specific "adapters."
 
-#### Responsibilities
+### Crate Summary
 
-- Git repository integration (`libgit2`)
-- Ledger: append/read, atomic ref updates (CAS)
-- CAS blob store (opaque/normal)
-- Notes helpers (`policy_root`/`trust_chain` on commits)
-- Epoch management
+| Crate | Purpose |
+|:---|:---|
+| [`gatos-ledger-core`](../../crates/gatos-ledger-core/README.md) | Defines the `no_std` core logic, data structures, and traits for the ledger. |
+| [`gatos-ledger-git`](../../crates/gatos-ledger-git/README.md) | Provides a `std`-dependent storage backend using `libgit2`. |
+| [`gatos-ledger`](../../crates/gatos-ledger/README.md) | A meta-crate that composes the ledger components via feature flags. |
+| [`gatos-mind`](../../crates/gatos-mind/README.md) | Implements the asynchronous, commit-backed message bus (pub/sub). |
+| [`gatos-echo`](../../crates/gatos-echo/README.md) | The deterministic state engine for processing events ("folds") and managing sessions. |
+| [`gatos-policy`](../../crates/gatos-policy/README.md) | The deterministic policy engine for executing compiled rules. |
+| [`gatos-kv`](../../crates/gatos-kv/README.md) | A Git-backed key-value state cache for materialized views. |
+| [`gatosd`](../../crates/gatosd/README.md) | The main binary entrypoint for the CLI and the JSONL RPC daemon. |
+| [`gatos-wasm-bindings`](../../bindings/wasm/README.md) | WebAssembly bindings for browser and Node.js environments. |
+| [`gatos-ffi-bindings`](../../bindings/ffi/README.md) | A C-compatible FFI for integration with other languages. |
 
-#### Key types
+### Ledger Architecture: Ports and Adapters
 
-```rust
-pub struct GitLedger { pub repo: Repository }
-pub struct Event { /* canonical JSON */ }
-pub struct BlobPtr { algo: Algo, hash: [u8;32], size: u64, kind: BlobKind }
-pub enum BlobKind { Plain, Opaque{ ciphertext_hash: [u8;32], cipher_meta: CipherMeta } }
-pub struct EpochId([u8;32]);
+The ledger is the primary example of this hexagonal design, as documented in [ADR-0001](../decisions/ADR-0001/DECISION.md).
 
-impl GitLedger {
-  pub fn append(&mut self, ns: &str, actor: &str, ev: &Event, expect: Oid) -> Result<Oid>;
-  pub fn iter(&self, ns_glob: &str) -> Result<EventIter>;
-  pub fn checkpoint_state(&mut self, ns: &str, tree: &Tree, state_root: [u8;32]) -> Result<Oid>;
-  pub fn note_policy(&mut self, commit: Oid, policy_root: [u8;32], trust_chain: [u8;32]) -> Result<()>;
-}
-```
-
-#### Algorithms
-
-##### Atomic ref update
-
-Use `git2::Reference::set_target_checked(old_oid, new_oid, force=false)`.
-
-##### Content-defined chunking (FastCDC) for CAS 
-
-- library integration; 
-- store manifests as blobs, 
-- chunks as objects.
-
-### 2.2 `gatos-policy`
-
-#### Responsibilities
-
-- Compile RGS → RGC (`policy_root = sha256(bytes)`)
-- Deterministic interpreter (no I/O)
-- Decision model with explainable results
-
-#### API
-
-```rust
-pub struct PolicyGate { bundle: Arc<PolicyBundle>, trust: TrustGraph }
-pub enum Decision { Allow, Deny { reason: String, rule_id: String } }
-
-impl PolicyGate {
-  pub fn evaluate(&self, intent: &Intent, ctx: &Context) -> Decision;
-}
-```
-
-### 2.3 `gatos-session`
-
-#### Responsibilities
-
-- Ephemeral branch management under `refs/gatos/sessions/...`
-- Undo/fork/merge using deterministic lattice-join + DPO adapters from Echo
-- Workspace projection (optional)
-
-### 2.4 `gatos-bus`
-
-#### Responsibilities
-
-- Topics, shards, QoS semantics
-- Acks and commitments
-- Backpressure windows; 
-- dead-letter topics
-
-#### Data structures
-
-```rust
-pub enum QoS { AtMostOnce, AtLeastOnce, ExactlyOnce }
-pub struct Message { ulid: Ulid, topic: String, payload: Value, ... }
-pub struct Ack { msg_ulid: Ulid, consumer: String, result: AckResult }
-```
-
-#### Algorithm (exactly-once)
-
-1. Publisher writes `gmb.msg`.
-2. Consumers de-dup by `(topic, ulid)` and write `gmb.ack`.
-3. Publisher waits for quorum; writes `gmb.commit`.
-4. Consumers discard duplicates `if (topic, ulid)` seen with a commit.
-
-#### Storage
-
-- `refs/gatos/mbus/<topic>/<shard>` for msgs and commits.
-- `refs/gatos/mbus-ack/<topic>/<consumer>` for acknowledgements.
-
-### 2.5 `gatos-proof`
-
-#### Commitment proof generator 
-
-Compute `(inputs_root, output_root, policy_root)` and sign.
-
-ZK proof trait abstraction for pluggable backends.
-
-#### API
-
-```rust
-pub trait Prover {
-  fn commit(&self, inputs_root: [u8;32], output_root: [u8;32], policy_root: [u8;32]) -> Proof;
-  fn verify(&self, proof: &Proof) -> bool;
-}
-```
-
-### 2.6 `gatosd`
-
-JSONL RPC server over stdin/stdout and optional TCP.
-
-Command router for: 
-- `append_event`, 
-- `fold_state`,
-- `policy.check`, 
-- `bus.publish`, 
-- `bus.subscribe`, 
-- `session.*`, 
-- `put_blob`, 
-- `prove`, 
-- `verify`, 
-- `epoch new`, 
-- `doctor`.
+-   **Core (Hexagon):** `gatos-ledger-core` is the `no_std` core. It defines the "port" for persistence via the `ObjectStore` trait.
+-   **Adapters:** `gatos-ledger-git` is an adapter that implements `ObjectStore` using a standard Git repository. Other backends (e.g., in-memory, flat-file) can be added by creating new adapter crates.
+-   **Composition:** The `gatos-ledger` meta-crate acts as the public entry point, using Cargo features to provide the consumer with the correct combination of core logic and storage backend.
 
 ---
 
@@ -299,7 +197,67 @@ Expose metrics via `gatosd /metrics`:
 
 ## 11.  Performance Guidance
 
-- Batch multiple events into a single tree and one commit where possible.
+- Batch multiple events into a single tree and one commit where possible (e.g., batching 64 enqueues to reduce ref churn).
 - Prefer manifest+chunking over Git‑LFS.
-- Tune pack GC with size thresholds; 
-- document recommended `gc.auto`, `fetch.writeCommitGraph`.
+- Tune pack GC with size thresholds; document recommended `gc.auto`, `fetch.writeCommitGraph`.
+- For message bus topics, start with a reasonable number of shards (e.g., 64) and store the shard map in a configuration file (e.g., `gatos/mbus-config/<topic>.json`). Resharding can be achieved via a versioned shard map and a dual-write migration window.
+
+---
+
+## 12. Client SDKs
+
+To facilitate integration with existing applications, GATOS nodes can be accessed via client SDKs that communicate with the `gatosd` daemon over the JSONL RPC protocol. This provides a language-agnostic way to interact with a GATOS repository.
+
+### Example: Go SDK (`gatos-go`)
+
+A Go SDK would provide a simple API for interacting with GATOS, abstracting away the details of the JSONL protocol.
+
+```go
+// Publish a job
+cli.PublishMsg(ctx, "queue.acme", Msg{
+  Ulid: NewULID(),
+  Headers: map[string]string{"priority":"high"},
+  Payload: Job{ID: jobID, PayloadPtr: ptr},
+  QoS: ExactlyOnce,
+})
+
+// Consume a job
+sub := cli.Subscribe(ctx, "queue.acme", Shards{0,1,2})
+for m := range sub.C {
+  // Idempotent work
+  res := run(m.Payload)
+  cli.AppendEvent(ctx, "jobs/acme/worker-42", NewResult(res))
+  cli.Ack(ctx, "queue.acme", m.ULID)
+  cli.CommitIfQuorum(ctx, "queue.acme", m.ULID) // Can be run by publisher or a coordinator
+}
+```
+
+Under the hood, the SDK would send and receive JSONL messages to and from the `gatosd` daemon for operations like `append_event`, `bus.publish`, `bus.subscribe`, `bus.ack`, and `bus.commit`.
+
+---
+
+## 13. Migration Strategies
+
+Migrating an existing application to GATOS can be done in a phased approach to minimize risk and downtime. The following "mirror, shadow, dual-read, cutover" strategy is recommended.
+
+### Phase A: Mirror Mode
+
+- The existing system remains the source of truth.
+- Application producers are modified to dual-write to both the existing system and to the GATOS journal and message bus.
+- GATOS workers are not yet active.
+
+### Phase B: Shadow Consumers
+
+- Stand up GATOS workers that consume from the message bus but perform no-op operations.
+- This allows for validation of the GATOS data flow, ordering, and performance without affecting the live system.
+
+### Phase C: Dual-Read & Canary
+
+- A small percentage of traffic (e.g., 1%) is routed to the GATOS workers to perform real work.
+- The results are compared with the existing system to ensure parity.
+- The percentage of traffic is gradually increased as confidence in the GATOS implementation grows.
+
+### Phase D: Cutover
+
+- Once parity is proven, producers are switched to write only to GATOS.
+- The existing system can be kept in a read-only mode for a short period to allow for rollback if necessary, before being retired.
