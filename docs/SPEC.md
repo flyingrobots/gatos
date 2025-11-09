@@ -558,7 +558,7 @@ Exactly-once delivery is achieved using the GATOS message bus:
 
 ### 18.5 Feature Implementation
 
-- **Priority Queues**: Implemented using separate topics for high- and low-priority jobs (e.g., `queue.<tenant>.high` and `queue.<tenant>.low`).
+- **Priority Queues**: Implemented using separate topics for high-priority and low-priority jobs (e.g., `queue.<tenant>.high` and `queue.<tenant>.low`).
 - **Retries and Backoff**: A worker or producer can re-publish a job with a `next_earliest_at` label, which is handled by a scheduler agent.
 - **Rate Limiting**: A fold computes a windowed count of jobs per tenant, which producers can consult before enqueueing new jobs.
 - **Delayed Jobs**: A scheduler agent reads `jobs.enqueue` events with a `next_earliest_at` field and publishes a `jobs.release` event at the appropriate time.
