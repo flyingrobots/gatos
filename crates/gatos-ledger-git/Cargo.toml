@@ -1,0 +1,16 @@
+[package]
+name = "gatos-ledger-git"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Git-backed storage backend for gatos-ledger (no_std core)"
+keywords = ["ledger", "git", "storage", "backend"]
+categories = ["filesystem", "database", "data-structures"]
+
+[dependencies]
+git2 = { workspace = true }
+gatos-ledger-core = { path = "../gatos-ledger-core" }
+hex = { workspace = true }
+blake3 = { workspace = true }

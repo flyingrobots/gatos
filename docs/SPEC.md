@@ -517,3 +517,160 @@ git gatos epoch new <ns>
 git gatos prove <state_root> | gatos verify <state_root>
 git gatos doctor
 ```
+
+---
+
+## 18. Example Use Case: A Git-Native Work Queue
+
+This section provides a practical example of how GATOS primitives can be used to build a sophisticated, multi-tenant, and auditable work queue, replacing a traditional system like a Redis-based queue.
+
+### 18.1 Data Model & Ref Layout
+
+The system is organized by a `tenant` namespace to provide multi-tenancy.
+
+- **Journals**: `refs/gatos/journal/jobs/<tenant>/<producer>` for appending job creation and result events.
+- **State**: `refs/gatos/state/jobs/<tenant>` for deterministic materialized views of the queue state (e.g., active jobs, DLQ).
+- **Message Bus**: `refs/gatos/mbus/queue.<tenant>/<shard>` for job dispatching and `refs/gatos/mbus-ack/queue.<tenant>/<consumer>` for acknowledgements.
+- **Audit**: `refs/gatos/audit/policy` for policy decisions and `refs/gatos/audit/proofs/jobs.<tenant>` for fold/execution proofs.
+
+### 18.2 Event Schema
+
+Two primary event types are used:
+
+- `jobs.enqueue`: Represents a new job being added to the queue. Includes job ID, priority, payload pointer, and policy/signature details.
+- `jobs.result`: Records the outcome of a job, including a `status` field ("ok" | "fail" | "retry"),
+  `duration_ms`, `attempts`, and optional `error` details for failures; attachments may include logs.
+
+Example envelopes (canonical JSON shape; values abbreviated for clarity):
+
+```json
+{
+  "type": "jobs.enqueue",
+  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+  "actor": "agent:producer-1",
+  "caps": ["journal:append", "bus:publish"],
+  "labels": ["exportable"],
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "tenant": "tenant-a",
+    "priority": "high",
+    "next_earliest_at": null,
+    "payload_ptr": {"kind":"blobptr","algo":"blake3","hash":"ab…cd","size":12345}
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "jobs.result",
+  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+  "actor": "agent:worker-42",
+  "caps": ["journal:append"],
+  "labels": [],
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "status": "ok", // or "fail" or "retry"
+    "duration_ms": 5230,
+    "attempts": 1
+  },
+  "attachments": [
+    {"kind":"blobptr","algo":"blake3","hash":"de…ad","size":2048,"labels":["exportable"]}
+  ],
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+Additional bus/event envelopes used in delivery semantics:
+
+```json
+{
+  "type": "gmb.ack",
+  "ulid": "01HQ7ZACK0000000000000000",
+  "actor": "agent:worker-42",
+  "caps": ["bus:ack"],
+  "labels": [],
+  "payload": {
+    "topic": "queue.acme",
+    "msg_ulid": "01HQ7ZMSG0000000000000000",
+    "shard": 12
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "gmb.commit",
+  "ulid": "01HQ7ZCOMMIT00000000000000",
+  "actor": "service:coordinator",
+  "caps": ["bus:commit"],
+  "labels": [],
+  "payload": {
+    "topic": "queue.acme",
+    "msg_ulid": "01HQ7ZMSG0000000000000000",
+    "acks": ["01HQ7ZACK0000000000000000"],
+    "quorum": 1
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "jobs.release",
+  "ulid": "01HQ7ZREL0000000000000000",
+  "actor": "service:scheduler",
+  "caps": ["journal:append", "bus:publish"],
+  "labels": [],
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "tenant": "tenant-a",
+    "released_at": "2025-11-09T12:00:00Z"
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+### 18.3 State Folds
+
+Deterministic folds compute the state of the work queue:
+
+- **Queue View**: A Last-Writer-Wins (LWW) map of job metadata, keyed by `job.id`.
+- **Dead-Letter-Queue (DLQ) View**: A filtered view of jobs where `status=fail` and `attempts` exceeds a defined maximum.
+- **Counters**: Grow-only (G) or PN counters for per-tenant statistics (e.g., enqueued, running, failed).
+
+### 18.4 Delivery Semantics (Exactly-Once)
+
+Exactly-once delivery is achieved using the GATOS message bus:
+
+1.  **Publish**: A producer appends a `jobs.enqueue` event to the journal and then publishes a `bus.message` to the message bus with `QoS=exactly_once`.
+2.  **Consume**: A worker subscribes to the topic, de-duplicates messages, and processes the job. Upon completion, it appends a `jobs.result` event to the journal and writes a `gmb.ack` to the bus.
+3.  **Commit**: A designated coordinator process (or the original publisher, if operating in
+    coordinator mode) observes the required quorum of `gmb.ack` messages and publishes a
+    `gmb.commit` message to finalize the transaction.
+
+    Election and failover mechanisms are implementation‑specific (e.g., Raft consensus, distributed
+    leader‑per‑topic with health checks, Zookeeper‑style coordination). Implementers MUST ensure the
+    chosen strategy prevents split‑brain and provides recovery after coordinator crashes. Safety is normative: coordinators MUST guarantee that retries do not
+    duplicate effects by EITHER maintaining durable state OR implementing idempotent commit
+    semantics. Transactions MUST carry unique identifiers, and implementations MUST define
+    timeouts and retry/abort rules for recovery.
+
+### 18.5 Feature Implementation
+
+- **Priority Queues**: Implemented using separate topics for high-priority and low-priority jobs (e.g., `queue.<tenant>.high` and `queue.<tenant>.low`).
+- **Retries and Backoff**: A worker or producer can re-publish a job with a `next_earliest_at` field in the payload, which is handled by a scheduler agent.
+- **Rate Limiting**: A fold computes a windowed count of jobs per tenant, which producers can consult before enqueueing new jobs.
+- **Delayed Jobs**: A scheduler agent reads `jobs.enqueue` events with a `next_earliest_at` field and publishes a `jobs.release` event at the appropriate time.
+- **RBAC**: Multi-tenancy and access control are handled by GATOS namespaces and capability grants, which can restrict access to specific topics and event types.

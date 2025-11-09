@@ -1,0 +1,12 @@
+[package]
+name = "gatos-policy"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Deterministic policy engine for GATOS (compiled rule interpreter)"
+keywords = ["gatos", "policy", "rules"]
+categories = ["authentication", "algorithms"]
+
+[dependencies]

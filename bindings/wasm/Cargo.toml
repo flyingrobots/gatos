@@ -1,0 +1,19 @@
+[package]
+name = "gatos-wasm-bindings"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "WebAssembly bindings for GATOS core libraries"
+homepage = "https://github.com/flyingrobots/gatos"
+keywords = ["gatos", "wasm", "bindings"]
+categories = ["wasm", "api-bindings"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = { workspace = true } # Pinned in workspace
+gatos-ledger-core = { path = "../../crates/gatos-ledger-core" }
+hex = { workspace = true }

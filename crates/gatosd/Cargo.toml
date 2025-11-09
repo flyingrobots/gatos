@@ -1,0 +1,22 @@
+[package]
+name = "gatosd"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "GATOS daemon and CLI (JSONL RPC server)"
+keywords = ["gatos", "daemon", "cli"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+gatos-ledger = { path = "../gatos-ledger" }
+gatos-mind = { path = "../gatos-mind" }
+gatos-echo = { path = "../gatos-echo" }
+gatos-policy = { path = "../gatos-policy" }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+clap = { version = "4", features = ["derive"] }
