@@ -19,7 +19,7 @@ edition = "2021"
 authors = ["flyingrobots"]
 license = "Apache-2.0"
 repository = "https://github.com/flyingrobots/gatos"
-documentation = "https://docs.rs/gatos-ledger"
+documentation = "https://github.com/flyingrobots/gatos/blob/main/README.md"
 homepage = "https://github.com/flyingrobots/gatos"
 
 [workspace.dependencies]
