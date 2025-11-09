@@ -548,11 +548,13 @@ Example envelopes (canonical JSON shape; values abbreviated for clarity):
   "type": "jobs.enqueue",
   "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
   "actor": "agent:producer-1",
-  "caps": ["bus:publish"],
+  "caps": ["journal:append", "bus:publish"],
   "labels": ["exportable"],
   "payload": {
     "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "tenant": "tenant-a",
     "priority": "high",
+    "next_earliest_at": null,
     "payload_ptr": {"kind":"blobptr","algo":"blake3","hash":"ab…cd","size":12345}
   },
   "policy_root": "sha256:…",
@@ -577,6 +579,63 @@ Example envelopes (canonical JSON shape; values abbreviated for clarity):
   "attachments": [
     {"kind":"blobptr","algo":"blake3","hash":"de…ad","size":2048,"labels":["exportable"]}
   ],
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+Additional bus/event envelopes used in delivery semantics:
+
+```json
+{
+  "type": "gmb.ack",
+  "ulid": "01HQ7ZACK0000000000000000",
+  "actor": "agent:worker-42",
+  "caps": ["bus:ack"],
+  "labels": [],
+  "payload": {
+    "topic": "queue.acme",
+    "msg_ulid": "01HQ7ZMSG0000000000000000",
+    "shard": 12
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "gmb.commit",
+  "ulid": "01HQ7ZCOMMIT00000000000000",
+  "actor": "service:coordinator",
+  "caps": ["bus:commit"],
+  "labels": [],
+  "payload": {
+    "topic": "queue.acme",
+    "msg_ulid": "01HQ7ZMSG0000000000000000",
+    "acks": ["01HQ7ZACK0000000000000000"],
+    "quorum": 1
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "jobs.release",
+  "ulid": "01HQ7ZREL0000000000000000",
+  "actor": "service:scheduler",
+  "caps": ["journal:append", "bus:publish"],
+  "labels": [],
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "tenant": "tenant-a",
+    "released_at": "2025-11-09T12:00:00Z"
+  },
   "policy_root": "sha256:…",
   "trust_chain": "sha256:…",
   "sig": "ed25519:…"
