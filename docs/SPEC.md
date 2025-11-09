@@ -601,7 +601,7 @@ Governs gated actions via proposals, approvals, and grants. Governance artifacts
 
 ### 20.1 Workflow
 
-Proposal → Approvals (N‑of‑M) → Grant
+Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MUST be defined in the trust graph (`gatos/trust/graph.json`).
 
 ### 20.2 Commit Structures (Trailers)
 
@@ -675,4 +675,4 @@ Revoked-By: <actor>
 
 ### 20.6 Bus Topics (recommended)
 
-`gatos.policy.proposal.created`, `gatos.policy.approval.created`, `gatos.policy.grant.created`, `gatos.policy.grant.revoked`.
+`gatos.governance.proposal.created`, `gatos.governance.approval.created`, `gatos.governance.grant.created`, `gatos.governance.grant.revoked`.

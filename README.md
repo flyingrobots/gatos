@@ -251,6 +251,16 @@ This design provides several powerful benefits:
 
 ## The *GATOS* Engine in Action
 
+### Data Schemas
+
+Canonical JSON Schemas for GATOS envelopes live under `schemas/v1/`, with versioned examples under `examples/v1/`.
+
+- Governance (ADR‑0003): `schemas/v1/governance/*.schema.json`
+- Job Plane (ADR‑0002): `schemas/v1/job/*.schema.json`
+- Common encodings: `schemas/v1/common/ids.schema.json`
+
+Consumers SHOULD pin to a specific major (e.g., `v1`). CI validates example documents against these schemas.
+
 Here's some examples, to help show off how each of the five planes of the GATOS operating surface, how each one works, and why it lets you do cool stuff.
 
 ### The Ledger — Immutable Memory (`gatos-ledger`) 🔗

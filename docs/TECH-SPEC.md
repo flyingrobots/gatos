@@ -262,7 +262,7 @@ Examples
 
 ```json
 {"type":"append_event","id":"01A","ns":"finance","event":{}}
-{"type":"bus.subscribe","id":"01C","topic":"queue.jobs"}
+{"type":"bus.subscribe","id":"01C","topic":"gatos.jobs.pending"}
 {"type":"fold_state","id":"01D","ns":"finance","channel":"table","spec":"folds/invoices.yaml"}
 {"type":"governance.proposal.new","id":"02A","action":"publish.artifact","target":"gatos://assets/model.bin","quorum":"2-of-3@leads"}
 {"type":"governance.approval.add","id":"02B","proposal":"blake3:…"}
@@ -383,7 +383,7 @@ See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
 - Grant creation: when quorum is met, create a Grant commit with a canonical Proof‑Of‑Consensus envelope and update `refs/gatos/grants/...`.
 - Gate enforcement: the Policy Gate checks for a valid Grant before allowing any governed action.
 
-### CLI Skeleton (normative surface; stub behavior acceptable initially)
+### CLI Skeleton (This defines the normative CLI user interface; stub behavior acceptable initially)
 
 - `gatos proposal new --action <id> --target <uri> --quorum <expr> [--ttl <dur>]`
 - `gatos approve --proposal <blake3:…> [--expires-at <ts>]`
@@ -404,6 +404,7 @@ sequenceDiagram
     participant Ledger as GATOS (Ledger)
     participant Policy as Policy Engine
     participant Bus as Message Bus
+    participant Approver as Approver (via CLI)
 
     Client->>Ledger: 1. Create Proposal (Action, Target, Quorum)
     Ledger->>Policy: 2. Validate proposal
