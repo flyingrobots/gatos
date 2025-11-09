@@ -68,11 +68,9 @@ pub trait ObjectStore {
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
 pub struct Commit {
-    /// Optional parent commit id (None for roots).
-    pub parent: Option<Hash>,
-    /// Hash of the tree (content root) this commit points to.
-    pub tree: Hash,
-    /// 64-byte author/issuer signature over canonical commit bytes.
+    /// Hash of the unsigned core content (`CommitCore`).
+    pub core_id: Hash,
+    /// 64-byte author/issuer signature over the core id or envelope.
     /// The scheme is defined at the policy/enforcement layer.
     #[serde_as(as = "[_; 64]")]
     pub signature: [u8; 64],
@@ -100,23 +98,23 @@ mod tests {
     use super::*;
     use bincode::{config, decode_from_slice};
 
+    fn fixed_core() -> CommitCore {
+        CommitCore { parent: Some([0x11; 32]), tree: [0x22; 32] }
+    }
+
     fn fixed_commit() -> Commit {
-        Commit {
-            parent: Some([0x11; 32]),
-            tree: [0x22; 32],
-            signature: [0x33; 64],
-        }
+        let core = fixed_core();
+        let core_id = compute_content_id(&core).unwrap();
+        Commit { core_id, signature: [0x33; 64] }
     }
 
     #[test]
     fn test_commit_roundtrip() {
         let c = fixed_commit();
         let bytes = encode_to_vec(&c, config::standard()).unwrap();
-        let (decoded, consumed): (Commit, usize) =
-            decode_from_slice(&bytes, config::standard()).unwrap();
+        let (decoded, consumed): (Commit, usize) = decode_from_slice(&bytes, config::standard()).unwrap();
         assert_eq!(consumed, bytes.len());
-        assert_eq!(decoded.parent, c.parent);
-        assert_eq!(decoded.tree, c.tree);
+        assert_eq!(decoded.core_id, c.core_id);
         assert_eq!(decoded.signature, c.signature);
     }
 
@@ -135,4 +133,27 @@ mod tests {
         let id2 = compute_commit_id(&c).unwrap();
         assert_eq!(id1, id2);
     }
+
+    #[test]
+    fn test_compute_content_id_stability() {
+        let core = fixed_core();
+        let id1 = compute_content_id(&core).unwrap();
+        let id2 = compute_content_id(&core).unwrap();
+        assert_eq!(id1, id2);
+    }
+}
+/// Immutable core content of a commit (unsigned).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
+pub struct CommitCore {
+    pub parent: Option<Hash>,
+    pub tree: Hash,
+}
+
+/// Compute the deterministic content id for unsigned commit content.
+///
+/// # Errors
+/// Returns an error if serialization fails under the canonical configuration.
+pub fn compute_content_id(core: &CommitCore) -> Result<Hash, bincode::error::EncodeError> {
+    let bytes = encode_to_vec(core, config::standard())?;
+    Ok(blake3::hash(&bytes).into())
 }
