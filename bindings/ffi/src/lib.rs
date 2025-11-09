@@ -88,6 +88,72 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     })
 }
 
+/// v2: Compute content id from core fields including message and timestamp.
+/// Returns lowercase hex string (caller must free via `gatos_ffi_free_string`).
+///
+/// `parent_ptr`: pointer to 32-byte parent hash or NULL when `has_parent=false`.
+/// `tree_ptr`: pointer to 32-byte tree hash.
+/// `msg_ptr`/`msg_len`: UTF‑8 message bytes.
+/// `timestamp`: seconds since Unix epoch (UTC).
+///
+/// # Safety
+/// The caller must ensure that:
+/// - When `has_parent` is true, `parent_ptr` points to at least 32 readable bytes.
+/// - `tree_ptr` points to at least 32 readable bytes.
+/// - `msg_ptr` is either NULL with `msg_len==0` or points to `msg_len` readable bytes of valid UTF‑8.
+#[no_mangle]
+pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
+    has_parent: bool,
+    parent_ptr: *const u8,
+    tree_ptr: *const u8,
+    msg_ptr: *const u8,
+    msg_len: usize,
+    timestamp: u64,
+) -> *mut libc::c_char {
+    use gatos_ledger_core::{compute_content_id, CommitCore, Hash};
+
+    let parent: Option<Hash> = if has_parent {
+        if parent_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        let mut buf = [0u8; 32];
+        std::ptr::copy_nonoverlapping(parent_ptr, buf.as_mut_ptr(), 32);
+        Some(buf)
+    } else {
+        None
+    };
+
+    if tree_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let mut tree = [0u8; 32];
+    std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
+
+    let message = if msg_len == 0 {
+        String::new()
+    } else {
+        if msg_ptr.is_null() {
+            return std::ptr::null_mut();
+        }
+        let bytes = core::slice::from_raw_parts(msg_ptr, msg_len);
+        match core::str::from_utf8(bytes) {
+            Ok(s) => s.to_owned(),
+            Err(_) => return std::ptr::null_mut(),
+        }
+    };
+
+    let core = CommitCore {
+        parent,
+        tree,
+        message,
+        timestamp,
+    };
+    compute_content_id(&core).map_or(std::ptr::null_mut(), |id| {
+        let s = hex::encode(id);
+        std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

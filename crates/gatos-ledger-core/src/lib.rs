@@ -76,6 +76,7 @@ pub trait ObjectStore {
 
 /// Immutable core content of a commit (unsigned).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
+#[serde(deny_unknown_fields)]
 pub struct CommitCore {
     pub parent: Option<Hash>,
     pub tree: Hash,
@@ -89,6 +90,7 @@ pub struct CommitCore {
 /// A detached signature over a `CommitCore` content id, with signer metadata.
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
+#[serde(deny_unknown_fields)]
 pub struct Signature {
     /// Signer public key bytes (scheme defined by policy layer).
     #[serde_as(as = "[_; 32]")]

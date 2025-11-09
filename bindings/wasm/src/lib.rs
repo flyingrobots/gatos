@@ -58,6 +58,47 @@ pub fn compute_commit_id_wasm(
         .map_err(|_| JsValue::from_str("serialize failure"))
 }
 
+/// v2: Compute content id from explicit core fields including message and timestamp.
+/// Returns lowercase hex string on success.
+#[wasm_bindgen]
+/// # Errors
+/// Returns `Err(JsValue)` when inputs have invalid lengths or serialization fails.
+pub fn compute_content_id_wasm_v2(
+    parent: Option<Vec<u8>>, // None means genesis
+    tree: &[u8],
+    message: &str,
+    timestamp: u64,
+) -> Result<String, JsValue> {
+    use gatos_ledger_core::Hash;
+
+    if tree.len() != 32 {
+        return Err(JsValue::from_str("invalid tree size"));
+    }
+    let mut tree_arr = [0u8; 32];
+    tree_arr.copy_from_slice(tree);
+    let parent_arr: Option<Hash> = match parent {
+        Some(p) => {
+            if p.len() != 32 {
+                return Err(JsValue::from_str("invalid parent size"));
+            }
+            let mut a = [0u8; 32];
+            a.copy_from_slice(&p);
+            Some(a)
+        }
+        None => None,
+    };
+
+    let core = gatos_ledger_core::CommitCore {
+        parent: parent_arr,
+        tree: tree_arr,
+        message: message.to_string(),
+        timestamp,
+    };
+    gatos_ledger_core::compute_content_id(&core)
+        .map(hex::encode)
+        .map_err(|_| JsValue::from_str("serialize failure"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
