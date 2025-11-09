@@ -15,10 +15,12 @@
 //! bytes.
 
 extern crate alloc;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use bincode::{config, encode_to_vec, Decode, Encode};
 use serde_with::serde_as;
+use smallvec::SmallVec;
 
 /// 256-bit BLAKE3 content hash digest.
 ///
@@ -26,6 +28,13 @@ use serde_with::serde_as;
 ///   endianness reinterpretation).
 /// - Usage: primary identifier for content-addressed objects and commits.
 pub type Hash = [u8; 32];
+
+/// Public key bytes for signature verification.
+///
+/// The concrete scheme (e.g., ed25519) is defined at the policy/enforcement
+/// layer. We use a fixed 32-byte array here to keep the core portable and
+/// deterministic across platforms and backends.
+pub type PubKey = [u8; 32];
 
 /// Errors produced by storage backends implementing [`ObjectStore`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,27 +74,64 @@ pub trait ObjectStore {
     fn get_object(&self, id: &Hash) -> Result<Option<Vec<u8>>, StoreError>;
 }
 
-#[serde_as]
+/// Immutable core content of a commit (unsigned).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
-pub struct Commit {
-    /// Hash of the unsigned core content (`CommitCore`).
-    pub core_id: Hash,
-    /// 64-byte author/issuer signature over the core id or envelope.
-    /// The scheme is defined at the policy/enforcement layer.
-    #[serde_as(as = "[_; 64]")]
-    pub signature: [u8; 64],
+pub struct CommitCore {
+    pub parent: Option<Hash>,
+    pub tree: Hash,
+    /// Human-readable message describing the change (canonicalized bytes).
+    pub message: String,
+    /// Seconds since Unix epoch (UTC). Treated as data; determinism is
+    /// preserved because the canonical id is a function of this value.
+    pub timestamp: u64,
 }
 
-/// Compute the deterministic content hash for a commit.
+/// A detached signature over a `CommitCore` content id, with signer metadata.
+#[serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
+pub struct Signature {
+    /// Signer public key bytes (scheme defined by policy layer).
+    #[serde_as(as = "[_; 32]")]
+    pub signer: PubKey,
+    /// 64-byte signature over the `CommitCore` content id, optionally bound to
+    /// additional metadata at higher layers (e.g., policy_root).
+    #[serde_as(as = "[_; 64]")]
+    pub sig: [u8; 64],
+}
+
+/// A commit container: the logical core plus zero or more signatures.
+///
+/// IMPORTANT: The canonical commit identifier is derived solely from the
+/// serialized `CommitCore`. Signatures do not affect the identifier.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Commit {
+    pub core: CommitCore,
+    #[serde(skip_serializing_if = "SmallVec::is_empty", default)]
+    pub sigs: SmallVec<[Signature; 2]>,
+}
+
+/// Compute the canonical commit identifier for a `Commit`.
+///
+/// This is defined as the BLAKE3 hash of the canonical bincode encoding of the
+/// unsigned `CommitCore` only. It is therefore invariant under the set/order of
+/// signatures present in [`Commit::sigs`].
+///
+/// # Errors
+/// Returns an error if serialization fails.
+pub fn compute_commit_id(commit: &Commit) -> Result<Hash, bincode::error::EncodeError> {
+    compute_content_id(&commit.core)
+}
+
+/// Compute the deterministic content id for unsigned commit content.
 ///
 /// Uses bincode with standard configuration for canonical serialization,
 /// followed by BLAKE3 hashing. Deterministic across platforms for identical
 /// inputs and a fixed serialization config.
 ///
 /// # Errors
-/// Returns an error if serialization fails.
-pub fn compute_commit_id(commit: &Commit) -> Result<Hash, bincode::error::EncodeError> {
-    let bytes = encode_to_vec(commit, config::standard())?;
+/// Returns an error if serialization fails under the canonical configuration.
+pub fn compute_content_id(core: &CommitCore) -> Result<Hash, bincode::error::EncodeError> {
+    let bytes = encode_to_vec(core, config::standard())?;
     Ok(blake3::hash(&bytes).into())
 }
 
@@ -96,42 +142,70 @@ extern crate std;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bincode::{config, decode_from_slice};
+    use smallvec::smallvec;
+    use std::string::ToString;
 
     fn fixed_core() -> CommitCore {
-        CommitCore { parent: Some([0x11; 32]), tree: [0x22; 32] }
+        CommitCore {
+            parent: Some([0x11; 32]),
+            tree: [0x22; 32],
+            message: "hello".to_string(),
+            timestamp: 1_725_000_000,
+        }
     }
 
-    fn fixed_commit() -> Commit {
+    // Note: Commit is encoded/decoded via serde formats externally; the
+    // canonical id is derived from the core only, tested below.
+
+    #[test]
+    fn test_compute_commit_id_invariant_under_signatures() {
         let core = fixed_core();
-        let core_id = compute_content_id(&core).unwrap();
-        Commit { core_id, signature: [0x33; 64] }
-    }
+        let id_core = compute_content_id(&core).unwrap();
 
-    #[test]
-    fn test_commit_roundtrip() {
-        let c = fixed_commit();
-        let bytes = encode_to_vec(&c, config::standard()).unwrap();
-        let (decoded, consumed): (Commit, usize) = decode_from_slice(&bytes, config::standard()).unwrap();
-        assert_eq!(consumed, bytes.len());
-        assert_eq!(decoded.core_id, c.core_id);
-        assert_eq!(decoded.signature, c.signature);
-    }
+        // No signatures
+        let commit0 = Commit {
+            core: core.clone(),
+            sigs: SmallVec::new(),
+        };
+        let id0 = compute_commit_id(&commit0).unwrap();
 
-    #[test]
-    fn test_commit_serialization_determinism() {
-        let c = fixed_commit();
-        let a = encode_to_vec(&c, config::standard()).unwrap();
-        let b = encode_to_vec(&c, config::standard()).unwrap();
-        assert_eq!(a, b);
-    }
+        // One signature
+        let sig1 = Signature {
+            signer: [0xAA; 32],
+            sig: [0xBB; 64],
+        };
+        let commit1 = Commit {
+            core: core.clone(),
+            sigs: smallvec![sig1.clone()],
+        };
+        let id1 = compute_commit_id(&commit1).unwrap();
 
-    #[test]
-    fn test_compute_commit_id_stability() {
-        let c = fixed_commit();
-        let id1 = compute_commit_id(&c).unwrap();
-        let id2 = compute_commit_id(&c).unwrap();
-        assert_eq!(id1, id2);
+        // Two signatures (different order)
+        let sig2 = Signature {
+            signer: [0xCC; 32],
+            sig: [0xDD; 64],
+        };
+        let commit2a = Commit {
+            core: core.clone(),
+            sigs: smallvec![sig1, sig2.clone()],
+        };
+        let commit2b = Commit {
+            core: core.clone(),
+            sigs: smallvec![
+                sig2,
+                Signature {
+                    signer: [0xAA; 32],
+                    sig: [0xBB; 64]
+                }
+            ],
+        };
+        let id2a = compute_commit_id(&commit2a).unwrap();
+        let id2b = compute_commit_id(&commit2b).unwrap();
+
+        assert_eq!(id_core, id0);
+        assert_eq!(id0, id1);
+        assert_eq!(id1, id2a);
+        assert_eq!(id2a, id2b);
     }
 
     #[test]
@@ -141,19 +215,4 @@ mod tests {
         let id2 = compute_content_id(&core).unwrap();
         assert_eq!(id1, id2);
     }
-}
-/// Immutable core content of a commit (unsigned).
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Encode, Decode)]
-pub struct CommitCore {
-    pub parent: Option<Hash>,
-    pub tree: Hash,
-}
-
-/// Compute the deterministic content id for unsigned commit content.
-///
-/// # Errors
-/// Returns an error if serialization fails under the canonical configuration.
-pub fn compute_content_id(core: &CommitCore) -> Result<Hash, bincode::error::EncodeError> {
-    let bytes = encode_to_vec(core, config::standard())?;
-    Ok(blake3::hash(&bytes).into())
 }
