@@ -16,7 +16,7 @@ Here’s a breakdown of how the new structure maps to the original goals:
 
 ## It Strengthens the `no_std` and Portability Goal
 
-The most significant change is splitting `gatos-ledger` into `gatos-ledger-core` and `gatos-ledger-git`. Its a direct and robust implementation of the "`no_std` at the core, `std` at the edges" principle we just documented in `ADR-0001`.
+The most significant change is splitting `gatos-ledger` into `gatos-ledger-core` and `gatos-ledger-git`. It's a direct and robust implementation of the "`no_std` at the core, `std` at the edges" principle we just documented in `ADR-0001`.
 
 > ***This makes the goal of running GATOS on microcontrollers or in WASM sandboxes not just a theoretical possibility but a core part of the
 architecture.***
