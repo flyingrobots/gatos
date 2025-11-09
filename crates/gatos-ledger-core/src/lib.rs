@@ -9,6 +9,10 @@
 //! All serialization uses bincode v2 with `config::standard()`, ensuring
 //! deterministic byte representations: identical structs produce identical
 //! bytes across platforms and architectures (given a fixed bincode version).
+//! Caveats: determinism assumes a fixed type definition and serialization
+//! config across crate versions; floats are serialized bitwise; endianness is
+//! normalized by the format; changing field order or enum variants will change
+//! bytes.
 
 extern crate alloc;
 use alloc::vec::Vec;
