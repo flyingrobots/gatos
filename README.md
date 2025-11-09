@@ -280,7 +280,7 @@ Produces:
 commit 9a0bf22...
 Event: thread.resolve
 Author: james@flyingrobots.dev
-Proof-Of-Event: blake3:c0ffee…
+Proof-Of-Event: blake3:<digest>
 ```
 
 Anyone can clone, verify signatures, and replay the ledger to rebuild the same state.

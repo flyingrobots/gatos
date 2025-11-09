@@ -582,11 +582,11 @@ The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id
 Example (trailers):
 
 ```text
-Job-Id: blake3:9f0a…
-Worker-Id: ed25519:03ab…
-Proof-Of-Execution: blake3:7c2e…
-Attest-Program: blake3:11dd…
-Attest-Sig: ed25519:8a77…
+Job-Id: blake3:<hex>
+Worker-Id: ed25519:<pubkey>
+Proof-Of-Execution: blake3:<hex>
+Attest-Program: blake3:<hex>
+Attest-Sig: ed25519:<sig>
 ```
 
 See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definition of `content_id` and canonical serialization.

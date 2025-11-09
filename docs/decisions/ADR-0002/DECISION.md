@@ -40,8 +40,8 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
    - **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
 5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. See envelope schema: [`schemas/v1/job/proof_of_execution_envelope.schema.json`](../../../schemas/v1/job/proof_of_execution_envelope.schema.json).
 6. Each `Result` commit **MUST** include trailers for discoverability:
-   - `Job-Id: <blake3:…>`
-   - `Proof-Of-Execution: <blake3:…>`
+   - `Job-Id: blake3:<hex>`
+   - `Proof-Of-Execution: blake3:<hex>`
    - `Worker-Id: <pubkey>`
    - `Attest-Program: <hash-of-runner-binary>` (optional)
    - `Attest-Sig: <signature>` (optional)
@@ -51,7 +51,7 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
 The canonical job identifier is the job’s `content_id` (the BLAKE3 hash of the canonical serialization of the unsigned job core). All protocol elements that refer to a job MUST use this `job-id`.
 
 - Claim refs MUST be named `refs/gatos/jobs/<job-id>/claims/<worker-id>`.
-- Result trailers MUST use `Job-Id: <blake3:…>` corresponding to the same `job-id`.
+- Result trailers MUST use `Job-Id: blake3:<hex>` corresponding to the same `job-id`.
 
 ULIDs MAY be used as human-friendly aliases in messages (for deduplication, sorting, and UX). When present, the ULID MUST also be recorded in the job manifest. Workers MUST resolve ULIDs to the canonical `job-id` by reading the job commit and computing its `content_id`. ULIDs MUST NOT be used as ref keys for claims or results.
 
@@ -68,7 +68,7 @@ The job manifest is stored as `job.yaml` but the authoritative form for hashing 
 - Optional fields:
   - `env: object` — map<string,string>; keys unique; values UTF‑8 strings.
   - `cwd: string` — working directory.
-  - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"…", "size":123 }`).
+  - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"<hex>", "size":123 }`).
   - `policy_root: string` — `sha256:<hex>` of policy bundle used.
   - `ulid: string` — human‑friendly identifier; not used for hashing.
 
