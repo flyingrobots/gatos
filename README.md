@@ -235,7 +235,7 @@ The architecture is conceptually divided into five distinct planes:
 | ------- | --------------------------- | --------------- |
 | Ledger  | Signed events / proofs      | `gatos-ledger`  |
 | State   | Deterministic folds         | `gatos-echo`    |
-| Policy  | Rules & capabilities        | `gatos-policy`  |
+| Policy  | Rules, capabilities, & consensus | `gatos-policy`  |
 | Message | Bus / sessions              | `gatos-mind`    |
 | Job     | Distributed job execution   | `gatos-compute` |
 

@@ -102,7 +102,7 @@ graph TD
 | `gatos-ledger` | Composes ledger components via feature flags. |
 | `gatos-mind` | Asynchronous, commit-backed message bus (pub/sub). |
 | `gatos-echo` | Deterministic state engine for processing events ("folds"). |
-| `gatos-policy` | Deterministic policy engine for executing compiled rules. |
+| `gatos-policy` | Deterministic policy engine for executing compiled rules and managing the Consensus Governance lifecycle. |
 | `gatos-kv` | Git-backed key-value state cache. |
 | `gatosd` | Main binary for the CLI and the JSONL RPC daemon. |
 | `gatos-compute` | Worker that discovers and executes jobs from the Job Plane. |
@@ -371,9 +371,17 @@ sequenceDiagram
 
 ---
 
-## 16. Governance CLI & Engine
+## 16. Governance Engine
 
 See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+
+### Engine Responsibilities
+
+- Watchers: a service in `gatos-policy` watches `refs/gatos/proposals/**` and `refs/gatos/approvals/**`.
+- Verification: for each new Approval, verify signature and eligibility using the trust graph.
+- Quorum check: evaluate the policy rule (`governance.<action>`) to determine if quorum is satisfied.
+- Grant creation: when quorum is met, create a Grant commit with a canonical Proof‑Of‑Consensus envelope and update `refs/gatos/grants/...`.
+- Gate enforcement: the Policy Gate checks for a valid Grant before allowing any governed action.
 
 ### CLI Skeleton (normative surface; stub behavior acceptable initially)
 
@@ -388,3 +396,31 @@ Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads
 ### Revocation Propagation
 
 Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
+### End‑to‑End Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Ledger as GATOS (Ledger)
+    participant Policy as Policy Engine
+    participant Bus as Message Bus
+
+    Client->>Ledger: 1. Create Proposal (Action, Target, Quorum)
+    Ledger->>Policy: 2. Validate proposal
+    Policy-->>Ledger: 3. Accepted
+    Ledger->>Bus: 4. Publish proposal.created
+
+    loop Approvals
+        Approver->>Ledger: 5. Create Approval (Signer, Proposal-Id)
+        Ledger->>Policy: 6. Verify signature + eligibility
+        Policy-->>Ledger: 7. Approval valid
+    end
+
+    Ledger->>Policy: 8. Check quorum
+    alt Quorum satisfied
+        Ledger->>Ledger: 9. Create Grant (Proof-Of-Consensus)
+        Ledger->>Bus: 10. Publish grant.created
+    else Not yet satisfied
+        Ledger-->>Client: Pending (partial)
+    end
+```
