@@ -281,6 +281,8 @@ version = "0.1.0"
 name = "gatos-ffi-bindings"
 version = "0.1.0"
 dependencies = [
+ "gatos-ledger-core",
+ "hex",
  "libc",
 ]
 
@@ -329,6 +331,8 @@ version = "0.1.0"
 name = "gatos-wasm-bindings"
 version = "0.1.0"
 dependencies = [
+ "gatos-ledger-core",
+ "hex",
  "wasm-bindgen",
 ]
 

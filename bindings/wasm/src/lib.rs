@@ -35,7 +35,9 @@ pub fn compute_commit_id_wasm(
     sig_arr.copy_from_slice(signature);
     let parent_arr: Option<Hash> = match parent {
         Some(p) => {
-            if p.len() != 32 { return Err(JsValue::from_str("invalid parent size")); }
+            if p.len() != 32 {
+                return Err(JsValue::from_str("invalid parent size"));
+            }
             let mut a = [0u8; 32];
             a.copy_from_slice(&p);
             Some(a)
@@ -43,7 +45,11 @@ pub fn compute_commit_id_wasm(
         None => None,
     };
 
-    let commit = Commit { parent: parent_arr, tree: tree_arr, signature: sig_arr };
+    let commit = Commit {
+        parent: parent_arr,
+        tree: tree_arr,
+        signature: sig_arr,
+    };
     compute_commit_id(&commit)
         .map(hex::encode)
         .map_err(|_| JsValue::from_str("serialize failure"))

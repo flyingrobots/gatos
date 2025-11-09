@@ -60,10 +60,13 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
     std::ptr::copy_nonoverlapping(signature_ptr, signature.as_mut_ptr(), 64);
 
-    let commit = Commit { parent, tree, signature };
+    let commit = Commit {
+        parent,
+        tree,
+        signature,
+    };
     compute_commit_id(&commit).map_or(std::ptr::null_mut(), |id| {
         let s = hex::encode(id);
-        std::ffi::CString::new(s)
-            .map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
+        std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
     })
 }

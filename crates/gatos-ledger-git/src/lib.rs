@@ -48,7 +48,9 @@ impl ObjectStore for GitStore {
                 return Err(StoreError::Io);
             }
         };
-        let Some(git_oid) = reference.target() else { return Err(StoreError::Invariant) };
+        let Some(git_oid) = reference.target() else {
+            return Err(StoreError::Invariant);
+        };
         let blob = self.repo.find_blob(git_oid).map_err(|_| StoreError::Io)?;
         Ok(Some(blob.content().to_vec()))
     }
