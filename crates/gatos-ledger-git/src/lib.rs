@@ -1,4 +1,4 @@
-use gatos_ledger_core::{Hash, ObjectStore, StoreError};
+pub use gatos_ledger_core::*; // Re-export core API surface for facade users
 use git2::Repository;
 
 pub struct GitStore {
