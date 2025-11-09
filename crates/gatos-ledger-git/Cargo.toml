@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "Git-backed storage backend for gatos-ledger (no_std core)"
 keywords = ["ledger", "git", "storage", "backend"]
+categories = ["filesystem", "database", "data-structures"]
 
 [dependencies]
 git2 = { workspace = true }

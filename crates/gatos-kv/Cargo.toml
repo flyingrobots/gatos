@@ -5,5 +5,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Git-backed key-value/materialized views for GATOS"
+keywords = ["gatos", "kv", "index"]
+categories = ["database", "data-structures"]
 
 [dependencies]

@@ -5,5 +5,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Deterministic fold/state engine for GATOS"
+keywords = ["gatos", "state", "folds"]
+categories = ["algorithms", "data-structures"]
 
 [dependencies]

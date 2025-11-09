@@ -5,10 +5,13 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "no_std core primitives for the GATOS ledger"
+keywords = ["gatos", "ledger", "no_std", "blake3"]
+categories = ["data-structures", "embedded"]
 
 [dependencies]
 blake3 = { workspace = true, default-features = false }
 heapless = { workspace = true } # For no_std collections
 bincode = { workspace = true, default-features = false, features = ["alloc", "derive"] } # For serialization
-serde = { workspace = true, default-features = false, features = ["derive"] }
-serde_with = { workspace = true, default-features = false, features = ["macros"] }
+serde = { workspace = true, default-features = false }
+serde_with = { workspace = true, default-features = false }

@@ -5,5 +5,8 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "GATOS Message Bus (GMB): commit-backed publish/subscribe"
+keywords = ["gatos", "message-bus", "git"]
+categories = ["network-programming", "data-structures"]
 
 [dependencies]

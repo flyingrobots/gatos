@@ -6,6 +6,8 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "GATOS ledger meta-crate with feature-gated core and backend selection"
+keywords = ["gatos", "ledger", "git"]
+categories = ["data-structures", "development-tools"]
 
 [dependencies]
 gatos-ledger-core = { path = "../gatos-ledger-core", optional = true }

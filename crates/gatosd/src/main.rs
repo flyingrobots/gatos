@@ -1,3 +1,4 @@
+#![allow(clippy::multiple_crate_versions)]
 //! gatosd — GATOS daemon/CLI entrypoint
 //!
 //! Minimal scaffold: parses CLI flags, initializes logging, and runs

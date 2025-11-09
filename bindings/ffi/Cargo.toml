@@ -7,6 +7,8 @@ license.workspace = true
 repository.workspace = true
 description = "C-compatible FFI bindings for GATOS core libraries"
 homepage = "https://github.com/flyingrobots/gatos"
+keywords = ["gatos", "ffi", "bindings"]
+categories = ["external-ffi-bindings", "api-bindings"]
 
 [lib]
 crate-type = ["cdylib"] # C dynamic library

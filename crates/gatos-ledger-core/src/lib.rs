@@ -1,6 +1,6 @@
 #![no_std]
 
-//! GATOS Ledger Core — no_std primitives.
+//! GATOS Ledger Core — `no_std` primitives.
 //!
 //! This crate defines portable types and traits for the GATOS ledger.
 //! It intentionally avoids `std` to run in constrained environments
@@ -39,13 +39,20 @@ pub enum StoreError {
 pub trait ObjectStore {
     /// Persist bytes under the given content `id`.
     ///
-    /// Returns `Ok(())` on success, or a [`StoreError`] on failure.
+    /// Returns `Ok(())` on success.
+    ///
+    /// # Errors
+    /// Returns a [`StoreError`] if the backend fails to persist the bytes or
+    /// if invariants (such as id/content mismatch) are violated.
     fn put_object(&mut self, id: &Hash, data: &[u8]) -> Result<(), StoreError>;
 
     /// Retrieve bytes by content `id`.
     ///
-    /// Returns `Ok(Some(Vec<u8>))` if present, `Ok(None)` if not found,
-    /// or a [`StoreError`] if the backend fails to read.
+    /// Returns `Ok(Some(Vec<u8>))` if present, `Ok(None)` if not found.
+    ///
+    /// # Errors
+    /// Returns a [`StoreError`] if the backend fails to access the underlying
+    /// storage or detects corruption.
     fn get_object(&self, id: &Hash) -> Result<Option<Vec<u8>>, StoreError>;
 }
 
@@ -68,6 +75,12 @@ pub struct Commit {
 ///
 /// Determinism: given identical input fields, the returned `Hash` is identical
 /// across platforms and architectures.
+#[must_use]
+///
+/// # Panics
+/// Panics if bincode serialization fails for the provided `commit` under the
+/// configured canonical encoding. This should not happen for well-formed
+/// values and indicates a programming error.
 pub fn compute_commit_id(commit: &Commit) -> Hash {
     blake3::hash(&encode_to_vec(commit, config::standard()).unwrap()).into()
 }

@@ -5,6 +5,9 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "GATOS daemon and CLI (JSONL RPC server)"
+keywords = ["gatos", "daemon", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 gatos-ledger = { path = "../gatos-ledger" }

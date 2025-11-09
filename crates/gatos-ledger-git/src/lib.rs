@@ -1,14 +1,13 @@
-use blake3;
 use gatos_ledger_core::{Hash, ObjectStore, StoreError};
 use git2::Repository;
-use hex;
 
 pub struct GitStore {
     repo: Repository,
 }
 
 impl GitStore {
-    pub fn new(repo: Repository) -> Self {
+    #[must_use]
+    pub const fn new(repo: Repository) -> Self {
         Self { repo }
     }
 }
@@ -45,15 +44,11 @@ impl ObjectStore for GitStore {
                 // If reference does not exist, treat as not found; other errors as IO
                 if e.code() == git2::ErrorCode::NotFound {
                     return Ok(None);
-                } else {
-                    return Err(StoreError::Io);
                 }
+                return Err(StoreError::Io);
             }
         };
-        let git_oid = match reference.target() {
-            Some(oid) => oid,
-            None => return Err(StoreError::Invariant),
-        };
+        let Some(git_oid) = reference.target() else { return Err(StoreError::Invariant) };
         let blob = self.repo.find_blob(git_oid).map_err(|_| StoreError::Io)?;
         Ok(Some(blob.content().to_vec()))
     }

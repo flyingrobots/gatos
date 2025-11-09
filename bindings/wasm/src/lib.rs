@@ -1,13 +1,15 @@
 use wasm_bindgen::prelude::*;
 
 /// Returns a static greeting without heap allocation for native Rust callers.
-pub fn hello_wasm() -> &'static str {
+#[must_use]
+pub const fn hello_wasm() -> &'static str {
     "Hello from gatos-wasm-bindings!"
 }
 
 /// JS/WASM-friendly export that returns an owned `String`.
 /// This simply wraps `hello_wasm()` so the JS boundary can copy the string.
 #[wasm_bindgen]
+#[must_use]
 pub fn hello_wasm_js() -> String {
     hello_wasm().to_string()
 }
