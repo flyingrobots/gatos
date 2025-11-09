@@ -1,53 +1,5 @@
 # GATOS — SPEC v0.3 (Draft)
 
-```c
-    __ ,                                                     
-  ,-| ~        ,                                             
- ('||/__,  '  ||                                             
-(( |||  | \ =||=                                            
-(( |||==| ||  ||                                             
- ( / |  , ||  ||                                             
-  -____/  \  \,                                            
-                                                             
-                                                             
-  ___                                                        
- -   -_,                                                     
-(  ~/||                                                      
-(  / ||   _-_,                                               
- \/==||  ||_.                                                
- /_ _||   ~ ||                                               
-(  - \, ,-_-                                                
-                                                             
-                                                             
- ___                                                         
--   ---___- ,,                                               
-   (' ||    ||                                               
-  ((  ||    ||/\  _-_                                       
- ((   ||    || || || \                                      
-  (( //     || || ||/                                        
-    -____-  \ |/ \,/                                       
-              _/
-                                                             
-    __                                                       
-  ,-||-,                             ,                       
- ('|||  )                      _    ||   '         _         
-(( |||--)) -_-_   _-_  ,._-_  < \, =||= \ \/\  / \       
-(( |||--)) || \ || \  ||    /-||  ||  || || || || ||       
- ( / |  )  || || ||/    ||   (( ||  ||  || || || || ||       
-  -____-   ||-'  \,/   \,   \/\  \, \ \ \ \ \_-|       
-           |/                                     /  \       
-           '                                     '----`      
-                                                             
-  -_-/                /\                                     
- (_ /                ||    _                                 
-(_ --_  \ \ ,._-_ =||=  < \,  _-_  _-_                     
-  --_ ) || ||  ||    ||   /-|| ||   || \                    
- _/  )) || ||  ||    ||  (( || ||   ||/                      
-(_-_-   \/\  \,   \,  \/\ \,/ \,/                     
-                                                             
-                                                             
-```
-
 > _The key to understanding GATOS is understanding that it's just Git._
 
 ## Git As The Operating Surface
@@ -63,15 +15,19 @@
 | **Scope** | Normative specification of data model, on-disk layout, protocols, and behavioral guarantees. |
 | **Audience** | Implementers, auditors, integrators. |
 
-GATOS is for anyone who's not afraid to try something new. It's for those who experiment and who ask _"What if?"_. GATOS is for innovators. Ground-breakers. It's for those that have the **GUTS** to try to see what happens.
-
-BUT enough hype. Let's see what GATOS is really all about...
-
 ---
 
 ## 0. Conventions
 
-**MUST/SHOULD/MAY** are to be interpreted as in `RFC 2119`.
+The keywords **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in `RFC 2119`.
+
+```mermaid
+graph TD
+    A[RFC 2119] --> B{Keywords};
+    B --> C[MUST];
+    B --> D[SHOULD];
+    B --> E[MAY];
+```
 
 **Git** refers to any conformant implementation supporting refs, commits, trees, blobs, notes, and atomic ref updates.
 
@@ -81,9 +37,7 @@ BUT enough hype. Let's see what GATOS is really all about...
 
 ## 1. System Model
 
-A **GATOS node** is a Git repository with a disciplined layout of refs, notes, and artifacts.  
-
-A **GATOS app** is a set of **schemas**, **policies**, and **folds** that operate on **append-only journals** to produce **deterministic state**.
+A **GATOS node** is a Git repository with a disciplined layout of refs, notes, and artifacts. A **GATOS app** is a set of **schemas**, **policies**, and **folds** that operate on **append-only journals** to produce **deterministic state**.
 
 **GATOS** defines five planes:
 
@@ -93,83 +47,122 @@ A **GATOS app** is a set of **schemas**, **policies**, and **folds** that operat
 4) **Message plane** — a commit‑backed pub/sub bus.
 5) **Job plane** — Distributed, verifiable job execution.
 
-All planes serialize exclusively to standard Git objects.
+```mermaid
+graph TD
+    subgraph "User / Client"
+        CLI("gatosd (CLI)")
+        SDK("Client SDK")
+    end
+
+    subgraph "GATOS System"
+        Daemon("gatosd (Daemon)")
+
+        subgraph "Policy Plane"
+            Policy("gatos-policy");
+        end
+
+        subgraph "State Plane"
+            Echo("gatos-echo");
+            KV("gatos-kv");
+        end
+
+        subgraph "Message Plane"
+            Mind("gatos-mind");
+        end
+
+        subgraph "Job Plane"
+            Compute("gatos-compute");
+        end
+
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
+        end
+
+        Daemon --> Policy;
+        Daemon --> Echo;
+        Daemon --> KV;
+        Daemon --> Mind;
+        Daemon --> Ledger;
+
+        Echo --> Ledger;
+        KV --> Ledger;
+        Mind --> Ledger;
+        Compute --> Mind;
+        Compute --> Ledger;
+    end
+
+    CLI --> Daemon;
+    SDK --> Daemon;
+
+    style Policy fill:#f9f,stroke:#333,stroke-width:2px
+    style Echo fill:#9cf,stroke:#333,stroke-width:2px
+    style KV fill:#9cf,stroke:#333,stroke-width:2px
+    style Mind fill:#9c9,stroke:#333,stroke-width:2px
+    style Ledger fill:#c99,stroke:#333,stroke-width:2px
+    style Compute fill:#f96,stroke:#333,stroke-width:2px
+```
 
 ### Requirements
 
-#### Journals
-
-- **MUST** be fast‑forward‑only. 
-- History rewrite of `refs/gatos/journal/**` is invalid and **MUST** be rejected.
-
-#### State refs 
-
-- **MUST** point to commits with a `state_root` note and **MUST** be derivable from journals and policies.
-
-#### Cache refs
-
-- **MUST** be rebuildable and **MUST NOT** be authoritative.
-
-#### Epochs 
-
-- **MUST** form a cryptographicall- linked chain; 
-- new clones **MAY** fetch only the current epoch plus epoch anchors.
+- Journals **MUST** be fast‑forward‑only. 
+- State refs **MUST** be derivable from journals and policies.
+- Cache refs **MUST** be rebuildable and **MUST NOT** be authoritative.
+- Epochs **MUST** form a cryptographically-linked chain.
 
 ---
 
 ## 2. On‑Disk Layout (Normative)
 
+The following diagram illustrates the primary locations for GATOS artifacts within the Git repository (`.git`) and the working tree.
+
+```mermaid
+graph TD
+    subgraph .git
+        direction LR
+        A(refs) --> A1(gatos)
+        A1 --> B1(journal)
+        A1 --> B2(state)
+        A1 --> B3(mbus)
+        A1 --> B4(jobs)
+        A1 --> B5(sessions)
+        A1 --> B6(audit)
+        A1 --> B7(cache)
+        A1 --> B8(epoch)
+        C(notes) --> C1(gatos)
+    end
+    subgraph Workspace
+        direction LR
+        D(gatos) --> D1(policies)
+        D --> D2(schema)
+        D --> D3(folds)
+        D --> D4(trust)
+        D --> D5(objects)
+    end
+```
+
+The normative layout is as follows:
 ```
 .git/
 ├── refs/
 │   └── gatos/
 │       ├── journal/
-│       │   └── <namespace>/<actor>/              # append-only event streams (fast-forward only)
 │       ├── state/
-│       │   └── <namespace>/                      # checkpoints (materialized state)
 │       ├── mbus/
-│       │   └── <topic>/<shard>/                  # message topics
 │       ├── mbus-ack/
-│       │   └── <topic>/<consumer>/               # acknowledgements
 │       ├── jobs/
 │       │   └── <job-ulid>/
-│       │       └── claims/<worker-id>            # job claims for distributed execution
+│       │       └── claims/<worker-id>
 │       ├── sessions/
-│       │   └── <actor>/<ulid>/                   # ephemeral working branches
 │       ├── audit/
-│       │   ├── policy/                            # policy decision envelopes
-│       │   └── proofs/<namespace>/                # ZK / commitment proof refs
 │       ├── cache/
-│       │   └── <index-id>/                        # rebuildable indexes (non-authoritative)
 │       └── epoch/
-│           └── <namespace>/<epoch-id>/            # epoch markers (bounded history)
-│
-├── notes/
-│   └── gatos/
-│       ├── policy/                                # decision notes on commits
-│       └── artifacts/                             # stdout / stderr / log attachments
-│
 └── gatos/
     ├── policies/
-    │   ├── <policy-name>.rgs                      # policy source (text)
-    │   └── <policy-name>.rgc                      # compiled policy bundle (bytecode)
-    │
     ├── schema/
-    │   └── <namespace>.yaml                       # schema / namespace manifests
-    │
     ├── folds/
-    │   └── <fold-name>.yaml                       # fold specifications
-    │
     ├── trust/
-    │   ├── graph.json                             # trust DAG and thresholds
-    │   └── grants/
-    │       └── <grant-id>.json                    # signed capability grants
-    │
     ├── objects/
-    │   └── <algo>/<hash>                          # CAS blob store (opaque / large objects)
-    │
     └── config/
-        └── <profile>.yaml                         # profile / configuration
 ```
 
 ---
@@ -178,63 +171,58 @@ All planes serialize exclusively to standard Git objects.
 
 ### 3.1 Actors
 
-Actors are strings of the form:
+Actors are strings of the form: `user:<name>`, `agent:<name>`, or `service:<name>`.
 
-- `user:<name>` (human), 
-- `agent:<name>` (automation), 
-- `service:<name>` (daemon).
+### 3.2 Capability Grants
 
-### 3.2 Capability Grants (Artifact)
+Grants link an `issuer` Actor to a `subject` Actor, bestowing a set of capabilities (`caps`) that are valid until an expiration date (`exp`).
 
-```json
-{
-  "type": "grant",
-  "ulid": "<ULID>",
-  "issuer": "user:james",
-  "subject": "agent:echo",
-  "caps": ["journal:append","state:checkpoint","bus:publish"],
-  "aud": ["repo://*/**"],        // optional audience constraints (globs)
-  "exp": "2027-01-01T00:00:00Z", // ISO8601 expiration
-  "sig": "ed25519:...",          // detached or inline signature of canonical JSON
-  "prev": "sha256:<prev-grant-hash>" // for rotation chains (optional)
-}
+```mermaid
+classDiagram
+    class Grant {
+        +String ulid
+        +String issuer
+        +String subject
+        +String[] caps
+        +Date exp
+        +String sig
+    }
+    class Actor {
+        <<enumeration>>
+        user
+        agent
+        service
+    }
+    Grant "1" -- "1" Actor : issuer
+    Grant "1" -- "1" Actor : subject
 ```
 
-**Grants** **MUST** be committed under `gatos/trust/grants/`.
-
-Verifiers **MUST** validate signature, issuer membership in trust graph, audience constraints, and expiry.
-
-> [!IMPORTANT]
-> Revocation is performed by committing a new grant with a revokes field referencing the original grant ULID.
+**Grants** **MUST** be committed under `gatos/trust/grants/`. Verifiers **MUST** validate the signature, issuer trust, audience, and expiry.
 
 ---
 
 ## 4. Events (Ledger Plane)
 
-### 4.1 Event Envelope (Canonical JSON)
+### 4.1 Event Envelope
 
-```json
-{
-  "type": "intent.<domain>.<verb>",  // e.g., intent.exec.run
-  "ulid": "<ULID>",
-  "actor": "user|agent|service:…",
-  "caps": ["cap1","cap2"],           // capabilities in use
-  "labels": ["private","exportable"],// policy labels
-  "payload": {...},                  // domain-specific content
-  "attachments": [ { "kind":"blobptr", "algo":"blake3", "hash":"...", "size":123 } ],
-  "policy_root": "sha256:...",       // compiled policy bundle hash used for this decision
-  "trust_chain": "sha256:...",       // digest of grants/issuers
-  "sig": "ed25519:..."               // signature over canonicalized envelope
-}
+All actions in GATOS are initiated via a signed Event.
+
+```mermaid
+classDiagram
+    class EventEnvelope {
+        +String type
+        +String ulid
+        +String actor
+        +String[] caps
+        +Object payload
+        +String policy_root
+        +String sig
+    }
 ```
 
 ### 4.2 Journal Semantics
 
-Appending an event **MUST** create a new commit whose tree contains a blob of the envelope; the commit **MUST** be appended to `refs/gatos/journal/<ns>/<actor>`.
-
-Ref updates **MUST** use atomic fast-forward with expected old OID (compare-and-swap).
-
-Denied operations **MUST NOT** write to journal; instead, the policy gate **MUST** write an audit decision (see [§6](#)).
+Appending an event **MUST** create a new commit on an append-only ref in `refs/gatos/journal/<ns>/<actor>`. Ref updates **MUST** use atomic compare-and-swap.
 
 ---
 
@@ -242,142 +230,97 @@ Denied operations **MUST NOT** write to journal; instead, the policy gate **MUST
 
 ### 5.1 Fold Function
 
-A **fold** is a pure function:
+A **fold** is a pure function: $state_root = F(events_stream, policy_root)$.
 
-$state_root = F(events_stream, policy_root)$
-
-#### Determinism 
-
-For identical inputs, the byte sequence of `state_root` MUST be identical across nodes and architectures.
-
-### 5.2 Fold Spec (YAML)
-
-```yaml
-version: 1
-inputs:
-  - "gatos/journal/finance/**"
-reducers:
-  - kind: map-join-lww        # example: last-writer-wins map
-    key: "$.id"
-  - kind: counter-gcounter    # example: grow-only counter
-rewrites:
-  - match: { type: "intent.exec", op: "approve_invoice" }
-    apply: { set: { path: "$.status", value: "approved" } }
-emit:
-  - path: "state/finance/invoices.json"
-hash:
-  algo: blake3                 # canonical serialization rules fixed by engine
+```mermaid
+graph TD
+    A[Event Stream] --> B{Fold Function};
+    C[Policy] --> B;
+    B --> D[State Root];
 ```
 
-### 5.3 State Checkpoints
+For identical inputs, the byte sequence of `state_root` **MUST** be identical.
 
-A checkpoint **MUST** be a commit on `refs/gatos/state/<ns>` whose tree contains emitted state artifacts and a `state_root` note containing the BLAKE3 of canonical serialization.
+### 5.2 Fold Spec & Checkpoints
 
-Checkpoints **SHOULD** include `inputs_root` (hash of input corpus) for verification and optional `proof_root` (see [§10](#)).
+A Fold is defined by a `.yaml` spec. Its output, a **State Checkpoint**, is a commit on `refs/gatos/state/<ns>` whose tree contains the materialized state artifacts.
 
 ---
 
 ## 6. Policy & Decision Audit
 
-### 6.1 Policy Bundle
+### 6.1 Gate Contract
 
-Policy source files (`.rgs` or equivalent) **MUST** compile into a deterministic bytecode bundle (`.rgc`) with a content hash (`policy_root`).
-
-Policies **MUST** be pure and MUST NOT depend on I/O, clocks, or randomness.
-
-### 6.2 Gate Contract
-
+All events are evaluated by a Policy Gate before being accepted.
 $Decision = Gate.evaluate(intent, context) -> {Allow | Deny(reason)}$
 
-On **ALLOW**, the gate **MUST** bind `policy_root` and `trust_chain` to the event.
+```mermaid
+sequenceDiagram
+    participant Client
+    participant GATOS
+    participant PolicyGate
 
-On **DENY**, the gate **MUST** append an audit decision:
-
-```json
-{
-  "type":"audit.decision",
-  "ulid":"<ULID>",
-  "actor":"user:james",
-  "intent":"intent.exec.run",
-  "resource":"gatos://finance",
-  "result":"DENY",
-  "rule":"policies/exec.rgs:12",
-  "explain":"caps missing: exec:run",
-  "policy_root":"sha256:...",
-  "trust_chain":"sha256:...",
-  "sig":"ed25519:..."
-}
+    Client->>GATOS: Propose Action (Intent)
+    GATOS->>PolicyGate: Evaluate(Intent, Context)
+    alt Action is Allowed
+        PolicyGate-->>GATOS: Decision: Allow
+        GATOS->>GATOS: Bind policy_root to event
+        GATOS-->>Client: Success
+    else Action is Denied
+        PolicyGate-->>GATOS: Decision: Deny(reason)
+        GATOS->>GATOS: Write Audit Decision
+        GATOS-->>Client: Failure(reason)
+    end
 ```
 
-to `refs/gatos/audit/policy`.
+On **DENY**, the gate **MUST** append an audit decision to `refs/gatos/audit/policy`.
 
 ---
 
 ## 7. Blob Pointers & Opaque Storage
 
-### 7.1 Pointer Format
+Large or sensitive data is stored out-of-band in a content-addressed store and referenced via pointers.
 
-```json
-{
-  "kind":"blobptr",
-  "algo":"blake3",
-  "hash":"<hex>",
-  "size":123456,
-  "labels":["exportable"]
-}
+```mermaid
+classDiagram
+    class BlobPointer {
+        +String kind: "blobptr"
+        +String algo
+        +String hash
+        +Number size
+    }
+    class OpaquePointer {
+        +String kind: "opaque"
+        +String algo
+        +String hash
+        +String ciphertext_hash
+        +Object cipher_meta
+    }
 ```
 
-Pointers **MUST** refer to content-addressed bytes in `gatos/objects/<algo>/<hash>`.
-
-For sensitive data, an opaque pointer **MAY** be used:
-
-```json
-{
-  "kind":"opaque",
-  "algo":"blake3",
-  "hash":"<plaintext-hash>",
-  "ciphertext_hash":"blake3:<hash>",
-  "cipher_meta":{"kdf":"...", "alg":"age-v1"},
-  "size":123456
-}
-```
-
-> [!IMPORTANT] 
-> No plaintext **MAY** be stored in Git for opaque objects.
+Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git.
 
 ---
 
 ## 8. Message Bus (Commit‑Backed Pub/Sub)
 
-### 8.1 Message Envelope
+The message bus provides a pub/sub system built on Git commits.
 
-```json
-{
-  "type":"gmb.msg",
-  "ulid":"<ULID>",
-  "topic":"echo/jobs",
-  "from":"agent:sim",
-  "reply_to":"echo/results",
-  "qos":"at_least_once|exactly_once|at_most_once",
-  "causal":{"parents":["<ULID>","<ULID>"]},
-  "ttl":86400,
-  "payload":{...},
-  "attachments":[...],
-  "sig":"ed25519:..."
-}
+```mermaid
+sequenceDiagram
+    participant Publisher
+    participant GATOS
+    participant Consumer
+
+    Publisher->>GATOS: Publish Message (QoS: exactly_once)
+    GATOS-->>Consumer: Deliver Message
+    Consumer->>Consumer: Process Message
+    Consumer->>GATOS: Send Ack
+    GATOS->>GATOS: Observe Ack Quorum
+    GATOS->>GATOS: Create gmb.commit Event
 ```
 
-Messages **MUST** be appended under `refs/gatos/mbus/<topic>/<shard>` where $shard = blake3(ulid) mod N$.
-
-### 8.2 QoS
-
-`at_most_once`: a single publish commit.
-
-`at_least_once`: consumer **MUST** write an ack to `refs/gatos/mbus-ack/<topic>/<consumer>` referencing `msg.ulid`.
-
-`exactly_once`: publisher **MUST** create a `gmb.commit` event after receiving a configured quorum of acks; 
-
-Consumers **MUST** de‑duplicate by `(topic, ulid)`.
+Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. `exactly_once` delivery semantics require consumers to write an `ack` to `refs/gatos/mbus-ack/`.
 
 ---
 
@@ -385,67 +328,76 @@ Consumers **MUST** de‑duplicate by `(topic, ulid)`.
 
 `gatos/sessions/<actor>/<ulid>` represents an ephemeral branch for interactive mutation.
 
-`undo` **MUST** rebase session to the parent commit (private rebase).
-
-`fork` **MUST** create a new session branch with same base.
-
-`merge` **MUST** use deterministic lattice joins or DPO rules declared in the fold spec; 
-
-Conflicts **MUST** be explicit.
+```mermaid
+graph TD
+    A(main) --> B(session-1);
+    B --> C(commit-a);
+    C --> D(commit-b);
+    subgraph "fork"
+        B --> E(session-2);
+    end
+    subgraph "undo"
+        D -- undo --> C;
+    end
+    subgraph "merge"
+        D --> F(main);
+        E --> F;
+    end
+```
 
 ---
 
 ## 10. Proofs (Commitments / ZK)
 
-A proof envelope attests to deterministic execution:
+A proof envelope attests to the deterministic execution of a fold or job.
 
-```json
-{
-  "type":"proof.fairness",
-  "ulid":"<ULID>",
-  "inputs_root":"blake3:<hex>",
-  "output_root":"blake3:<hex>",
-  "policy_root":"sha256:<hex>",
-  "proof":"zkp:plonk:<base64>|commitment:<base64>",
-  "sig":"ed25519:<...>"
-}
+```mermaid
+classDiagram
+    class ProofEnvelope {
+        +String type
+        +String ulid
+        +String inputs_root
+        +String output_root
+        +String policy_root
+        +String proof
+        +String sig
+    }
 ```
 
 Proofs **MUST** be stored under `refs/gatos/audit/proofs/<ns>`.
-
-Nodes **MAY** verify either commitment‑level proofs (baseline) or ZK proofs (advanced).
 
 ---
 
 ## 11. Offline Authority Protocol (OAP)
 
-Authority envelopes **MUST** wrap privileged actions ***performed while offline*** and embed `{policy_root, trust_chain, (optional) epoch_anchor}`.
+OAP governs how divergent changes from offline peers are reconciled upon reconnecting.
 
-On reconnect, peers **MUST** exchange envelopes, validate signatures and ancestry of `policy_root`, and:
-
-- prefer descendants in policy ancestry,
-- if incomparable, append `governance.conflict` and require explicit policy merge.
+```mermaid
+sequenceDiagram
+    participant PeerA
+    participant PeerB
+    Note over PeerA, PeerB: Peers are offline and make divergent changes
+    PeerA ->> PeerB: Reconnect & Exchange Envelopes
+    PeerB ->> PeerB: Validate Signatures & Policy Ancestry
+    alt Policies are comparable
+        PeerB ->> PeerB: Prefer descendant policy
+    else Policies are incomparable
+        PeerB ->> PeerB: Append governance.conflict event
+    end
+```
 
 ---
 
 ## 12.  Profiles
 
-### `local`
+Profiles define the enforcement and operational mode of a GATOS node.
 
-- All enforcement in‑process; 
-- no remote hooks; 
-- suitable for single‑user/offline.
-
-### `push-gate`
-
-- Writes go via an authoritative gateway enforcing policy; 
-- mirrors to public remote; 
-- provides RYW guarantees.
-
-### `saas-hosted` 
-
-- Enforcement via branch protection + required checks; 
-- policy gate runs as CI.
+```mermaid
+graph TD
+    A(GATOS) --> B(local);
+    A --> C(push-gate);
+    A --> D(saas-hosted);
+```
 
 Profiles **MUST** be discoverable via `gatos/config/profile.yaml`.
 
@@ -453,258 +405,156 @@ Profiles **MUST** be discoverable via `gatos/config/profile.yaml`.
 
 ## 13.  Observability & Health
 
-Implementations **SHOULD** expose:
+Implementations **SHOULD** expose metrics and provide a health-check CLI command.
 
-- `/healthz`,
-- `/readyz` (boolean),
-- `/metrics` (Prometheus text) including:
-  -  journal append latency, 
-  -  fold latency, 
-  -  bus ack lag, 
-  -  cache rebuild counts.
-
-CLI **MUST** include `gatos doctor` to diagnose ref invariants, epoch continuity, cache staleness, and pack health.
+```mermaid
+graph TD
+    A[gatosd] -- Exposes --> B["/metrics"];
+    C[Prometheus] -- Scrapes --> B;
+    D[gatos doctor] -- Diagnoses --> E(Ref Invariants);
+    D --> F(Epoch Continuity);
+    D --> G(Cache Staleness);
+```
 
 ---
 
 ## 14.  Security Model
 
-Default `deny`.
+The security model is deny-by-default, governed by capability grants evaluated by the policy engine.
 
-All privileged writes **MUST** carry verifiable capability grants.
-
-Labels (`private`, `exportable`, `pii`) **MUST** gate mirroring and bus routing per policy.
-
-- Opaque pointers **MUST** prevent plaintext leakage through Git; 
-- only pointer metadata is replicated.
-
-Keys/issuers rotation **MUST** be auditable (grant chains).
+```mermaid
+graph TD
+    subgraph "Access Control"
+        A[Actor] -- Requests access to --> B[Resource];
+        C[Capability Grant] -- Links --> A;
+        C -- Links --> D{Policy};
+        D -- Evaluates request for --> B;
+    end
+```
 
 ---
 
 ## 15.  Performance & GC
 
-Large payloads **SHOULD** be chunked (e.g., 4–16 MiB) into `gatos/objects/`.
+Epoch compaction is used to manage repository size over time.
 
-Implementations **SHOULD** provide epoch compaction:
-
-- gatos epoch new `<ns>` to roll,
-- verifiable anchors to preserve continuity,
-- garbage collection for unreferenced blobs beyond retention windows (policy‑controlled).
+```mermaid
+graph TD
+    A[Epoch N] --> B(Epoch N+1 Anchor);
+    B -- Triggers --> C{Compaction};
+    C -- Prunes --> D(Unreferenced Blobs in Epoch N);
+```
 
 ---
 
 ## 16.  Compliance & Tests (Normative)
 
-Implementations **MUST** pass a rigorous five-point certification inspection.
+Implementations **MUST** pass a five-point certification inspection.
 
-1. **Deterministic Fold**: identical `state_root` across platforms for a fixed corpus.
-2. **Exactly‑Once Delivery**: duplicated publishes yield single consumer effect with `QoS=exactly_once`.
-3. **Offline Reconcile**: divergent policies yield `governance.conflict`, not silent clobber.
-4. **Deny Audit**: every `DENY` emits an audit decision with rule identifier.
-5. **Blob Integrity**: pointer mismatch detection.
+```mermaid
+graph TD
+    A(GATOS Implementation) --> B(Certification);
+    B --> C(Deterministic Fold);
+    B --> D(Exactly-Once Delivery);
+    B --> E(Offline Reconcile);
+    B --> F(Deny Audit);
+    B --> G(Blob Integrity);
+```
 
 ---
 
 ## 17. CLI (Reference)
 
-```bash
-git gatos init [repo]
-git gatos session start|undo|fork <name>|merge <name>|snapshot
-git gatos event add <ns> --json <file>
-git gatos fold <ns> <channel> --spec folds/<x>.yaml --out <path>
-git gatos bus publish <topic> --json <file> --qos <mode>
-git gatos bus subscribe <topic> [--from HEAD-100]
-git gatos policy check --intent <i> --resource <r>
-git gatos trust grant <subject> <cap> [--exp]
-git gatos epoch new <ns>
-git gatos prove <state_root> | gatos verify <state_root>
-git gatos doctor
+The `git gatos` command provides the primary user interface.
+
+```mermaid
+graph TD
+    A(git gatos) --> B(init);
+    A --> C(session);
+    A --> D(event);
+    A --> E(fold);
+    A --> F(bus);
+    A --> G(policy);
+    A --> H(trust);
+    A --> I(epoch);
+    A --> J(prove);
+    A --> K(doctor);
 ```
 
 ---
 
 ## 18. Example Use Case: A Git-Native Work Queue
 
-This section provides a practical example of how GATOS primitives can be used to build a sophisticated, multi-tenant, and auditable work queue, replacing a traditional system like a Redis-based queue.
+This diagram shows the data flow for enqueuing and processing a job.
 
-### 18.1 Data Model & Ref Layout
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Daemon as gatosd
+    participant Ledger as gatos-ledger
+    participant Bus as gatos-mind
+    participant State as gatos-echo
 
-The system is organized by a `tenant` namespace to provide multi-tenancy.
+    Client->>Daemon: 1. Enqueue Job (Event)
+    Daemon->>Ledger: 2. Append `jobs.enqueue` event
+    Ledger-->>Daemon: 3. Success
+    Daemon->>Bus: 4. Publish `gmb.msg` to topic
+    Bus-->>Daemon: 5. Success
+    Daemon-->>Client: 6. Job Enqueued
 
-- **Journals**: `refs/gatos/journal/jobs/<tenant>/<producer>` for appending job creation and result events.
-- **State**: `refs/gatos/state/jobs/<tenant>` for deterministic materialized views of the queue state (e.g., active jobs, DLQ).
-- **Message Bus**: `refs/gatos/mbus/queue.<tenant>/<shard>` for job dispatching and `refs/gatos/mbus-ack/queue.<tenant>/<consumer>` for acknowledgements.
-- **Audit**: `refs/gatos/audit/policy` for policy decisions and `refs/gatos/audit/proofs/jobs.<tenant>` for fold/execution proofs.
+    Note over Bus,State: Later, a worker consumes the job...
 
-### 18.2 Event Schema
+    participant Worker
+    Worker->>Bus: 7. Subscribe to topic
+    Bus->>Worker: 8. Delivers `gmb.msg`
+    Worker->>Daemon: 9. Report Result (Event)
+    Daemon->>Ledger: 10. Append `jobs.result` event
+    Ledger-->>Daemon: 11. Success
+    Daemon->>Bus: 12. Write `gmb.ack`
+    Daemon-->>Worker: 13. Result Recorded
 
-Two primary event types are used:
-
-- `jobs.enqueue`: Represents a new job being added to the queue. Includes job ID, priority, payload pointer, and policy/signature details.
-- `jobs.result`: Records the outcome of a job, including a `status` field ("ok" | "fail" | "retry"),
-  `duration_ms`, `attempts`, and optional `error` details for failures; attachments may include logs.
-
-Example envelopes (canonical JSON shape; values abbreviated for clarity):
-
-```json
-{
-  "type": "jobs.enqueue",
-  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
-  "actor": "agent:producer-1",
-  "caps": ["journal:append", "bus:publish"],
-  "labels": ["exportable"],
-  "payload": {
-    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
-    "tenant": "tenant-a",
-    "priority": "high",
-    "next_earliest_at": null,
-    "payload_ptr": {"kind":"blobptr","algo":"blake3","hash":"ab…cd","size":12345}
-  },
-  "policy_root": "sha256:…",
-  "trust_chain": "sha256:…",
-  "sig": "ed25519:…"
-}
+    Note over Ledger,State: A fold process runs...
+    State->>Ledger: 14. Read events from journal
+    State->>State: 15. Compute new state (e.g., update queue view)
+    State->>Ledger: 16. Checkpoint new state
 ```
-
-```json
-{
-  "type": "jobs.result",
-  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
-  "actor": "agent:worker-42",
-  "caps": ["journal:append"],
-  "labels": [],
-  "payload": {
-    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
-    "status": "ok", // or "fail" or "retry"
-    "duration_ms": 5230,
-    "attempts": 1
-  },
-  "attachments": [
-    {"kind":"blobptr","algo":"blake3","hash":"de…ad","size":2048,"labels":["exportable"]}
-  ],
-  "policy_root": "sha256:…",
-  "trust_chain": "sha256:…",
-  "sig": "ed25519:…"
-}
-```
-
-Additional bus/event envelopes used in delivery semantics:
-
-```json
-{
-  "type": "gmb.ack",
-  "ulid": "01HQ7ZACK0000000000000000",
-  "actor": "agent:worker-42",
-  "caps": ["bus:ack"],
-  "labels": [],
-  "payload": {
-    "topic": "queue.acme",
-    "msg_ulid": "01HQ7ZMSG0000000000000000",
-    "shard": 12
-  },
-  "policy_root": "sha256:…",
-  "trust_chain": "sha256:…",
-  "sig": "ed25519:…"
-}
-```
-
-```json
-{
-  "type": "gmb.commit",
-  "ulid": "01HQ7ZCOMMIT00000000000000",
-  "actor": "service:coordinator",
-  "caps": ["bus:commit"],
-  "labels": [],
-  "payload": {
-    "topic": "queue.acme",
-    "msg_ulid": "01HQ7ZMSG0000000000000000",
-    "acks": ["01HQ7ZACK0000000000000000"],
-    "quorum": 1
-  },
-  "policy_root": "sha256:…",
-  "trust_chain": "sha256:…",
-  "sig": "ed25519:…"
-}
-```
-
-```json
-{
-  "type": "jobs.release",
-  "ulid": "01HQ7ZREL0000000000000000",
-  "actor": "service:scheduler",
-  "caps": ["journal:append", "bus:publish"],
-  "labels": [],
-  "payload": {
-    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
-    "tenant": "tenant-a",
-    "released_at": "2025-11-09T12:00:00Z"
-  },
-  "policy_root": "sha256:…",
-  "trust_chain": "sha256:…",
-  "sig": "ed25519:…"
-}
-```
-
-### 18.3 State Folds
-
-Deterministic folds compute the state of the work queue:
-
-- **Queue View**: A Last-Writer-Wins (LWW) map of job metadata, keyed by `job.id`.
-- **Dead-Letter-Queue (DLQ) View**: A filtered view of jobs where `status=fail` and `attempts` exceeds a defined maximum.
-- **Counters**: Grow-only (G) or PN counters for per-tenant statistics (e.g., enqueued, running, failed).
-
-### 18.4 Delivery Semantics (Exactly-Once)
-
-Exactly-once delivery is achieved using the GATOS message bus:
-
-1.  **Publish**: A producer appends a `jobs.enqueue` event to the journal and then publishes a `bus.message` to the message bus with `QoS=exactly_once`.
-2.  **Consume**: A worker subscribes to the topic, de-duplicates messages, and processes the job. Upon completion, it appends a `jobs.result` event to the journal and writes a `gmb.ack` to the bus.
-3.  **Commit**: A designated coordinator process (or the original publisher, if operating in
-    coordinator mode) observes the required quorum of `gmb.ack` messages and publishes a
-    `gmb.commit` message to finalize the transaction.
-
-    Election and failover mechanisms are implementation‑specific (e.g., Raft consensus, distributed
-    leader‑per‑topic with health checks, Zookeeper‑style coordination). Implementers MUST ensure the
-    chosen strategy prevents split‑brain and provides recovery after coordinator crashes. Safety is normative: coordinators MUST guarantee that retries do not
-    duplicate effects by EITHER maintaining durable state OR implementing idempotent commit
-    semantics. Transactions MUST carry unique identifiers, and implementations MUST define
-    timeouts and retry/abort rules for recovery.
-
-### 18.5 Feature Implementation
-
-- **Priority Queues**: Implemented using separate topics for high-priority and low-priority jobs (e.g., `queue.<tenant>.high` and `queue.<tenant>.low`).
-- **Retries and Backoff**: A worker or producer can re-publish a job with a `next_earliest_at` field in the payload, which is handled by a scheduler agent.
-- **Rate Limiting**: A fold computes a windowed count of jobs per tenant, which producers can consult before enqueueing new jobs.
-- **Delayed Jobs**: A scheduler agent reads `jobs.enqueue` events with a `next_earliest_at` field and publishes a `jobs.release` event at the appropriate time.
-- **RBAC**: Multi-tenancy and access control are handled by GATOS namespaces and capability grants, which can restrict access to specific topics and event types.
 
 ---
 
 ## 19. Job Plane (Compute)
 
-The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs. It makes GATOS an *active* system capable of orchestrating computation.
+The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs.
 
 ### 19.1 Job Lifecycle
 
-The job lifecycle is represented entirely through Git objects:
+This diagram illustrates how the state of a Job transitions based on events recorded in the GATOS ledger.
 
--   **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
--   **Claim:** A ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
--   **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
+```mermaid
+stateDiagram-v2
+    [*] --> Enqueued
+
+    Enqueued --> Processing: Worker consumes `bus.message`
+    Processing --> Succeeded: `jobs.result` (ok) event recorded
+    Processing --> Failed: `jobs.result` (fail) event recorded
+
+    Succeeded --> [*]
+    Failed --> Retrying: `attempts` < max_retries
+    Failed --> DeadLetterQueue: `attempts` >= max_retries
+
+    Retrying --> Enqueued: Job is re-published
+    DeadLetterQueue --> [*]
+```
+
+The lifecycle is represented entirely through Git objects:
+
+-   **Job:** A commit whose tree contains a `job.yaml` manifest.
+-   **Claim:** An atomic ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`.
+-   **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
 
-When a **Job** commit is created, a corresponding message **MUST** be published to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers.
+When a **Job** commit is created, a message **MUST** be published to a topic on the Message Plane for discovery by workers.
 
 ### 19.3 Proof-Of-Execution
 
-The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. Each `Result` commit **MUST** include the following trailers for discoverability:
-
--   `Job-Id: <hash>`
--   `Proof-Of-Execution: <blake3:...>`
--   `Worker-Id: <pubkey>`
--   `Attest-Program: <hash-of-runner-binary>` (optional)
--   `Attest-Sig: <signature>` (optional)
-
-```
+The **Proof-Of-Execution** **MUST** sign the job’s `content_id`. Each `Result` commit **MUST** include trailers for discoverability, including `Job-Id`, `Proof-Of-Execution`, and `Worker-Id`.
