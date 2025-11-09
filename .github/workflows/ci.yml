@@ -10,6 +10,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  editorconfig:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: EditorConfig check
+        uses: editorconfig-checker/action@v2
+        with:
+          version: '2.7.0'
+
   fmt:
     runs-on: ubuntu-latest
     steps:
