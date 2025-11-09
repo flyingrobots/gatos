@@ -14,6 +14,8 @@ Schemas:
   - schemas/v1/governance/revocation.schema.json
   - schemas/v1/governance/proof_of_consensus_envelope.schema.json
   - schemas/v1/policy/governance_policy.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 ## ADR-0003: Consensus Governance for Gated Actions

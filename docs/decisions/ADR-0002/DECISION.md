@@ -10,6 +10,8 @@ Tags: [Job Plane, Compute, PoE]
 Schemas:
   - schemas/v1/job/job_manifest.schema.json
   - schemas/v1/job/proof_of_execution_envelope.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 ## ADR-0002: Distributed Compute via a Job Plane

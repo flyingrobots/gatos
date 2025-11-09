@@ -1,0 +1,6 @@
+{
+  "proposal_id": "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "approval_id": "blake3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "signer": "ed25519:0000000000000000000000000000000000000000000000000000000000000000",
+  "expires_at": "2025-12-01T00:00:00Z"
+}

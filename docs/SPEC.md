@@ -528,6 +528,8 @@ sequenceDiagram
 
 ## 19. Job Plane (Compute)
 
+See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+
 The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs.
 
 ### 19.1 Job Lifecycle
@@ -586,6 +588,8 @@ See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definit
 ---
 
 ## 20. Governance (Consensus Gate)
+
+See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
 
 Governs gated actions via proposals, approvals, grants (see ADR‑0003). Governance artifacts are Git commits under dedicated refs (see on‑disk layout above). All trailers use canonical, prefixed encodings (e.g., `blake3:<hex>`, `ed25519:<pubkey>`).
 

@@ -1,0 +1,6 @@
+{
+  "grant_id": "blake3:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "revocation_id": "blake3:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "reason": "superseded",
+  "revoked_by": "user:bob"
+}

@@ -340,6 +340,8 @@ classDiagram
 
 ## 15. Compute Engine (Job Runner)
 
+See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+
 The `gatos-compute` crate provides the GATOS worker process.
 
 ```mermaid
@@ -370,6 +372,8 @@ sequenceDiagram
 ---
 
 ## 16. Governance CLI & Engine
+
+See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
 
 ### CLI Skeleton (normative surface; stub behavior acceptable initially)
 
