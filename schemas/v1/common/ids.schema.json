@@ -11,12 +11,12 @@
     },
     "ed25519Key": {
       "type": "string",
-      "pattern": "^ed25519:(?:[0-9a-f]{64}|[A-Za-z0-9_\-+/]{43}=|[A-Za-z0-9_\-+/]{44})$",
+      "pattern": "^ed25519:(?:[0-9a-f]{64}|[A-Za-z0-9+/_-]{43}=|[A-Za-z0-9+/_-]{44})$",
       "description": "Ed25519 public key encoded as hex(32B) or base64/base64url(32B) with algorithm prefix."
     },
     "ed25519Sig": {
       "type": "string",
-      "pattern": "^ed25519:(?:[0-9a-f]{128}|[A-Za-z0-9_\-+/]{86}==|[A-Za-z0-9_\-+/]{88})$",
+      "pattern": "^ed25519:(?:[0-9a-f]{128}|[A-Za-z0-9+/_-]{86}==|[A-Za-z0-9+/_-]{88})$",
       "description": "Ed25519 signature encoded as hex(64B) or base64/base64url(64B) with algorithm prefix."
     },
     "uri": { "type": "string", "format": "uri" }
