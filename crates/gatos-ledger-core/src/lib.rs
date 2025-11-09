@@ -4,6 +4,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use serde_with::serde_as;
+use bincode::{config, encode_to_vec, Encode, Decode}; // Import Encode and Decode
 
 pub type Hash = [u8; 32];
 
@@ -13,7 +14,7 @@ pub trait ObjectStore {
 }
 
 #[serde_as]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Encode, Decode)] // Add Encode and Decode derives
 pub struct Commit {
     pub parent: Option<Hash>,
     pub tree: Hash,
@@ -22,5 +23,5 @@ pub struct Commit {
 }
 
 pub fn compute_commit_id(commit: &Commit) -> Hash {
-    blake3::hash(&bincode::serialize(commit).unwrap()).into()
+    blake3::hash(&encode_to_vec(commit, config::standard()).unwrap()).into()
 }
