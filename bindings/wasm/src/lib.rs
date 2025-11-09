@@ -25,34 +25,8 @@ pub fn compute_commit_id_wasm(
     tree: &[u8],
     signature: &[u8],
 ) -> Result<String, JsValue> {
-    use gatos_ledger_core::Hash;
-
-    if tree.len() != 32 || signature.len() != 64 {
-        return Err(JsValue::from_str("invalid input sizes"));
-    }
-    let mut tree_arr = [0u8; 32];
-    tree_arr.copy_from_slice(tree);
-    let mut sig_arr = [0u8; 64];
-    sig_arr.copy_from_slice(signature);
-    let parent_arr: Option<Hash> = match parent {
-        Some(p) => {
-            if p.len() != 32 {
-                return Err(JsValue::from_str("invalid parent size"));
-            }
-            let mut a = [0u8; 32];
-            a.copy_from_slice(&p);
-            Some(a)
-        }
-        None => None,
-    };
-
-    // For compatibility, provide empty message and zero timestamp at the WASM boundary.
-    let core = gatos_ledger_core::CommitCore {
-        parent: parent_arr,
-        tree: tree_arr,
-        message: String::new(),
-        timestamp: 0,
-    };
+    if signature.len() != 64 { return Err(JsValue::from_str("invalid signature size")); }
+    let core = validate_and_build_core(parent, tree, String::new(), 0)?;
     gatos_ledger_core::compute_content_id(&core)
         .map(hex::encode)
         .map_err(|_| JsValue::from_str("serialize failure"))
@@ -69,8 +43,19 @@ pub fn compute_content_id_wasm_v2(
     message: &str,
     timestamp: u64,
 ) -> Result<String, JsValue> {
-    use gatos_ledger_core::Hash;
+    let core = validate_and_build_core(parent, tree, message.to_string(), timestamp)?;
+    gatos_ledger_core::compute_content_id(&core)
+        .map(hex::encode)
+        .map_err(|_| JsValue::from_str("serialize failure"))
+}
 
+fn validate_and_build_core(
+    parent: Option<Vec<u8>>,
+    tree: &[u8],
+    message: String,
+    timestamp: u64,
+) -> Result<gatos_ledger_core::CommitCore, JsValue> {
+    use gatos_ledger_core::Hash;
     if tree.len() != 32 {
         return Err(JsValue::from_str("invalid tree size"));
     }
@@ -78,25 +63,14 @@ pub fn compute_content_id_wasm_v2(
     tree_arr.copy_from_slice(tree);
     let parent_arr: Option<Hash> = match parent {
         Some(p) => {
-            if p.len() != 32 {
-                return Err(JsValue::from_str("invalid parent size"));
-            }
+            if p.len() != 32 { return Err(JsValue::from_str("invalid parent size")); }
             let mut a = [0u8; 32];
             a.copy_from_slice(&p);
             Some(a)
         }
         None => None,
     };
-
-    let core = gatos_ledger_core::CommitCore {
-        parent: parent_arr,
-        tree: tree_arr,
-        message: message.to_string(),
-        timestamp,
-    };
-    gatos_ledger_core::compute_content_id(&core)
-        .map(hex::encode)
-        .map_err(|_| JsValue::from_str("serialize failure"))
+    Ok(gatos_ledger_core::CommitCore { parent: parent_arr, tree: tree_arr, message, timestamp })
 }
 
 #[cfg(test)]
