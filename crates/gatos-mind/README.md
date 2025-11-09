@@ -20,26 +20,30 @@ in [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and protocol details in
 
 ## Feature Flags
 
-- `std` (default): standard library support.
-- With `std` (default): full Message Bus functionality including async publishers/subscribers and
-  topic sharding.
-- Without `std` (`no_std`): core message types and serialization only; messaging operations require
-  an async runtime and allocation and are not available in pure `no_std` builds.
+- `std` (default): standard library support
+  - Enabled (default): Full Message Bus functionality including async publishers/subscribers and topic sharding.
+  - Disabled (`no_std`): Core message types and trait definitions only; no async runtime, publishers, or subscribers. Use this for embedded environments or constrained WASM profiles.
 
 ## Quick Start
 
-```rust
-// Placeholder API sketch — final names may differ.
+```rust,no_run
+// API sketch — final names may differ.
 // use gatos_mind::{Publisher, Subscriber};
-
-// let mut pubr = Publisher::connect("queue.acme").await?;
-// pubr.publish(b"hello").await?;
-
-// let mut sub = Subscriber::connect("queue.acme").await?;
-// if let Some(msg) = sub.next().await { /* ... */ }
+//
+// #[tokio::main]
+// async fn main() -> anyhow::Result<()> {
+//     let mut pubr = Publisher::connect("queue.acme").await?;
+//     pubr.publish(b"hello").await?;
+//
+//     let mut sub = Subscriber::connect("queue.acme").await?;
+//     if let Some(msg) = sub.next().await {
+//         // process msg
+//     }
+//     Ok(())
+// }
 ```
 
-See examples/ (coming soon) for working code once the API lands.
+Examples coming soon; for now, this sketch illustrates the intended shape.
 
 ## Integration
 

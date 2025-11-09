@@ -21,6 +21,7 @@ license = "Apache-2.0"
 repository = "https://github.com/flyingrobots/gatos"
 documentation = "https://github.com/flyingrobots/gatos/blob/main/README.md"
 homepage = "https://github.com/flyingrobots/gatos"
+rust-version = "1.81"
 
 [workspace.dependencies]
 blake3 = { version = "1.8.2", default-features = false }
