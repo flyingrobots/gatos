@@ -400,7 +400,7 @@ graph TD
     A --> D(saas-hosted);
 ```
 
-Profiles **MUST** be discoverable via `gatos/config/profile.yaml`.
+Nodes **MUST** discover the active profile via `gatos/config/profile.yaml`.
 
 ---
 

@@ -75,9 +75,14 @@ sequenceDiagram
     Worker->>Bus (Message Plane): 3. Subscribe to job topic
     Bus (Message Plane)->>Worker: 4. Receive Job message
     Worker->>GATOS (Ledger): 5. Atomically create Claim ref (by job-id)
-    GATOS (Ledger)-->>Worker: 6. Claim successful
-    Worker->>Worker: 7. Execute Job
-    Worker->>GATOS (Ledger): 8. Create Result commit (with Job-Id trailer)
+    alt Claim already exists by another worker
+        GATOS (Ledger)-->>Worker: 6. Claim failed (CAS)
+        Worker->>Worker: 7. Backoff and retry
+    else Claim created
+        GATOS (Ledger)-->>Worker: 6. Claim successful
+        Worker->>Worker: 7. Execute Job
+        Worker->>GATOS (Ledger): 8. Create Result commit (with Job-Id trailer)
+    end
 ```
 
 ### Consequences
@@ -101,3 +106,4 @@ sequenceDiagram
 ### Terminology and References
 
 - `content_id`: The BLAKE3 hash of the canonical serialization of the unsigned job core. This mirrors the definition used for commits in ADR‑0001 and applies here to the job manifest’s canonical form. See ADR‑0001 for canonical serialization rules and the `CommitCore` pattern.
+- `unsigned job core`: The canonical, serialized job content used for hashing and signatures; derived from the job manifest (e.g., `job.yaml`) and fixed fields, excluding any signatures, claims, or result artifacts. This parallels ADR‑0001’s "unsigned commit core" concept.
