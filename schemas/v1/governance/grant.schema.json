@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/governance/grant.schema.json",
+  "title": "GATOS Governance Grant (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["proposal_id", "grant_id", "proof_of_consensus"],
+  "properties": {
+    "proposal_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
+    "grant_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
+    "proof_of_consensus": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" }
+  }
+}
+

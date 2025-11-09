@@ -20,10 +20,10 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
 2. The `refs/gatos/jobs/` namespace is reserved for this plane.
 3. When a **Job** commit is created, the **Ledger Service** (e.g., `gatosd`) **MUST** publish a corresponding message to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers. Publication is an automatic system behavior on commit acceptance.
 4. The job lifecycle **MUST** be represented entirely through Git objects:
-   - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation. See schema: [`schemas/job/job_manifest.schema.json`](../../schemas/job/job_manifest.schema.json).
+   - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation. See schema: [`schemas/v1/job/job_manifest.schema.json`](../../schemas/v1/job/job_manifest.schema.json).
    - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare‑and‑swap) to prevent race conditions.
    - **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
-5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. See envelope schema: [`schemas/job/proof_of_execution_envelope.schema.json`](../../schemas/job/proof_of_execution_envelope.schema.json).
+5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. See envelope schema: [`schemas/v1/job/proof_of_execution_envelope.schema.json`](../../schemas/v1/job/proof_of_execution_envelope.schema.json).
 6. Each `Result` commit **MUST** include trailers for discoverability:
    - `Job-Id: <blake3:…>`
    - `Proof-Of-Execution: <blake3:…>`

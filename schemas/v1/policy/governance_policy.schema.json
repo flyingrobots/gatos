@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/policy/governance_policy.schema.json",
+  "title": "GATOS Governance Policy Section (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "governance": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "quorum": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["at_least", "group"],
+                "properties": {
+                  "at_least": { "type": "integer", "minimum": 1 },
+                  "group": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["all_of"],
+                "properties": {
+                  "all_of": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "ttl": {
+            "oneOf": [ { "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^P[T\\dHMS]+$" } ]
+          }
+        }
+      }
+    }
+  }
+}
+
