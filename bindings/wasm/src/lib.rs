@@ -25,7 +25,9 @@ pub fn compute_commit_id_wasm(
     tree: &[u8],
     signature: &[u8],
 ) -> Result<String, JsValue> {
-    if signature.len() != 64 { return Err(JsValue::from_str("invalid signature size")); }
+    if signature.len() != 64 {
+        return Err(JsValue::from_str("invalid signature size"));
+    }
     let core = validate_and_build_core(parent, tree, String::new(), 0)?;
     gatos_ledger_core::compute_content_id(&core)
         .map(hex::encode)
@@ -63,14 +65,21 @@ fn validate_and_build_core(
     tree_arr.copy_from_slice(tree);
     let parent_arr: Option<Hash> = match parent {
         Some(p) => {
-            if p.len() != 32 { return Err(JsValue::from_str("invalid parent size")); }
+            if p.len() != 32 {
+                return Err(JsValue::from_str("invalid parent size"));
+            }
             let mut a = [0u8; 32];
             a.copy_from_slice(&p);
             Some(a)
         }
         None => None,
     };
-    Ok(gatos_ledger_core::CommitCore { parent: parent_arr, tree: tree_arr, message, timestamp })
+    Ok(gatos_ledger_core::CommitCore {
+        parent: parent_arr,
+        tree: tree_arr,
+        message,
+        timestamp,
+    })
 }
 
 #[cfg(test)]

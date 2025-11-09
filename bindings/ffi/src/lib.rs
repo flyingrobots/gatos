@@ -46,7 +46,9 @@ unsafe fn parse_hash_opt(has: bool, ptr: *const u8) -> Result<Option<Hash>, ()> 
 /// # Safety
 /// `ptr` must be non-null and point to at least 32 readable bytes.
 unsafe fn parse_hash(ptr: *const u8) -> Result<Hash, ()> {
-    if ptr.is_null() { return Err(()); }
+    if ptr.is_null() {
+        return Err(());
+    }
     let mut out = [0u8; 32];
     std::ptr::copy_nonoverlapping(ptr, out.as_mut_ptr(), 32);
     Ok(out)
@@ -84,12 +86,25 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     signature_ptr: *const u8,
 ) -> *mut libc::c_char {
     // Parse inputs
-    let parent = match parse_hash_opt(has_parent, parent_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    let parent = match parse_hash_opt(has_parent, parent_ptr) {
+        Ok(x) => x,
+        Err(_) => return std::ptr::null_mut(),
+    };
     // Signature is ignored for hashing but validated for compatibility
-    if signature_ptr.is_null() { return std::ptr::null_mut(); }
-    let tree = match parse_hash(tree_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    if signature_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let tree = match parse_hash(tree_ptr) {
+        Ok(x) => x,
+        Err(_) => return std::ptr::null_mut(),
+    };
     // Empty message + zero timestamp boundary
-    let core = CommitCore { parent, tree, message: String::new(), timestamp: 0 };
+    let core = CommitCore {
+        parent,
+        tree,
+        message: String::new(),
+        timestamp: 0,
+    };
     compute_and_encode(&core)
 }
 
@@ -115,8 +130,14 @@ pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
     msg_len: usize,
     timestamp: u64,
 ) -> *mut libc::c_char {
-    let parent = match parse_hash_opt(has_parent, parent_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
-    let tree = match parse_hash(tree_ptr) { Ok(x)=>x, Err(_)=> return std::ptr::null_mut() };
+    let parent = match parse_hash_opt(has_parent, parent_ptr) {
+        Ok(x) => x,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    let tree = match parse_hash(tree_ptr) {
+        Ok(x) => x,
+        Err(_) => return std::ptr::null_mut(),
+    };
 
     let message = if msg_len == 0 {
         String::new()
@@ -131,7 +152,12 @@ pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
         }
     };
 
-    let core = CommitCore { parent, tree, message, timestamp };
+    let core = CommitCore {
+        parent,
+        tree,
+        message,
+        timestamp,
+    };
     compute_and_encode(&core)
 }
 
