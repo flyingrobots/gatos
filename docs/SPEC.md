@@ -690,12 +690,12 @@ The Job Plane provides a system for scheduling, executing, and recording the res
 The job lifecycle is represented entirely through Git objects:
 
 -   **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
--   **Claim:** A ref under `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
+-   **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>` where `job-id` is the job’s `content_id` (BLAKE3 of the canonical unsigned job core). This ref **MUST** be created atomically (using Compare-And-Swap semantics) to prevent race conditions.
 -   **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
 
-When a **Job** commit is created, a corresponding message **MUST** be published to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers.
+When a **Job** commit is created, a corresponding message **MUST** be published to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers. Messages MAY include a ULID for UX/deduplication, but workers MUST resolve to the canonical `job-id` by computing the job commit’s `content_id`.
 
 ### 19.3 Proof-Of-Execution
 

@@ -292,7 +292,7 @@ The `gatos-compute` crate will provide the primary implementation of a GATOS wor
 ### Implementation Plan
 
 1.  **Subscription:** The worker will use the `gatos-mind` crate to subscribe to one or more job topics on the Message Plane (e.g., `gatos/jobs/pending`).
-2.  **Claiming:** Upon receiving a job message, the worker will use the `gatos-ledger` crate to attempt an atomic claim by creating a ref at `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. The operation will use compare-and-swap semantics to ensure only one worker can claim a given job.
+2.  **Claiming:** Upon receiving a job message, the worker will use the `gatos-ledger` crate to attempt an atomic claim by creating a ref at `refs/gatos/jobs/<job-id>/claims/<worker-id>` where `job-id` is the job’s `content_id` (BLAKE3). The operation will use compare-and-swap semantics to ensure only one worker can claim a given job. Messages MAY carry a ULID for convenience; workers MUST resolve the ULID to the canonical `job-id` by reading the job commit.
 3.  **Execution:** Once a job is claimed, the worker will execute the job's `command` as defined in its manifest. Execution will take place in a sandboxed environment (e.g., a container or a WASM runtime) to ensure isolation.
 4.  **Result & Proof:** Upon completion, the worker will create a `Result` commit. This involves:
     *   Storing any output artifacts (e.g., logs, data) as blobs.
