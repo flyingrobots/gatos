@@ -36,6 +36,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      Required-Quorum: 2-of-3@leads
      Expire-At: 2025-12-01T00:00:00Z
      Policy-Rule: governance.publish.artifact
+     Created-By: user:alice
      ```
    - `Proposal-Id` is the `content_id` (BLAKE3 of canonical proposal envelope).
 
@@ -48,6 +49,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      Proposal-Id: blake3:<hex>
      Approval-Id: blake3:<hex>
      Signer: ed25519:<pubkey>
+     Expires-At: 2025-12-01T00:00:00Z  # OPTIONAL
      ```
 
 6. Grant (normative)
@@ -66,6 +68,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      - A sorted list (by `Signer`) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
    - Implementations MUST use canonical JSON (UTF‑8, sorted keys, no insignificant whitespace) to build this envelope prior to hashing. All hex encodings MUST be lowercase.
+   - Storage: The canonical PoC envelope JSON SHOULD be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
 
 8. Governance schema (policy integration)
    - Extend `.gatos/policy.yaml` to declare governance rules:
@@ -98,12 +101,24 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
       Grant-Id: blake3:<hex>
       Revocation-Id: blake3:<hex>
       Reason: <free-text>
+      Revoked-By: user:bob
       ```
     - A new grant MAY also supersede an older one by including `Supersedes: blake3:<grant-id>`.
     - Policy MUST deny governed actions when a matching grant is revoked or superseded.
 
 11. Publication responsibility
-    - The **Ledger Service** (e.g., `gatosd`) MUST watch governance refs and MAY publish bus messages on transitions (e.g., proposal created, quorum reached) to enable automation.
+    - The **Ledger Service** (e.g., `gatosd`) MUST watch governance refs and MAY publish bus messages on transitions (e.g., proposal created, quorum reached, revoked) to enable automation.
+    - Recommended topics:
+      - `gatos.policy.proposal.created`
+      - `gatos.policy.approval.created`
+      - `gatos.policy.grant.created`
+      - `gatos.policy.grant.revoked`
+
+### Security Considerations
+
+- Grants are immutable once committed; changes require revocation or supersedure.
+- Signer private keys SHOULD be protected (offline or delegated to a signing service).
+- Expired proposals MUST NOT be revived post‑TTL; new proposals are required.
 
 ### Diagrams
 
@@ -187,4 +202,3 @@ Together, ADR‑0002 (Job Plane) and ADR‑0003 (Consensus Governance) transform
 
 - `content_id`: BLAKE3 hash of canonical serialization of an unsigned core (see ADR‑0001).
 - Canonical encodings: lowercase hex for BLAKE3 digests; `ed25519:<base64|hex>` for keys/signatures.
-

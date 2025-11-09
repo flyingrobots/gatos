@@ -153,6 +153,10 @@ The normative layout is as follows:
 │       ├── jobs/
 │       │   └── <job-id>/
 │       │       └── claims/<worker-id>
+│       ├── proposals/
+│       ├── approvals/
+│       ├── grants/
+│       └── revocations/
 │       ├── sessions/
 │       ├── audit/
 │       ├── cache/
@@ -578,3 +582,17 @@ Attest-Sig: ed25519:8a77…
 ```
 
 See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definition of `content_id` and canonical serialization.
+
+---
+
+## 20. Governance (Consensus Gate)
+
+Governs gated actions via proposals, approvals, grants (see ADR‑0003). Governance artifacts are Git commits under dedicated refs (see on‑disk layout above). All trailers use canonical, prefixed encodings (e.g., `blake3:<hex>`, `ed25519:<pubkey>`).
+
+### 20.1 Proofs
+
+Governance Proof‑Of‑Consensus envelopes SHOULD be stored canonically under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer on the Grant MUST equal `blake3(envelope_bytes)`.
+
+### 20.2 Bus Topics (recommended)
+
+`gatos.policy.proposal.created`, `gatos.policy.approval.created`, `gatos.policy.grant.created`, `gatos.policy.grant.revoked`.

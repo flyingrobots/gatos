@@ -176,7 +176,7 @@ sequenceDiagram
 
 ## 7. JSONL Protocol
 
-Communication with `gatosd` occurs over a JSONL RPC protocol.
+Communication with `gatosd` occurs over a JSONL RPC protocol. Long‑running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
 
 ```mermaid
 sequenceDiagram
@@ -256,6 +256,17 @@ sequenceDiagram
         Libsodium-->>GATOS: Fail
         GATOS-->>Client: Reject Event
     end
+```
+
+Examples
+
+```json
+{"type":"append_event","id":"01A","ns":"finance","event":{}}
+{"type":"bus.subscribe","id":"01C","topic":"queue.jobs"}
+{"type":"fold_state","id":"01D","ns":"finance","channel":"table","spec":"folds/invoices.yaml"}
+{"type":"governance.proposal.new","id":"02A","action":"publish.artifact","target":"gatos://assets/model.bin","quorum":"2-of-3@leads"}
+{"type":"governance.approval.add","id":"02B","proposal":"blake3:…"}
+{"type":"governance.grant.verify","id":"02C","grant":"blake3:…"}
 ```
 
 ---
@@ -355,3 +366,21 @@ sequenceDiagram
 3.  **Execution:** The worker will execute the job's `command` in a sandboxed environment.
 4.  **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
 5.  **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
+
+---
+
+## 16. Governance CLI & Engine
+
+### CLI Skeleton (normative surface; stub behavior acceptable initially)
+
+- `gatos proposal new --action <id> --target <uri> --quorum <expr> [--ttl <dur>]`
+- `gatos approve --proposal <blake3:…> [--expires-at <ts>]`
+- `gatos grant verify --grant <blake3:…>`
+
+### Group Resolution
+
+Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads`) against `gatos/trust/graph.json`.
+
+### Revocation Propagation
+
+Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
