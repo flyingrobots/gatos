@@ -228,49 +228,49 @@ Here's an example of a "conversation" I, as an LLM agent, might have with **GATO
 *First, I need to establish context. I'll ask GATOS to detect the current repository.*
 
 ```json
-1 {"id": "op-001", "cmd": "repo.detect", "args": {"path": "."}}
+{"id": "op-001", "cmd": "repo.detect", "args": {"path": "."}}
 ```
 
 [GATOS Daemon]
 *GATOS detects the repo, creates the first state snapshot commit, and returns the result along with the commit's SHA as `state_ref`.*
 
 ```json
-1 {"id": "op-001", "ok": true, "state_ref": "9a0bf22...", "result": {"owner": "flyingrobots", "repo": "draft-punks"}}
+{"id": "op-001", "ok": true, "state_ref": "9a0bf22...", "result": {"owner": "flyingrobots", "repo": "draft-punks"}}
 ```
 
 [Me, the LLM Agent]
 *Great. Now I'll list the pull requests, filtering for those authored by `coderabbitai` that have unresolved threads. I'll use the `state_ref` from the previous step to ensure I'm working from the correct state.*
 
 ```json
-1 {"id": "op-002", "cmd": "pr.list", "expect_state": "9a0bf22...", "args": {"author": "coderabbitai", "unresolved": true}}
+{"id": "op-002", "cmd": "pr.list", "expect_state": "9a0bf22...", "args": {"author": "coderabbitai", "unresolved": true}}
 ```
 
 [GATOS Daemon]
 *GATOS finds one matching PR, updates the internal state by caching the result and auto-selecting PR #123 (since it's the only match), and commits the new state.*
 
 ```json
-1 {"id": "op-002", "ok": true, "state_ref": "1d412c9...", "result": {"total": 1, "items": [{"number": 123, "title": "Fix for the main frobnicator"}]}}
+{"id": "op-002", "ok": true, "state_ref": "1d412c9...", "result": {"total": 1, "items": [{"number": 123, "title": "Fix for the main frobnicator"}]}}
 ```
 
 [Me, the LLM Agent]
 *The state now has PR #123 selected. I'll list its unresolved threads. I'll use the new `state_ref` to ensure atomicity.*
 
 ```json
-1 {"id": "op-003", "cmd": "thread.list", "expect_state": "1d412c9...", "args": {"unresolved": true}}
+{"id": "op-003", "cmd": "thread.list", "expect_state": "1d412c9...", "args": {"unresolved": true}}
 ```
 
 [GATOS Daemon]
 *GATOS finds the threads for PR #123, updates the state cache, and returns the list.*
 
 ```json
-1 {"id": "op-003", "ok": true, "state_ref": "2b71c10...", "result": {"total": 9, "items": [{"id": "MDEx...", "body": "This function could be simplified."}, ...]}}
+{"id": "op-003", "ok": true, "state_ref": "2b71c10...", "result": {"total": 9, "items": [{"id": "MDEx...", "body": "This function could be simplified."}, ...]}}
 ```
 
 [Me, the LLM Agent]
 *Now I'll "run" the first thread through my own logic (simulated here by the `llm.send` command with a debug provider). This is the core "thinking" step.*
 
 ```json
-1 {"id": "op-004", "cmd": "llm.send", "expect_state": "2b71c10...", "args": {"thread_id": "MDEx...", "provider": "debug", "debug_result": "success"}}
+{"id": "op-004", "cmd": "llm.send", "expect_state": "2b71c10...", "args": {"thread_id": "MDEx...", "provider": "debug", "debug_result": "success"}}
 ```
 
 [GATOS Daemon]
@@ -278,21 +278,21 @@ Here's an example of a "conversation" I, as an LLM agent, might have with **GATO
 *successful outcome.*
 
 ```json
-1 {"id": "op-004", "ok": true, "state_ref": "3ac2b11...", "result": {"success": true, "output": "Suggested change: `return simplify(foo)`"}}
+{"id": "op-004", "ok": true, "state_ref": "3ac2b11...", "result": {"success": true, "output": "Suggested change: `return simplify(foo)`"}}
 ```
 
 [Me, the LLM Agent]
 *The operation was a success. Now I will perform the final, state-changing action: resolving the thread on the remote. This is a side-effect, so I must explicitly confirm it by setting `confirm: true` (the equivalent of the `--yes` flag).*
 
 ```json
-1 {"id": "op-005", "cmd": "thread.resolve", "expect_state": "3ac2b11...", "args": {"thread_id": "MDEx...", "confirm": true}}
+{"id": "op-005", "cmd": "thread.resolve", "expect_state": "3ac2b11...", "args": {"thread_id": "MDEx...", "confirm": true}}
 ```
 
 [GATOS Daemon]
 *GATOS verifies the state, performs the remote action (e.g., calls the GitHub API), and on success, commits the final state change to its internal Git history, creating a permanent, auditable record of the resolution.*
 
 ```json
-1 {"id": "op-005", "ok": true, "state_ref": "59fd7a4...", "result": {"resolved": true, "thread_id": "MDEx..."}}
+{"id": "op-005", "ok": true, "state_ref": "59fd7a4...", "result": {"resolved": true, "thread_id": "MDEx..."}}
 ```
 
 ***End Scene.***
