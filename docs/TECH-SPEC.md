@@ -263,3 +263,22 @@ Migrating an existing application to GATOS can be done in a phased approach to m
 
 - Once parity is proven, producers are switched to write only to GATOS.
 - The existing system can be kept in a read-only mode for a short period to allow for rollback if necessary, before being retired.
+
+---
+
+## 14. Wire-Format Invariants
+
+To ensure interoperability and hash stability across implementations, GATOS adopts the following
+wire‑format invariants:
+
+- Canonical encoding: bincode v2 with `config::standard()` for all canonically serialized types.
+- Endianness: Multi‑byte primitives are encoded by bincode; consumers MUST treat values as encoded
+  bytes without reinterpretation.
+- Fixed‑size arrays: Types like `Hash = [u8; 32]` are encoded verbatim as fixed‑length byte arrays.
+- Floats: Avoid in content‑addressed data. If floats are required by policy, they MUST be treated as
+  raw IEEE‑754 bytes and documented for the specific type.
+- Versioning: Schema evolution MUST be explicit (e.g., enums or versioned wrappers). Reordering
+  fields or changing enum variant orders is a breaking change that alters bytes.
+
+These rules complement the module‑level documentation in `gatos‑ledger‑core` and the event envelope
+schemas in `SPEC.md`.
