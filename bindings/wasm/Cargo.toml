@@ -1,15 +1,15 @@
 [package]
 name = "gatos-wasm-bindings"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "WebAssembly bindings for GATOS core libraries"
-license = "Apache-2.0"
-authors = ["flyingrobots"]
-repository = "https://github.com/flyingrobots/gatos"
 homepage = "https://github.com/flyingrobots/gatos"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2.104" # Pin to specific version for reproducibility
+wasm-bindgen = { workspace = true } # Pinned in workspace

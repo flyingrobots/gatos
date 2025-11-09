@@ -1,11 +1,14 @@
 [package]
 name = "gatos-ledger-core"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
-blake3 = { version = "1.5", default-features = false }
-heapless = "0.8" # For no_std collections
-bincode = { version = "2.0.1", default-features = false, features = ["alloc", "derive"] } # For serialization
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_with = { version = "3.8", default-features = false, features = ["macros"] }
+blake3 = { workspace = true, default-features = false }
+heapless = { workspace = true } # For no_std collections
+bincode = { workspace = true, default-features = false, features = ["alloc", "derive"] } # For serialization
+serde = { workspace = true, default-features = false, features = ["derive"] }
+serde_with = { workspace = true, default-features = false, features = ["macros"] }

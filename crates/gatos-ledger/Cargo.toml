@@ -1,7 +1,10 @@
 [package]
 name = "gatos-ledger"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 gatos-ledger-core = { path = "../gatos-ledger-core", optional = true }
