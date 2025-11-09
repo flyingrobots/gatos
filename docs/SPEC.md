@@ -540,6 +540,43 @@ Two primary event types are used:
 - `jobs.enqueue`: Represents a new job being added to the queue. Includes job ID, priority, payload pointer, and policy/signature details.
 - `jobs.result`: Records the outcome of a job, including status (ok/fail), duration, and attachments for logs.
 
+Example envelopes (canonical JSON shape; values abbreviated for clarity):
+
+```json
+{
+  "type": "jobs.enqueue",
+  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+  "actor": "agent:producer-1",
+  "caps": ["bus:publish"],
+  "labels": ["exportable"],
+  "payload": {
+    "job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+    "priority": "high",
+    "payload_ptr": {"kind":"blobptr","algo":"blake3","hash":"ab…cd","size":12345}
+  },
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
+```json
+{
+  "type": "jobs.result",
+  "ulid": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7",
+  "actor": "agent:worker-42",
+  "caps": ["journal:append"],
+  "labels": [],
+  "payload": {"job_id": "01HQ7Z4J7QWJ2CP2Z0Q9Y4K1P7", "ok": true, "duration_ms": 5230, "attempts": 1},
+  "attachments": [
+    {"kind":"blobptr","algo":"blake3","hash":"de…ad","size":2048,"labels":["exportable"]}
+  ],
+  "policy_root": "sha256:…",
+  "trust_chain": "sha256:…",
+  "sig": "ed25519:…"
+}
+```
+
 ### 18.3 State Folds
 
 Deterministic folds compute the state of the work queue:
