@@ -15,3 +15,5 @@ crate-type = ["cdylib"] # C dynamic library
 
 [dependencies]
 libc = { workspace = true } # For c_char - pinned in workspace
+gatos-ledger-core = { version = "0.1.0", path = "../../crates/gatos-ledger-core" }
+hex = { workspace = true }
