@@ -11,6 +11,6 @@ categories = ["filesystem", "database", "data-structures"]
 
 [dependencies]
 git2 = { workspace = true }
-gatos-ledger-core = { version = "0.1.0", path = "../gatos-ledger-core" }
+gatos-ledger-core = { path = "../gatos-ledger-core" }
 hex = { workspace = true }
 blake3 = { workspace = true }
