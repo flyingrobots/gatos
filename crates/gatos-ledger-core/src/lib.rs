@@ -75,14 +75,17 @@ pub struct Commit {
 ///
 /// Determinism: given identical input fields, the returned `Hash` is identical
 /// across platforms and architectures.
-#[must_use]
+/// Compute the deterministic content hash for a commit.
 ///
-/// # Panics
-/// Panics if bincode serialization fails for the provided `commit` under the
-/// configured canonical encoding. This should not happen for well-formed
-/// values and indicates a programming error.
-pub fn compute_commit_id(commit: &Commit) -> Hash {
-    blake3::hash(&encode_to_vec(commit, config::standard()).unwrap()).into()
+/// Uses bincode with standard configuration for canonical serialization,
+/// followed by BLAKE3 hashing. Deterministic across platforms for identical
+/// inputs and a fixed serialization config.
+///
+/// # Errors
+/// Returns an error if serialization fails.
+pub fn compute_commit_id(commit: &Commit) -> Result<Hash, bincode::error::EncodeError> {
+    let bytes = encode_to_vec(commit, config::standard())?;
+    Ok(blake3::hash(&bytes).into())
 }
 
 // Test support: enable std for unit tests.
@@ -125,8 +128,8 @@ mod tests {
     #[test]
     fn test_compute_commit_id_stability() {
         let c = fixed_commit();
-        let id1 = compute_commit_id(&c);
-        let id2 = compute_commit_id(&c);
+        let id1 = compute_commit_id(&c).unwrap();
+        let id2 = compute_commit_id(&c).unwrap();
         assert_eq!(id1, id2);
     }
 }
