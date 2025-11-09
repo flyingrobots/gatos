@@ -15,3 +15,5 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = { workspace = true } # Pinned in workspace
+gatos-ledger-core = { version = "0.1.0", path = "../../crates/gatos-ledger-core" }
+hex = { workspace = true }
