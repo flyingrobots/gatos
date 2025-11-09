@@ -1,3 +1,3 @@
-pub fn hello_policy() -> String {
-    "Hello from gatos-policy!".to_string()
+pub fn hello_policy() -> &'static str {
+    "Hello from gatos-policy!"
 }

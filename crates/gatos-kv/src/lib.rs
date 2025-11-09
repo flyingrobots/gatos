@@ -1,3 +1,3 @@
-pub fn hello_kv() -> String {
-    "Hello from gatos-kv!".to_string()
+pub fn hello_kv() -> &'static str {
+    "Hello from gatos-kv!"
 }
