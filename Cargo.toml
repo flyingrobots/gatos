@@ -19,6 +19,8 @@ edition = "2021"
 authors = ["flyingrobots"]
 license = "Apache-2.0"
 repository = "https://github.com/flyingrobots/gatos"
+documentation = "https://docs.rs/gatos-ledger"
+homepage = "https://github.com/flyingrobots/gatos"
 
 [workspace.dependencies]
 blake3 = { version = "1.8.2", default-features = false }
