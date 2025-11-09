@@ -39,8 +39,9 @@ pub type PubKey = [u8; 32];
 /// Errors produced by storage backends implementing [`ObjectStore`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StoreError {
-    /// Underlying backend I/O or system error.
-    Io,
+    /// Underlying backend I/O or system error. Carries backend-provided detail
+    /// where available to aid diagnostics in `std` backends.
+    Io(String),
     /// Data corruption detected (e.g., hash mismatch).
     Corruption,
     /// Operation unsupported by this backend.

@@ -7,7 +7,6 @@ pub struct GitStore {
 
 impl GitStore {
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]
     pub fn new(repo: Repository) -> Self {
         Self { repo }
     }
@@ -20,10 +19,10 @@ impl ObjectStore for GitStore {
             return Err(StoreError::Corruption);
         }
 
-        let odb = self.repo.odb().map_err(|_| StoreError::Io)?;
+        let odb = self.repo.odb().map_err(|e| StoreError::Io(e.to_string()))?;
         let git_oid = odb
             .write(git2::ObjectType::Blob, data)
-            .map_err(|_| StoreError::Io)?;
+            .map_err(|e| StoreError::Io(e.to_string()))?;
 
         let ref_name = format!("refs/gatos/blake3-map/{}", hex::encode(id));
         self.repo
@@ -33,7 +32,7 @@ impl ObjectStore for GitStore {
                 true,
                 "gatos: map blake3 hash to git oid",
             )
-            .map_err(|_| StoreError::Io)?;
+            .map_err(|e| StoreError::Io(e.to_string()))?;
         Ok(())
     }
 
@@ -46,13 +45,13 @@ impl ObjectStore for GitStore {
                 if e.code() == git2::ErrorCode::NotFound {
                     return Ok(None);
                 }
-                return Err(StoreError::Io);
+                return Err(StoreError::Io(e.to_string()));
             }
         };
         let Some(git_oid) = reference.target() else {
             return Err(StoreError::Invariant);
         };
-        let blob = self.repo.find_blob(git_oid).map_err(|_| StoreError::Io)?;
+        let blob = self.repo.find_blob(git_oid).map_err(|e| StoreError::Io(e.to_string()))?;
         let bytes = blob.content().to_vec();
         Ok(Some(bytes))
     }
