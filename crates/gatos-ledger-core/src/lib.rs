@@ -70,12 +70,6 @@ pub struct Commit {
     pub signature: [u8; 64],
 }
 
-/// Compute the canonical commit id.
-///
-/// The id is `blake3( bincode_v2_canonical(commit) )`.
-///
-/// Determinism: given identical input fields, the returned `Hash` is identical
-/// across platforms and architectures.
 /// Compute the deterministic content hash for a commit.
 ///
 /// Uses bincode with standard configuration for canonical serialization,
