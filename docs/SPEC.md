@@ -599,11 +599,13 @@ Exactly-once delivery is achieved using the GATOS message bus:
 2.  **Consume**: A worker subscribes to the topic, de-duplicates messages, and processes the job. Upon completion, it appends a `jobs.result` event to the journal and writes a `gmb.ack` to the bus.
 3.  **Commit**: A designated coordinator process (or the original publisher, if operating in
     coordinator mode) observes the required quorum of `gmb.ack` messages and publishes a
-    `gmb.commit` message to finalize the transaction. Coordinator election and failover are
-    implementation-specific (e.g., leader-per-topic); transactions must carry a unique id so any
-    actor can safely retry/complete after crashes. Coordinators MUST maintain durable state or rely
-    on idempotent commit semantics so that retries do not duplicate effects; include timeouts and
-    retry rules for completing or aborting a transaction.
+    `gmb.commit` message to finalize the transaction.
+
+    Election and failover mechanisms are implementation‑specific (e.g., Raft, static
+    leader‑per‑topic). Safety is normative: coordinators MUST guarantee that retries do not
+    duplicate effects by EITHER maintaining durable state OR implementing idempotent commit
+    semantics. Transactions MUST carry unique identifiers, and implementations MUST define
+    timeouts and retry/abort rules for recovery.
 
 ### 18.5 Feature Implementation
 
