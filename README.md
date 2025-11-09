@@ -145,26 +145,62 @@ Ask yourself...
 **GATOS:** _Git As **the** Operating Surface™_
 
 > [!WARNING]
-> Exposure to GATOS may include side-effects such as: feeling "badass", becoming curious about Open-Source Software, speaking to the computer, and the sensation that time has elaspsed at an abnormally fast pace. In a controlled study, 1% of participants lost their car keys, but they came back to retrieve them the following day. Please, enjoy GATOS responsibly.
+> Exposure to GATOS may include side-effects such as: feeling "badass", becoming curious about Open-Source Software, speaking to the computer, and the sensation that time has elapsed at an abnormally fast pace. In a controlled study, 1% of participants lost their car keys, but they came back to retrieve them the following day. Please, enjoy GATOS responsibly.
 
 ---
 
-## OK, WTF is GATOS?!!
+## OK, ENOUGH. WTF is GATOS?!! WTF is an "Operating Surface"?!!
 
-> ***How can a human and an AI collaborate effectively on complex tasks?***
+### Git: As The Operating Surface
+
+**GATOS** stands for **Git As The Operating Surface**. It's a new kind of **programmable**, **distributed backend** that uses a standard Git repository for all the critical functions of a distributed system:
+
+- **Database**: The Git history serves as the primary data store ("shape").
+- **Message Bus**: It facilitates communication and state  ("folds").
+- **Source of Truth**: The repository's history is the single, verifiable source of all state.
+
+The ultimate goal is to create a workflow where every action, whether by a human or an AI agent, is recorded as a **verifiable, time-addressable commit**.
+
+### What is an "Operating Surface"?
+
+> **Operating Surface** — the layer where state, policy, and computation converge.
+> GATOS turns Git’s history into an executable, auditable operating surface.
+
+or:
+
+> **Operating Surface** (n.)
+> A distributed environment where every operation is a verifiable state transition in a shared history.
+
+In simpler terms, it's where your application's data (state), rules (policy), and logic (computation) are all unified and managed. Usually, that's "process space". GATOS opens things up, and uses the history of a Git repository to model the operating surface. ***GATOS transforms Git from a simple version control tool into a fully functional, programmable, executable platform***.
+
+## Git Beyond Version Control
+
+GATOS comes from the realization that when these core principles are combined, the result is frickin' sweet: **Git can be used for _way more_ than just version control**.
+
+| **Doctrine** | **Why it's rad** |
+|--------------|------------------|
+| Git-Native | Literally the most battle-tested distributed state management software on Earth. |
+| Deterministic | All state transitions are predictable and bit-for-bit verifiable. |
+| Immutable & Auditable | Every state change is a cryptographically-signed commit, providing a complete, permanent record. |
+| Offline-First & Distributed | The entire state is contained within the Git repo, allowing for offline work and synchronization via standard git push/pull. |
+| Time-Travel | You can inspect and branch from any previous state in the history. |
+
+## Git can do what?!
 
 This project is special. Its origin story, a practical problem leading to a profound architectural insight, is the hallmark of truly innovative software.
 
-**GATOS** is not just an abstract specification; it is the concrete answer to the question, *"How can a human and an AI collaborate effectively on complex tasks?"* The entire architecture (the event-sourced ledger, the deterministic state, the policy engine, the JSONL protocol) is purpose-built to enable this new kind of human-computer interaction. It's a tool built not just for getting a job done, but for *thinking and remembering the process of getting it done*.
+> ***How can a human and an AI collaborate effectively on complex tasks?***
+
+**GATOS** is not *just* an abstract specification; it is the **concrete** answer to the question, *"How can a human and an AI collaborate effectively on complex tasks?"* The entire architecture (the event-sourced ledger, the deterministic state, the policy engine, the JSONL protocol) is purpose-built to enable this new kind of human-computer interaction. It's a tool built not just for getting a job done, but for *thinking and remembering the process of getting it done*. **GATOS takes what Git already was doing and unlocks its super powers.**
 
 The potential here is immense, and it extends far beyond the initial [draft-punks](https://github.com/flyingrobots/daft-punks) tool.
 
 ### A New Application Backend
 
-**GATOS** is effectively a new kind of serverless, distributed, auditable backend. Any application that needs state management, auditability, and offline capabilities could be built on it. 
+**GATOS** is effectively **a new kind of serverless, distributed, auditable backend**. Any application that needs **state management**, **auditability**, and **offline capabilities** could be built on it. 
 
-Think of a kanban board where every card move is a verifiable commit, or a configuration management system where every change is a signed, auditable event.
-      
+Imagine a kanban board where every card move is a verifiable commit, or a configuration management system where every change is a signed, auditable event. That's what GATOS gives you: a distributed, cryptographically-secure, auditable, offline-first but publishable state space, built on top of the most battle-tested distributed state management software on Earth: ***Git***.
+
 ### The "Operating System" for AI Agents 
 
 > ***An AI agent could use the `git-mind` protocol to propose a change, request approval from a human via the consensus mechanism, and execute the change, all while leaving a perfect audit trail.***
@@ -213,205 +249,205 @@ This design provides several powerful benefits:
 - **Policy-Driven Governance**: A flexible policy engine allows for fine-grained control over actions, including multi-party approval workflows ("N of M" consensus).
 - **Active Orchestration**: Natively schedule, execute, and record the results of distributed, asynchronous jobs.
 
-## Conversations with *GATOS*
+## The *GATOS* Engine in Action
 
-### An AI Conversation with *GATOS*
+Here's some examples, to help show off how each of the five planes of the GATOS operating surface, how each one works, and why it lets you do cool stuff.
 
-Here's an example of a "conversation" I, as an LLM agent, might have with **GATOS**, using the `git gatos` tool and its JSONL protocol as described in the [origin story](./docs/ok-real-talk.md).
+### The Ledger — Immutable Memory (`gatos-ledger`) 🔗
 
-**Scenario**: My goal is to find unresolved review threads from `coderabbitai` in a specific pull request, generate a response for one, and then resolve it. I will interact with **GATOS** by sending JSON commands to the `git gatos serve --stdio` process and receiving JSON responses.
+**Responsibility:** Record all events as a cryptographically-signed, append-only history.
+This is the source of truth every other plane reads from.
 
-<details>
-*(Meta-commentary is in italics)*
+**How it works:** Each action — user command, job result, or policy approval — emits a signed event commit. The commit hash itself is the proof that the event occurred.
+
+```bash
+git gatos event add --type thread.resolve --args '{"pr":123,"thread":"MDEx..."}'
+```
+
+Produces:
+
+```bash
+commit 9a0bf22...
+Event: thread.resolve
+Author: james@flyingrobots.dev
+Proof-Of-Event: blake3:c0ffee…
+```
+
+Anyone can clone, verify signatures, and replay the ledger to rebuild the same state.
+
+### The State — Folding the Surface (`gatos-echo`) ➿
+
+**Responsibility**: Turn Git’s raw event history into a single, deterministic **shape**, the canonical snapshot of “what the world looks like right now.” Given the same history and policy, every node computes the same result, bit-for-bit.
+
+**How it works:** The State Plane (powered by `gatos-echo`) reads the immutable event log from the Ledger Plane and folds it into a reproducible state by performing a **meld**: *the deterministic merge of two shapes into a new, consistent form.*
+
+Every fold is pure and bit-for-bit deterministic: given the same events and policy, every replica will compute the same shape hash.
+
+When two branches diverge, the State Plane performs a meld — a deterministic fold-merge that reconciles the two shapes into one new, provably consistent shape.
+Instead of Git’s “conflicts,” you get mathematical agreement: the same inputs always produce the same output.
+
+**Example:** Deterministic Merges (aka **"Mind-Melds"**)
 
 ***Begin Scene.***
 
-[Me, the LLM Agent]
-*First, I need to establish context. I'll ask GATOS to detect the current repository.*
+[Developer A]
+*Adds a new configuration in their branch.*
 
-```json
-{"id": "op-001", "cmd": "repo.detect", "args": {"path": "."}}
+```bash
+git gatos event add --config security-update.yaml
 ```
+
+[Developer B]
+*Changes a different part of the system on another branch.*
+
+```bash
+git gatos event add --config security-update.yaml
+```
+
+[Both]
+*Push their work to the same repository. Normally Git would raise a merge conflict.*
 
 [GATOS Daemon]
-*GATOS detects the repo, creates the first state snapshot commit, and returns the result along with the commit's SHA as `state_ref`.*
+*The State Plane detects two valid histories and runs a meld fold:*
 
-```json
-{"id": "op-001", "ok": true, "state_ref": "9a0bf22...", "result": {"owner": "flyingrobots", "repo": "draft-punks"}}
+```bash
+refs/gatos/state/melds/<ulid>
+├── parent: feature-A@9a0bf22…
+├── parent: security-update@1d412c9…
+└── result:  meld-root@3ac2b11…
 ```
 
-[Me, the LLM Agent]
-*Great. Now I'll list the pull requests, filtering for those authored by `coderabbitai` that have unresolved threads. I'll use the `state_ref` from the previous step to ensure I'm working from the correct state.*
+*The meld fold analyzes both shapes, finds no policy violations, and produces a new shape hash:*
 
-```json
-{"id": "op-002", "cmd": "pr.list", "expect_state": "9a0bf22...", "args": {"author": "coderabbitai", "unresolved": true}}
+```bash
+Shape-Root: blake3:6e80d2c…
+Proof-of-Meld: blake3:3ac2b11…
 ```
 
-[GATOS Daemon]
-*GATOS finds one matching PR, updates the internal state by caching the result and auto-selecting PR #123 (since it's the only match), and commits the new state.*
-
-```json
-{"id": "op-002", "ok": true, "state_ref": "1d412c9...", "result": {"total": 1, "items": [{"number": 123, "title": "Fix for the main frobnicator"}]}}
-```
-
-[Me, the LLM Agent]
-*The state now has PR #123 selected. I'll list its unresolved threads. I'll use the new `state_ref` to ensure atomicity.*
-
-```json
-{"id": "op-003", "cmd": "thread.list", "expect_state": "1d412c9...", "args": {"unresolved": true}}
-```
-
-[GATOS Daemon]
-*GATOS finds the threads for PR #123, updates the state cache, and returns the list.*
-
-```json
-{"id": "op-003", "ok": true, "state_ref": "2b71c10...", "result": {"total": 9, "items": [{"id": "MDEx...", "body": "This function could be simplified."}, ...]}}
-```
-
-[Me, the LLM Agent]
-*Now I'll "run" the first thread through my own logic (simulated here by the `llm.send` command with a debug provider). This is the core "thinking" step.*
-
-```json
-{"id": "op-004", "cmd": "llm.send", "expect_state": "2b71c10...", "args": {"thread_id": "MDEx...", "provider": "debug", "debug_result": "success"}}
-```
-
-[GATOS Daemon]
-*GATOS records the result of the LLM operation in its journal (via a commit trailer) and updates the state. It returns the simulated*
-*successful outcome.*
-
-```json
-{"id": "op-004", "ok": true, "state_ref": "3ac2b11...", "result": {"success": true, "output": "Suggested change: `return simplify(foo)`"}}
-```
-
-[Me, the LLM Agent]
-*The operation was a success. Now I will perform the final, state-changing action: resolving the thread on the remote. This is a side-effect, so I must explicitly confirm it by setting `confirm: true` (the equivalent of the `--yes` flag).*
-
-```json
-{"id": "op-005", "cmd": "thread.resolve", "expect_state": "3ac2b11...", "args": {"thread_id": "MDEx...", "confirm": true}}
-```
-
-[GATOS Daemon]
-*GATOS verifies the state, performs the remote action (e.g., calls the GitHub API), and on success, commits the final state change to its internal Git history, creating a permanent, auditable record of the resolution.*
-
-```json
-{"id": "op-005", "ok": true, "state_ref": "59fd7a4...", "result": {"resolved": true, "thread_id": "MDEx..."}}
-```
+*The merged configuration appears automatically in the workspace—no conflicts, no lost edits.
+Anyone else folding the same two branches will compute the exact same shape and hash.*
 
 ***End Scene.***
-</details>
 
-In this conversation, every step is a small, atomic, and verifiable state change recorded in a Git history. I can stop at any point, and
-GATOS will remember the context. If another process were to interact with it, my *expect_state* check would fail, preventing me from acting on stale data. ***This is the power of the "Conversational GitOps" model.***
 
-### A Human Conversation with GATOS
+**Why it matters:**
 
-**Scenario**: A developer, James, wants to check on his open pull requests and then look at some automated reviews from `coderabbitai`. He uses an app built on the GATOS engine, "draft-punks" (`git dp`), which pulls down PR comments for processing.
+- Deterministic, conflict-free merges.
+- Any replica can replay the same fold and get the same result.
+- The shape root becomes the “state hash” for the rest of the system: what jobs attest to and what policies govern.
 
-<details>
-*(Meta-commentary is in italics)*
+### The Policy — Governance via Reflex (`gatos-policy`) ⚖️
+
+How does GATOS decide what's allowed and who can do it? It uses **Reflex™**.
+
+"Ref" = git state.     
+"Lex" = law. 
+"Ref" + "Lex" = "Reflex".   
+
+Governance policy is embedded directly in Git's history. Reflex is Git's self-governing reflex arc.
+
+**Responsibility**: Enforcing rules, governance, and multi-party consensus before allowing state transitions.
+
+**How it Works**: Policies are code/rules stored in the repository. When a high-impact command is issued, the Policy Plane checks the rules. It can block the operation with a `POLICY_BLOCK` error until necessary conditions (like N-of-M signatures) are met.
+
+#### Example: Multi-Party Deployment Approval 
+
+Here is a short example that shows how GATOS handles governance: the **Policy Plane** in action. Rather than just API calls, this example shows off GATOS's true "backend" capabilities.
+
+ (This shows how GATOS enforces rules before permitting a state change.)
 
 ***Begin Scene.***
 
-[James]
-*First, I'll list my own open PRs that have unresolved threads.*
+[External System (e.g., CI/CD)]    
+*I want to deploy to production, but GATOS requires two signatures for this action.*
 
-```bash
-git dp pr list --author=James --unresolved
+```json
+{"id": "op-006", "cmd": "asset.deploy", "expect_state": "59fd7a4...", "args": {"target": "production-api-v2"}}
 ```
 
-[GATOS CLI]
-*GATOS finds two matching PRs and displays them in a table. The internal state now contains this list of two PRs, but nothing is selected yet.*
+[GATOS Daemon]   
+*GATOS checks the 'production-deploy' policy and blocks the request, committing an event that records the attempt.*
 
-```bash
-Found 2 pull requests for @James with unresolved threads.
-
-NUM  TITLE                         THREADS  AGE
----  -------------------------     -------  ---
-123  Fix for the main frobnicator   3     2d
-125  Update documentation           1     5h
-
-To select one, run: git dp pr select <NUM>
+```json
+{"id": "op-006", "ok": false, "state_ref": "6e80d2c...", "error": "POLICY_BLOCK", "details": "Requires M of N approval. Waiting for signatures from 'ops' and 'security' owners."}
 ```
 
-[James]
-*Okay, I want to look at the first one.*
+[Human/Agent]   
+*The human agent adds their signed approval to the system.*
 
-```bash
-git dp pr select 123
+"What do we have here? Looks like we've got a live one. Another deployment, eh? Alright, I'll sign off on it."
+
+```json
+{"id": "op-007", "cmd": "policy.approve", "expect_state": "6e80d2c...", "args": {"event_id": "op-006", "signature": "jkirby/xyz123"}}
 ```
 
-[GATOS CLI]
-*The tool updates its state to mark PR #123 as the active selection. This is committed to the internal `refs/mind/sessions/main` history.*
+[GATOS Daemon]   
+*The policy is now satisfied. GATOS executes the deployment logic, records the final success, and commits the state.*
 
-```bash
-✅ Selected PR #123: Fix for the main frobnica...
-```
-
-[James]
-*Now that I have a PR selected, I can ask for its threads without specifying the PR number again. The tool remembers the context.*
-
-```bash
-git dp thread list
-```
-
-[GATOS CLI]
-*GATOS uses the selected PR from its state to fetch and display only the threads for PR #123.*
-
-```bash
-Displaying 3 threads for PR #123.
-
-ID     AUTHOR         BODY
-----   ------------   ---------------------------------
-T01    coderabbitai   This function could be simplified.
-T02    another-dev    Good catch!
-T03    coderabbitai   Nit: extra whitespace.
-```
-
-[James]
-*Okay, I'm done with my PRs for now. I want to switch gears and see what `coderabbitai` has been up to elsewhere. I'll start a new query.*
-
-```bash
-git dp pr list --author=coderabbitai
-```
-
-[GATOS CLI]
-*This is the key moment. Because James initiated a new top-level query (`pr list`), GATOS resets the previous context. The old selection (PR #123) and its cached threads are cleared before running the new command. It finds one PR from `coderabbitai` and, since it's the only result, it's automatically selected.*
-
-```bash
-Found 1 pull request for @coderabbitai.
-
-NUM  TITLE                      THREADS  AGE
----  -------------------------  -------  ---
-456  Automated dependency update      5  1h
-
-✅ Auto-selected only result: PR #456. 
-```
-
-[James]
-*Just to be sure, I'll check the current state.*
-
-```bash
-git dp state show
-```
-
-[GATOS CLI]
-*The output confirms that the state was reset and now reflects the new context.*
-
-```bash
-Current GATOS State (Session: main, Ref: 8c03aef...)
-
-REPO
-  owner: flyingrobots
-  repo:  draft-punks
-
-SELECTION
-  pr: 456
+```json
+{"id": "op-007", "ok": true, "state_ref": "81a4f5b...", "result": {"status": "policy_satisfied", "action_taken": "deployment_started"}}
 ```
 
 ***End Scene.***
-</details>
 
-This flow shows how GATOS acts like a helpful assistant, remembering your context while you're focused on a task, but smartly resetting when you clearly indicate you're starting a new one.
+### The Message — Semantics and Git (`gatos-mind`) 🧠
+
+**Responsibility**: Managing the contextual, session-based interaction with the user or agent. This is the "Conversational GitOps" layer.
+
+**How it Works**: This plane manages the "mind" of the current session. It uses an internal ref (like `refs/mind/sessions/main`) to track ephemeral context, such as the currently selected repository, PR, or thread ID. This allows for simple, context-aware commands.
+
+**Example**: Context-Aware Commands
+
+| Command               | Action         | Explanation |
+|------------------------|----------------|--------------|
+| `pr.select 123`        | **Set Context** | The Message Plane commits a context change to the session ref, setting `context.pr = 123`. |
+| `thread.list`          | **Use Context** | The next command doesn't need a PR number. The Message Plane automatically retrieves threads for `context.pr = 123`. |
+| `pr.list --all`        | **Reset Context** | A new top-level query triggers the Message Plane to clear the previous `pr` and `thread` context before running the new command, preventing stale context. |
+
+This makes GATOS feel alive: it remembers what you’re doing, but resets when you change focus.
+
+### The Job — Breathing Life into Git (`gatos-compute`) ⚙️
+
+**Responsibility:** Scheduling, executing, and recording the results of distributed, asynchronous computation.
+
+**How it Works:** The Job Plane treats jobs as state. A process creates a job event (e.g., `job.schedule.run_tests`). A worker picks up the job, and on completion, commits a result event (e.g., `job.result.tests_passed`) to the Ledger. The entire workflow is captured in the Git history.
+
+**Example:** Distributed Testing
+
+**Event:** *A commit is pushed to the main branch.*
+
+**Job Plane Action:** *The CI policy triggers GATOS to commit a job.schedule event: "Run tests on SHA a1b2c3d."*
+
+**External Worker:** *A CI Runner (outside GATOS) sees the job.schedule event in the Git history/message bus and starts the tests.*
+
+**Result Event:** *When the tests pass, the CI Runner commits a job.result event: "Tests passed for SHA a1b2c3d with result SUCCESS."*
+
+**State Plane Update:** *The State Plane folds this result, and the current state of SHA a1b2c3d is updated to show test_status: passed.*
+
+
+This architecture ensures that even external, asynchronous computation is fully auditable and recorded deterministically within the Git repository's history.
+
+## 💥 The Power of Convergence: This is GATOS
+
+What you've read just now is more than a novel application; it's a re-platforming of distributed computing.
+
+By fusing its five planes, Ledger, State, Policy, Message, and Job, and grounding them in the immutable, globally replicated power of Git, GATOS does more than just manage data; it manages auditable, deterministic ***reality***.
+
+This convergence unlocks crazy powerful stuff. Foundational capabilities that were previously complex, centralized, or required a blockchain:
+
+**Zero-Trust Collaboration:** Build applications where every action is a cryptographically-signed, verifiable proof, making the audit trail perfect for AI-human interaction.
+
+**Decentralized Governance:** Embed complex regulatory logic directly into the application's source of truth, enforcing multi-party approval and policy at the protocol level.
+
+**Time-Travel Computing:** Fork your entire state, process, and data to any point in the past, experiment with changes, and then merge the results deterministically.
+
+**GATOS** is a system that is offline-first, always auditable, and built on the most resilient distribution platform in the world.
+
+**GATOS** is the end of databases that lie and systems that forget. This is the Operating Surface you've been waiting for.
+
+***FINALLY. Git As The Operating Surface.™***
+
+Now, you *git* it.
 
 ---
 
