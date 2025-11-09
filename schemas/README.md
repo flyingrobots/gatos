@@ -10,6 +10,5 @@ Versioning policy
 
 Canonical encodings
 
-- BLAKE3 digests: `blake3:<lowercase hex32>`
+- BLAKE3 digests: `blake3:<lowercase 64-hex>`
 - Ed25519 keys/signatures: `ed25519:<hex|base64>`
-

@@ -4,7 +4,7 @@
   "title": "GATOS Governance Proposal (v1)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["action", "target", "proposal_id", "policy_rule"],
+  "required": ["action", "target", "proposal_id", "policy_rule", "created_by"],
   "properties": {
     "action": { "type": "string" },
     "target": { "$ref": "../../v1/common/ids.schema.json#/$defs/uri" },
@@ -15,4 +15,3 @@
     "created_by": { "type": "string" }
   }
 }
-
