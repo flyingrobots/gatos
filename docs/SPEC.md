@@ -589,9 +589,15 @@ Deterministic folds compute the state of the work queue:
 
 Exactly-once delivery is achieved using the GATOS message bus:
 
-1.  **Publish**: A producer appends a `jobs.enqueue` event to the journal and then publishes a `gmb.msg` to the message bus with `QoS=exactly_once`.
+1.  **Publish**: A producer appends a `jobs.enqueue` event to the journal and then publishes a `bus.message` to the message bus with `QoS=exactly_once`.
 2.  **Consume**: A worker subscribes to the topic, de-duplicates messages, and processes the job. Upon completion, it appends a `jobs.result` event to the journal and writes a `gmb.ack` to the bus.
-3.  **Commit**: A coordinator (or the original publisher) observes the `gmb.ack` and publishes a `gmb.commit` message, finalizing the transaction.
+3.  **Commit**: A designated coordinator process (or the original publisher, if operating in
+    coordinator mode) observes the required quorum of `gmb.ack` messages and publishes a
+    `gmb.commit` message to finalize the transaction. Coordinator election and failover are
+    implementation-specific (e.g., leader-per-topic); transactions must carry a unique id so any
+    actor can safely retry/complete after crashes. Coordinators MUST maintain durable state or rely
+    on idempotent commit semantics so that retries do not duplicate effects; include timeouts and
+    retry rules for completing or aborting a transaction.
 
 ### 18.5 Feature Implementation
 
