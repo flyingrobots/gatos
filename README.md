@@ -191,16 +191,17 @@ Feet on the ground, head out of the clouds, we are just getting started.
 
 The system is built on a Hexagonal Architecture ("Ports and Adapters"), with a portable `no_std` core that defines the pure business logic, surrounded by "adapters" that connect it to the outside world (like a Git backend or a JSONL server). This makes the core logic highly testable, secure, and capable of running anywhere from a server to a WASM sandbox.
 
-### The Four Planes of GATOS
+### The Five Planes of GATOS
 
-The architecture is conceptually divided into four distinct planes:
+The architecture is conceptually divided into five distinct planes:
 
-| Plane   | Responsibility         | Crate          |
-| ------- | ---------------------- | -------------- |
-| Ledger  | Signed events / proofs | `gatos-ledger` |
-| State   | Deterministic folds    | `gatos-echo`   |
-| Policy  | Rules & capabilities   | `gatos-policy` |
-| Message | Bus / sessions         | `gatos-mind`   |
+| Plane   | Responsibility              | Crate           |
+| ------- | --------------------------- | --------------- |
+| Ledger  | Signed events / proofs      | `gatos-ledger`  |
+| State   | Deterministic folds         | `gatos-echo`    |
+| Policy  | Rules & capabilities        | `gatos-policy`  |
+| Message | Bus / sessions              | `gatos-mind`    |
+| Job     | Distributed job execution   | `gatos-compute` |
 
 Interaction with the system is handled by the `gatosd` daemon, which exposes a simple JSONL RPC protocol. This allows both human-driven CLIs and automated agents (like LLMs) to "converse" with the repository in a structured, deterministic way.
 
@@ -210,6 +211,7 @@ This design provides several powerful benefits:
 - **Time-Travel**: Any previous state can be checked out, inspected, and branched from.
 - **Offline-First & Distributed**: The entire state lives within the Git repository, which can be used offline and synchronized via normal `git push/pull`.
 - **Policy-Driven Governance**: A flexible policy engine allows for fine-grained control over actions, including multi-party approval workflows ("N of M" consensus).
+- **Active Orchestration**: Natively schedule, execute, and record the results of distributed, asynchronous jobs.
 
 ## Conversations with *GATOS*
 

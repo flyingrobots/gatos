@@ -25,6 +25,10 @@ graph TD
             Mind("gatos-mind");
         end
 
+        subgraph "Job Plane"
+            Compute("gatos-compute");
+        end
+
         subgraph "Ledger Plane"
             Ledger("gatos-ledger");
         end
@@ -38,6 +42,8 @@ graph TD
         Echo --> Ledger;
         KV --> Ledger;
         Mind --> Ledger;
+        Compute --> Mind;
+        Compute --> Ledger;
     end
 
     CLI --> Daemon;
@@ -48,4 +54,5 @@ graph TD
     style KV fill:#9cf,stroke:#333,stroke-width:2px
     style Mind fill:#9c9,stroke:#333,stroke-width:2px
     style Ledger fill:#c99,stroke:#333,stroke-width:2px
+    style Compute fill:#f96,stroke:#333,stroke-width:2px
 ```

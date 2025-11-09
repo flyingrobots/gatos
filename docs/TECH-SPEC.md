@@ -54,11 +54,11 @@ GATOS follows a modular, "Ports and Adapters" (Hexagonal) architecture. The core
 | [`gatosd`](../../crates/gatosd/README.md) | The main binary entrypoint for the CLI and the JSONL RPC daemon. |
 | [`gatos-wasm-bindings`](../../bindings/wasm/README.md) | WebAssembly bindings for browser and Node.js environments. |
 | [`gatos-ffi-bindings`](../../bindings/ffi/README.md) | A C-compatible FFI for integration with other languages. |
+| `gatos-compute` | A worker/runner that discovers and executes jobs from the Job Plane. |
 
 ### Ledger Architecture: Ports and Adapters
 
 The ledger is the primary example of this hexagonal design, as documented in [ADR-0001](../decisions/ADR-0001/DECISION.md).
-
 -   **Core (Hexagon):** `gatos-ledger-core` is the `no_std` core. It defines the "port" for persistence via the `ObjectStore` trait.
 -   **Adapters:** `gatos-ledger-git` is an adapter that implements `ObjectStore` using a standard Git repository. Other backends (e.g., in-memory, flat-file) can be added by creating new adapter crates.
 -   **Composition:** The `gatos-ledger` meta-crate acts as the public entry point, using Cargo features to provide the consumer with the correct combination of core logic and storage backend.
@@ -282,3 +282,20 @@ wire‑format invariants:
 
 These rules complement the module‑level documentation in `gatos‑ledger‑core` and the event envelope
 schemas in `SPEC.md`.
+
+---
+
+## 15. Compute Engine (Job Runner)
+
+The `gatos-compute` crate will provide the primary implementation of a GATOS worker process. This worker is responsible for discovering, claiming, and executing jobs defined in the Job Plane.
+
+### Implementation Plan
+
+1.  **Subscription:** The worker will use the `gatos-mind` crate to subscribe to one or more job topics on the Message Plane (e.g., `gatos/jobs/pending`).
+2.  **Claiming:** Upon receiving a job message, the worker will use the `gatos-ledger` crate to attempt an atomic claim by creating a ref at `refs/gatos/jobs/<job-ulid>/claims/<worker-id>`. The operation will use compare-and-swap semantics to ensure only one worker can claim a given job.
+3.  **Execution:** Once a job is claimed, the worker will execute the job's `command` as defined in its manifest. Execution will take place in a sandboxed environment (e.g., a container or a WASM runtime) to ensure isolation.
+4.  **Result & Proof:** Upon completion, the worker will create a `Result` commit. This involves:
+    *   Storing any output artifacts (e.g., logs, data) as blobs.
+    *   Generating a `Proof-Of-Execution` by signing the job's `content_id` and an attestation envelope.
+    *   Committing the result and proof to the ledger with the appropriate `Job-Id` and other trailers.
+5.  **Lifecycle Management:** The worker will be responsible for updating job state and handling timeouts, retries (as dictated by policy), and failures.
