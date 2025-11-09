@@ -32,8 +32,8 @@ The `gatos-ledger-core` crate contains only the portable logic, while backends l
 
 ```rust
 pub trait ObjectStore {
-    fn put_object(&mut self, id: Hash, data: &[u8]);
-    fn get_object(&self, id: &Hash) -> Option<Vec<u8>>;
+    fn put_object(&mut self, id: &Hash, data: &[u8]) -> Result<(), StoreError>;
+    fn get_object(&self, id: &Hash) -> Result<Option<Vec<u8>>, StoreError>;
 }
 ```
 

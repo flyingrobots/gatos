@@ -7,6 +7,7 @@ pub struct GitStore {
 
 impl GitStore {
     #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
     pub fn new(repo: Repository) -> Self {
         Self { repo }
     }

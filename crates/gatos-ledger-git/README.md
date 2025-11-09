@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Put some bytes under their blake3 hash
     let data = b"hello";
-    let id: Hash = blake3::hash(data).into();
+    let id: Hash = blake3::hash(data).into_bytes();
     store.put_object(&id, data)?;
 
     // Retrieve them later

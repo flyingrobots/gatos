@@ -24,7 +24,7 @@ pub fn compute_commit_id_wasm(
     tree: &[u8],
     signature: &[u8],
 ) -> Result<String, JsValue> {
-    use gatos_ledger_core::{compute_commit_id, Commit, Hash};
+    use gatos_ledger_core::Hash;
 
     if tree.len() != 32 || signature.len() != 64 {
         return Err(JsValue::from_str("invalid input sizes"));
@@ -45,12 +45,10 @@ pub fn compute_commit_id_wasm(
         None => None,
     };
 
-    let commit = Commit {
-        parent: parent_arr,
-        tree: tree_arr,
-        signature: sig_arr,
-    };
-    compute_commit_id(&commit)
+    let core = gatos_ledger_core::CommitCore { parent: parent_arr, tree: tree_arr };
+    let core_id = gatos_ledger_core::compute_content_id(&core).map_err(|_| JsValue::from_str("serialize failure"))?;
+    let commit = gatos_ledger_core::Commit { core_id, signature: sig_arr };
+    gatos_ledger_core::compute_commit_id(&commit)
         .map(hex::encode)
         .map_err(|_| JsValue::from_str("serialize failure"))
 }

@@ -21,6 +21,12 @@ pub unsafe extern "C" fn gatos_ffi_free_string(s: *mut libc::c_char) {
     let _ = std::ffi::CString::from_raw(s);
 }
 
+/// Convenience alias for freeing strings allocated by this FFI.
+#[no_mangle]
+pub unsafe extern "C" fn gatos_free(s: *mut libc::c_char) {
+    gatos_ffi_free_string(s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,7 +60,7 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     tree_ptr: *const u8,
     signature_ptr: *const u8,
 ) -> *mut libc::c_char {
-    use gatos_ledger_core::{compute_commit_id, Commit, Hash};
+    use gatos_ledger_core::{compute_commit_id, compute_content_id, Commit, CommitCore, Hash};
 
     let parent: Option<Hash> = if has_parent {
         if parent_ptr.is_null() {
@@ -75,11 +81,9 @@ pub unsafe extern "C" fn gatos_compute_commit_id_hex(
     std::ptr::copy_nonoverlapping(tree_ptr, tree.as_mut_ptr(), 32);
     std::ptr::copy_nonoverlapping(signature_ptr, signature.as_mut_ptr(), 64);
 
-    let commit = Commit {
-        parent,
-        tree,
-        signature,
-    };
+    let core = CommitCore { parent, tree };
+    let Ok(core_id) = compute_content_id(&core) else { return std::ptr::null_mut() };
+    let commit = Commit { core_id, signature };
     compute_commit_id(&commit).map_or(std::ptr::null_mut(), |id| {
         let s = hex::encode(id);
         std::ffi::CString::new(s).map_or(std::ptr::null_mut(), std::ffi::CString::into_raw)
