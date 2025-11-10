@@ -142,8 +142,15 @@ async function listMarkdownFiles() {
     return files;
   }
   // --all: use git-tracked files for reproducibility
-  const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8', cwd: repoRoot });
-  return out.split(/\r?\n/).filter(Boolean);
+  try {
+    const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8', cwd: repoRoot });
+    return out.split(/\r?\n/).filter(Boolean);
+  } catch (e) {
+    const msg = e && e.message ? e.message : String(e);
+    throw new Error(
+      `Failed to list markdown files via 'git ls-files'; ensure git is installed and this is a git repository (cwd=${repoRoot}).\nUnderlying error: ${msg}`
+    );
+  }
 }
 
 async function collectRenderTasks(mdFiles) {
