@@ -217,7 +217,7 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 
 - [ ] Opaque Pointer resolution fails without a valid capability.
 - [ ] Private blob digest matches the digest in the public pointer.
-- [ ] Commit trailers accurately report the number of redactions/pointers.
+- [ ] Commit trailers (`Privacy-Redactions`, `Privacy-Pointers`) accurately report the number of redactions/pointers.
 
 #### Test Plan
 
