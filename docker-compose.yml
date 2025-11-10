@@ -25,5 +25,4 @@ services:
     working_dir: /work
     volumes:
       - .:/work
-    command: >-
-      bash -lc "npx -y markdownlint-cli '**/*.md' --config .markdownlint.json"
+    command: ["npx", "-y", "markdownlint-cli", "**/*.md", "--config", ".markdownlint.json"]
