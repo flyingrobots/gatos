@@ -71,7 +71,7 @@ graph TD
         end
 
         subgraph "Job Plane"
-            Compute("gatos-compute");
+            Compute("gatos-compute (planned)");
         end
 
         subgraph "Ledger Plane"
