@@ -1,3 +1,5 @@
+# ADR-0003: Consensus Governance for Gated Actions
+
 ---
 Status: Accepted
 Date: 2025-11-08
@@ -16,8 +18,6 @@ Schemas:
 Supersedes: []
 Superseded-By: []
 ---
-
-# ADR-0003: Consensus Governance for Gated Actions
 
 ## Scope
 

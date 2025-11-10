@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "properties": {
     "governance": {
+      "$comment": "Rule names are enumerated in policy YAML (see ADR-0003 §8); schema remains permissive for extensibility.",
       "type": "object",
       "additionalProperties": {
         "type": "object",
@@ -35,11 +36,11 @@
           "ttl": {
             "oneOf": [
               { "type": "integer", "minimum": 0, "description": "TTL in seconds" },
-              {
-                "type": "string",
-                "description": "TTL as ISO 8601 duration (e.g., PT1H, P2D)",
-                "pattern": "^P(?:\\d+Y)?(?:\\d+M)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)?$"
-              }
+          {
+            "type": "string",
+            "description": "TTL as ISO 8601 duration (e.g., PT1H, P2D)",
+            "pattern": "^P(?:(?:\\d+Y|\\d+M|\\d+W|\\d+D)+(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)?|T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)$"
+          }
             ]
           }
         }
