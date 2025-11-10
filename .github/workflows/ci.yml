@@ -102,8 +102,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          # Increment v2 when updating markdownlint-cli version pin
-          key: ${{ runner.os }}-node-20-npx-cache-v2
+          key: ${{ runner.os }}-node-20-npx-cache-${{ hashFiles('.github/workflows/ci.yml') }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
