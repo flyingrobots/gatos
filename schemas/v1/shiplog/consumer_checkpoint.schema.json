@@ -15,15 +15,7 @@
     }
   },
   "anyOf": [
-    {
-      "required": [
-        "ulid"
-      ]
-    },
-    {
-      "required": [
-        "commit_oid"
-      ]
-    }
+    { "type": "object", "properties": { "ulid": {} }, "required": ["ulid"] },
+    { "type": "object", "properties": { "commit_oid": {} }, "required": ["commit_oid"] }
   ]
 }

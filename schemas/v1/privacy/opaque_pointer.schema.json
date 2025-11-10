@@ -84,12 +84,14 @@
             },
             "required": [
               "class"
-            ]
+            ],
+            "type": "object"
           }
         },
         "required": [
           "extensions"
-        ]
+        ],
+        "type": "object"
       },
       "then": {
         "required": [
