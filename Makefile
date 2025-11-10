@@ -45,7 +45,11 @@ schema-compile:
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -r schemas/v1/common/ids.schema.json'
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/event_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json && \
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/deployment_trailer.schema.json && \
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json'
 
 schema-validate:
 	@bash -lc 'set -euo pipefail; \
@@ -59,7 +63,11 @@ schema-validate:
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/opaque_pointer_min.json -r schemas/v1/common/ids.schema.json'
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/opaque_pointer_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/event_envelope.schema.json -d examples/v1/shiplog/event_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_min.json && \
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/deployment_trailer.schema.json -d examples/v1/shiplog/trailer_min.json && \
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json -d examples/v1/shiplog/anchor_min.json'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \

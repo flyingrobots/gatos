@@ -4,18 +4,27 @@
   "title": "GATOS Shiplog Event Envelope (v1 Canonical JSON)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["ulid", "ns", "type", "payload"],
+  "required": ["ulid", "topic", "type", "payload"],
   "properties": {
-    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
-    "ns": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
+    "ulid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID (26 chars, Crockford base32, uppercase, no I/L/O/U)"
+    },
+    "topic": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{0,63}$",
+      "description": "Topic name (ASCII, lowercase start)."
+    },
     "type": { "type": "string", "minLength": 1 },
     "payload": { "type": "object" },
     "refs": {
       "type": "object",
       "propertyNames": { "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
-      "additionalProperties": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" }
+      "additionalProperties": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+      "description": "Optional cross-references to related state roots or objects (blake3:...)."
     }
   },
-  "description": "Canonical Shiplog event envelope. Content-Id is blake3(JCS(envelope)). Payload MUST NOT embed private data; replace with OpaquePointer."
+  "description": "Canonical Shiplog event envelope. Content-Id is blake3(JCS(envelope)). Payload MUST NOT embed private data; replace with Opaque Pointer per privacy schema."
 }
 

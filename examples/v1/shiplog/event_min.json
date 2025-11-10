@@ -1,6 +1,6 @@
 {
   "ulid": "01HF4Y9Q1SM8Q7K9DK2R3V4AWB",
-  "ns": "governance",
+  "topic": "governance",
   "type": "proposal.created",
   "payload": { "title": "Q4 Budget", "amount": 100000 },
   "refs": {
