@@ -2,29 +2,20 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 
 const repoRoot = process.cwd();
 const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
 
-async function* iterMarkdownFiles(cliFiles) {
-  if (cliFiles && cliFiles.length > 0) {
-    for (const f of cliFiles) {
-      // Only yield files that end with .md and exist
-      if (f.toLowerCase().endsWith('.md')) {
-        try { await fs.access(f); yield f; } catch { /* skip */ }
-      }
-    }
-    return;
-  }
-  // Fallback: use git-tracked files for reproducibility
-  const { execSync } = await import('child_process');
-  const files = execSync("git ls-files -- '*.md'", { encoding: 'utf8' })
-    .split(/\r?\n/)
-    .filter(Boolean);
-  for (const f of files) yield f;
+// Simple argv parser: flags first, then files
+const rawArgs = process.argv.slice(2);
+const flags = new Set();
+const cliFiles = [];
+for (const a of rawArgs) {
+  if (a.startsWith('-')) flags.add(a);
+  else cliFiles.push(a);
 }
+const scanAll = flags.has('--all');
 
 const MERMAID_RE = /```mermaid\s*\n([\s\S]*?)```/g;
 
@@ -52,44 +43,95 @@ function outNameFor(mdPath, index) {
   return `${rel}__mermaid_${index}.svg`;
 }
 
-async function main() {
-  let mmdc = binPath('mmdc');
-  await ensureDir(outDir);
-  let countBlocks = 0;
-  const cliFiles = process.argv.slice(2);
-  for await (const mdPath of iterMarkdownFiles(cliFiles)) {
+async function listMarkdownFiles() {
+  if (!scanAll) {
+    if (cliFiles.length === 0) {
+      // Safety: if invoked with no files and without --all, do nothing.
+      return [];
+    }
+    const files = [];
+    for (const f of cliFiles) {
+      if (!f.toLowerCase().endsWith('.md')) continue;
+      try { await fs.access(f); files.push(f); } catch { /* skip missing */ }
+    }
+    return files;
+  }
+  // --all: use git-tracked files for reproducibility
+  const { execSync } = await import('child_process');
+  const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8' });
+  return out.split(/\r?\n/).filter(Boolean);
+}
+
+async function collectRenderTasks(mdFiles) {
+  const tasks = [];
+  for (const mdPath of mdFiles) {
     const text = await fs.readFile(mdPath, 'utf8');
-    let match;
-    let idx = 0;
+    let match; let idx = 0;
     while ((match = MERMAID_RE.exec(text)) !== null) {
-      const code = match[1].trim() + '\n';
       idx += 1;
-      countBlocks += 1;
-      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gatos-mmd-'));
-      const tmpIn = path.join(tmpDir, 'in.mmd');
-      await fs.writeFile(tmpIn, code, 'utf8');
+      const code = match[1].trim() + '\n';
       const outFile = path.join(outDir, outNameFor(mdPath, idx));
-      let cmd, args;
-      if (await fs
-        .access(mmdc)
-        .then(() => true)
-        .catch(() => false)) {
-        cmd = mmdc;
-        const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
-        args = ['-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-      } else {
-        // Fallback to npx without requiring repo-local deps
-        cmd = 'npx';
-        const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
-        args = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-      }
-      await run(cmd, args);
+      tasks.push({ mdPath, index: idx, code, outFile });
     }
   }
-  console.log(`Generated ${countBlocks} mermaid diagram(s) into ${path.relative(repoRoot, outDir)}`);
+  return tasks;
+}
+
+async function hasLocal(cmdPath) {
+  try { await fs.access(cmdPath); return true; } catch { return false; }
+}
+
+async function renderTask(task, mmdcPath) {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gatos-mmd-'));
+  const tmpIn = path.join(tmpDir, 'in.mmd');
+  await fs.writeFile(tmpIn, task.code, 'utf8');
+  const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
+  const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+  const argsNpx = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+  if (await hasLocal(mmdcPath)) {
+    await run(mmdcPath, argsLocal);
+  } else {
+    await run('npx', argsNpx);
+  }
+}
+
+async function main() {
+  await ensureDir(outDir);
+  const mdFiles = await listMarkdownFiles();
+  if (mdFiles.length === 0) {
+    console.log('No Markdown files specified; skipping Mermaid generation.');
+    return;
+  }
+  const tasks = await collectRenderTasks(mdFiles);
+  if (tasks.length === 0) {
+    console.log('No Mermaid code blocks found in specified files.');
+    return;
+  }
+
+  const mmdcPath = binPath('mmdc');
+  const maxParallel = Math.max(1, Math.min(Number(process.env.MERMAID_MAX_PARALLEL || 0) || os.cpus().length, 8));
+
+  let inFlight = 0; let idx = 0; let completed = 0; const total = tasks.length;
+  const next = () => {
+    if (idx >= total) return Promise.resolve();
+    const t = tasks[idx++];
+    inFlight++;
+    return renderTask(t, mmdcPath)
+      .then(() => { completed++; })
+      .finally(() => { inFlight--; });
+  };
+
+  const runners = Array.from({ length: maxParallel }, async () => {
+    while (idx < total) {
+      await next();
+    }
+  });
+
+  await Promise.all(runners);
+  console.log(`Generated ${completed}/${total} mermaid diagram(s) into ${path.relative(repoRoot, outDir)} (parallel=${maxParallel})`);
 }
 
 main().catch((err) => {
-  console.error(err.message || err);
+  console.error(err && err.stack ? err.stack : (err && err.message) || err);
   process.exit(1);
 });
