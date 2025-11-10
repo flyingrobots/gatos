@@ -12,14 +12,14 @@ diagrams:
 	@bash -lc 'scripts/mermaid/generate_all.sh'
 
 lint-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+	@bash -lc 'if command -v node >/dev/null 2>&1; then \
       npx -y markdownlint-cli "**/*.md" --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
       docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --config .markdownlint.json"; \
 	else echo "Need Node.js or Docker" >&2; exit 1; fi'
 
 fix-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+	@bash -lc 'if command -v node >/dev/null 2>&1; then \
       npx -y markdownlint-cli "**/*.md" --fix --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
       docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --fix --config .markdownlint.json"; \
@@ -44,7 +44,8 @@ schema-compile:
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json'
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json && \
+	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -r schemas/v1/common/ids.schema.json'
 
 schema-validate:
 	@bash -lc 'set -euo pipefail; \
@@ -57,7 +58,8 @@ schema-validate:
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json'
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json && \
+	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/opaque_pointer_min.json -r schemas/v1/common/ids.schema.json'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \

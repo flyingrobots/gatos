@@ -92,23 +92,25 @@ classDiagram
     class OpaquePointer {
         +string kind: "opaque_pointer"
         +string algo: "blake3"
-        +string digest: "blake3:<hex>"
-        +number size
+        +string digest: "blake3:<hex>"            // plaintext digest
+        +string ciphertext_digest "blake3:<hex>"  // MAY be present
+        +int    size                                // SHOULD be present (bytes)
         +string location
-        +string capability
+        +string capability                          // MUST NOT embed secrets
+        +object extensions                          // forward-compatible
     }
 ```
 
--   **`digest`**: The content-address of the private blob (`blake3(private_bytes)`). This is the immutable link between the public and private worlds.
+-   **`digest`**: The content-address of the private plaintext (`blake3(plaintext_bytes)`). This is the immutable link between the public and private worlds.
+-   **`ciphertext_digest`**: The content-address of the stored ciphertext (`blake3(ciphertext_bytes)`). For low‑entropy privacy classes (see Policy Hooks), the public pointer **MUST** include `ciphertext_digest` and policy **MUST NOT** expose the plaintext digest publicly.
 -   **`location`**: A URI indicating where to resolve the blob. Supported schemes include:
     -   `gatos-node://ed25519:<pubkey>`: Resolve via the GATOS trust graph.
     -   `https://...`, `s3://...`, `ipfs://...`: Standard distributed storage.
     -   `file:///...`: For local development and testing.
--   **`capability`**: A URI defining the authorization and decryption mechanism required to access the blob.
-    -   `gatos-key://v1/aes-256-gcm/<key-id>`: A symmetric key managed by a GATOS-aware key service.
-    -   `kms://...`, `age://...`, `sops://...`: Integration with standard secret management tools.
+-   **`capability`**: A reference identifying the authorization and decryption mechanism required to access the blob. It **MUST NOT** embed secrets or pre‑signed tokens. It SHOULD be a stable identifier (e.g., `gatos-key://v1/aes-256-gcm/<key-id>` or `kms://...`) that can be resolved privately at the policy layer.
+    -   Pointers MAY publish a non‑sensitive label and keep resolver details private via policy. Implementations MAY also place auxiliary hints inside `extensions`.
 
-The canonical `content_id` of the pointer itself is `blake3(canonical_json_bytes)`.
+The canonical `content_id` of the pointer itself is `blake3(JCS(pointer_json))`, where `JCS(…)` denotes RFC 8785 JSON Canonicalization Scheme applied to UTF‑8 bytes. This rule is normative for all canonical JSON in GATOS (pointers, governance envelopes, any JSON state snapshots).
 
 **Schema:** `schemas/v1/privacy/opaque_pointer.schema.json`
 
@@ -122,6 +124,10 @@ The State Engine (`gatos-echo`) is responsible for executing the projection.
     -   `redact`: The field is removed from the public state.
     -   `pointerize`: The field's value is stored as a private blob, and an Opaque Pointer is substituted in the public state.
 4.  The resulting `PublicState` is committed to the public refs, and the `Private Blobs` are persisted to their specified `location`.
+
+Determinism Requirements:
+- All JSON artifacts produced during projection (including Opaque Pointers) MUST be canonicalized with RFC 8785 JCS prior to hashing.
+- When non‑JSON maps are materialized (e.g., Git tree entries), keys MUST be ordered lexicographically by their lowercase UTF‑8 bytes.
 
 ```mermaid
 sequenceDiagram
@@ -140,20 +146,38 @@ sequenceDiagram
 
 ### 4. Pointer Resolution Protocol (Normative)
 
+Authentication semantics are aligned with HTTP. We adopt a simple, interoperable model (JWT default; HTTP Message Signatures optional):
+
+-  **Endpoint**: `POST /gatos/private/blobs/resolve`
+-  **Request Body (application/json; JCS canonical form)**:
+   `{ "digest": "blake3:<hex>", "want": "plaintext"|"ciphertext" }`
+-  **Authorization**: `Authorization: Bearer <JWT>`
+   - Claims MUST include: `sub` (ed25519:<pubkey>), `aud` (node id or URL), `method` ("POST"), `path` ("/gatos/private/blobs/resolve"), `exp`, and `nbf`.
+   - Clock skew tolerance: ±300 seconds.
+   - On missing/invalid token: `401 Unauthorized`. On policy denial: `403 Forbidden`.
+
 A client resolving an Opaque Pointer **MUST** follow this protocol:
 
-1.  **Parse Pointer**: Extract `digest`, `location`, and `capability`.
+1.  **Parse Pointer**: Extract `digest`, optional `ciphertext_digest`, `location`, and `capability`.
 2.  **Fetch Blob**:
-    -   If `gatos-node://<actor-id>`, resolve the actor's endpoint from the trust graph.
-    -   The client **MUST** send an authenticated request to the node (e.g., with a JWT or a signed challenge).
-    -   The node's endpoint (e.g., `GET /gatos/private/blobs/{digest}`) **MUST** verify the client's authorization against its policy before returning the blob.
+    -   If `gatos-node://<actor-id>`, resolve the actor's endpoint from the trust graph, then `POST /gatos/private/blobs/resolve` with the body above.
+    -   The node **MUST** verify the bearer token and enforce policy before returning the blob.
 3.  **Acquire Capability**:
-    -   Parse the `capability` URI.
-    -   Interact with the specified system (KMS, key server) to get the decryption key. This step will have its own auth/authz protocol.
+    -   Resolve the `capability` reference via the configured key system (KMS, key server). Secrets MUST NOT be embedded in the pointer.
 4.  **Decrypt and Verify**:
-    -   Decrypt the fetched blob using the key.
-    -   Compute `blake3(decrypted_bytes)`.
-    -   The operation **MUST FAIL** if the computed hash does not exactly match the `digest` in the pointer.
+    -   Decrypt the fetched blob using the resolved key and AAD parameters (see Security Notes).
+    -   Compute `blake3(plaintext)` and compare to `digest` if published; compute `blake3(ciphertext)` and compare to `ciphertext_digest` if published. A mismatch **MUST** produce `DigestMismatch`.
+
+Response headers on success:
+```
+Content-Type: application/octet-stream
+X-BLAKE3-Digest: blake3:<hex-of-ciphertext>
+Digest: sha-256=<base64-of-ciphertext>
+```
+
+Optional HTTP Message Signatures profile (RFC 9421):
+- Clients MAY authenticate by signing `@method`, `@target-uri`, `date`, `host`, `content-digest` (SHA‑256 of the JSON body) and sending `Signature-Input` and `Signature` headers.
+- Servers SHOULD still return `Digest` and `X-BLAKE3-Digest` headers for response integrity.
 
 ```mermaid
 sequenceDiagram
@@ -162,7 +186,7 @@ sequenceDiagram
     participant KMS as Key Management Service
 
     C->>C: 1. Read OpaquePointer
-    C->>PN: 2. GET /private/{digest} (Authenticated)
+    C->>PN: 2. POST /gatos/private/blobs/resolve (Authorization: Bearer <JWT>)
     PN->>PN: 3. Check policy (is C allowed?)
     alt Authorized
         PN-->>C: 4. Return encrypted blob
@@ -171,7 +195,7 @@ sequenceDiagram
         C->>C: 7. Decrypt blob
         C->>C: 8. Verify blake3(decrypted) == digest
     else Unauthorized
-        PN-->>C: 4. Return 403 Forbidden
+        PN-->>C: 4. Return 401/403
     end
 ```
 
@@ -181,9 +205,15 @@ The privacy policy is defined in `.gatos/policy.yaml` and extends the policy eng
 
 ```yaml
 privacy:
+  classes:
+    pii_low_entropy:
+      min_entropy_bits: 40
+      publish_plaintext_digest: false
+      require_ciphertext_digest: true
   rules:
     - select: "path.to.sensitive.data"
       action: "pointerize"
+      class: "pii_low_entropy"
       capability: "gatos-key://v1/aes-256-gcm/ops-key-01"
       location: "gatos-node://ed25519:<owner-pubkey>"
     - select: "path.to.transient.data"
@@ -199,6 +229,7 @@ To make privacy operations transparent and auditable, any commit that creates a 
 ```
 Privacy-Redactions: 3
 Privacy-Pointers: 12
+Privacy-Pointer-Rotations: 1
 ```
 
 This provides a simple, top-level indicator that a projection has occurred, prompting auditors to look deeper if necessary.
@@ -223,3 +254,33 @@ This provides a simple, top-level indicator that a projection has occurred, prom
 -   **Large Artifact Management**: Handle large binaries (ML models, videos) without bloating the Git repository.
 -   **Compliant Data Sharing**: Share a public, redacted dataset with third parties while retaining private access to the full, unified view.
 -   **Federated Learning**: Different actors can hold private models locally, referenced by pointers in a public "training plan" shape.
+
+---
+
+## Namespacing and Storage (Normative)
+
+-   Private overlays are actor‑anchored: `refs/gatos/private/<actor-id>/<ns>/<channel>` index metadata. The local workspace mirror is `gatos/private/<actor-id>/<ns>/<channel>`.
+-   Private blobs themselves are NOT stored under Git refs. They live in pluggable blob stores and are addressed by their `ciphertext_digest`/`digest`.
+
+## Security & Privacy Notes (Normative)
+
+-   Capability references in pointers MUST NOT contain secrets or pre‑signed tokens. Use stable identifiers and resolve sensitive data via policy.
+-   AES‑256‑GCM (if used) MUST include AAD composed of: actor id, pointer `content_id`, and policy version; nonces MUST be 96‑bit, randomly generated, and never reused per key.
+-   Right‑to‑be‑forgotten: deleting private blobs breaks pointer resolution but does not remove the public pointer. Implement erasure as a tombstone event plus an audit record.
+
+### Algorithm variants (experimental; private attestations only)
+
+- Implementations MAY use a keyed BLAKE3 variant for private attestation envelopes (not for public Opaque Pointers): `algo = "blake3-keyed"` with parameters encoded in an envelope or pointer `extensions` field.
+- Recommended KDF: `hkdf-sha256`; context string `"gatos:ptr:priv:<policy_id>"`; derive `key = HKDF(policy_key, salt = actor_pubkey, info = context)`.
+- Public pointers MUST continue to use `algo = "blake3"` for third‑party verifiability.
+
+## Error Taxonomy (Normative)
+
+Implementations SHOULD use a stable set of error codes with JSON problem details:
+
+- `Unauthorized` (401)
+- `Forbidden` (403)
+- `NotFound` (404)
+- `DigestMismatch` (422)
+- `CapabilityUnavailable` (503)
+- `PolicyDenied` (403)

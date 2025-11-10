@@ -86,7 +86,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 7. Proof‑Of‑Consensus (normative)
    - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes (see schema: [`schemas/v1/governance/proof_of_consensus_envelope.schema.json`](../../../schemas/v1/governance/proof_of_consensus_envelope.schema.json)):
      - The canonical proposal envelope (by value or by `Proposal-Id`).
-     - A sorted list (by `Signer`) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
+     - A lexicographically sorted list of approvals by the lowercase ASCII of each approval's `Signer` value (the `ed25519:<hex>` string). Each approval is included by value or via `Approval-Id`.
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
    - Implementations MUST use canonical JSON (UTF‑8, sorted keys, no insignificant whitespace) to build this envelope before hashing. All hex encodings MUST be lowercase. Ordering by signer is an application‑level MUST; JSON Schema cannot enforce sort order.
    - Storage: The canonical PoC envelope JSON SHOULD be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.

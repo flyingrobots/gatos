@@ -1,46 +1,18 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "GATOS Opaque Pointer",
-  "description": "A canonical pointer to a private data blob, used to replace sensitive or large data in a public state projection.",
+  "description": "Canonical pointer to a private blob used in public projections.",
   "type": "object",
   "properties": {
-    "kind": {
-      "description": "The object kind, MUST be 'opaque_pointer'.",
-      "type": "string",
-      "const": "opaque_pointer"
-    },
-    "algo": {
-      "description": "The hashing algorithm used for the digest, MUST be 'blake3'.",
-      "type": "string",
-      "const": "blake3"
-    },
-    "digest": {
-      "description": "The content-address of the private blob, prefixed with the algorithm.",
-      "type": "string",
-      "pattern": "^blake3:[a-f0-9]{64}$"
-    },
-    "size": {
-      "description": "Optional: The size of the private blob in bytes.",
-      "type": "integer",
-      "minimum": 0
-    },
-    "location": {
-      "description": "A URI indicating where the private blob can be resolved.",
-      "type": "string",
-      "format": "uri"
-    },
-    "capability": {
-      "description": "A URI defining the authorization and/or decryption mechanism for the blob.",
-      "type": "string",
-      "format": "uri"
-    }
+    "kind": { "type": "string", "const": "opaque_pointer" },
+    "algo": { "type": "string", "const": "blake3" },
+    "digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" },
+    "ciphertext_digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" },
+    "size": { "type": "integer", "minimum": 0 },
+    "location": { "type": "string", "format": "uri" },
+    "capability": { "type": "string", "format": "uri" },
+    "extensions": { "type": "object" }
   },
-  "required": [
-    "kind",
-    "algo",
-    "digest",
-    "location",
-    "capability"
-  ],
+  "required": ["kind","algo","digest","location","capability"],
   "additionalProperties": false
 }

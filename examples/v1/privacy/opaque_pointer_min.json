@@ -1,0 +1,9 @@
+{
+  "kind": "opaque_pointer",
+  "algo": "blake3",
+  "digest": "blake3:0000000000000000000000000000000000000000000000000000000000000000",
+  "ciphertext_digest": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+  "size": 0,
+  "location": "gatos-node://ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "capability": "gatos-key://v1/aes-256-gcm/test-key-01"
+}

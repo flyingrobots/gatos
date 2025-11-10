@@ -329,6 +329,18 @@ name = "gatos-policy"
 version = "0.1.0"
 
 [[package]]
+name = "gatos-privacy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "gatos-ledger-core",
+ "hex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "gatos-wasm-bindings"
 version = "0.1.0"
 dependencies = [

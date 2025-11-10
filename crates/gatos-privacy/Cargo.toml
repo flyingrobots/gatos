@@ -1,0 +1,13 @@
+[package]
+name = "gatos-privacy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gatos-ledger-core = { path = "../gatos-ledger-core" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+hex = { workspace = true }
+anyhow = { workspace = true }
+

@@ -197,10 +197,29 @@ The `PrivateStore` is a pluggable trait, allowing for backends like a local file
 
 The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.
 
--   **Endpoint**: `gatosd` will listen for authenticated `GET` requests at `/gatos/private/blobs/{digest}`.
--   **Authentication**: The client SDK **MUST** send a `Authorization` header containing a JSON Web Signature (JWS) with a detached payload. The JWS payload **MUST** be the BLAKE3 hash of the request body. `gatosd` verifies the signature against the actor's public key.
--   **Authorization**: Upon receiving a valid request, `gatosd` queries `gatos-policy` to determine if the requesting actor has the capability to access the blob identified by `{digest}`.
--   **Response**: If authorized, `gatosd` fetches the (likely encrypted) blob from its configured `PrivateStore` and returns it to the client. The client is then responsible for decryption via the `capability` URI.
+-   Endpoint: `POST /gatos/private/blobs/resolve`
+-   Content-Type: `application/json`
+-   Request body (JCS canonical JSON):
+    ```json
+    { "digest": "blake3:<hex>", "want": "plaintext" }
+    ```
+    - `want` OPTIONAL: `"plaintext" | "ciphertext"` (default `"plaintext"`).
+-   Authentication: `Authorization: Bearer <JWT>`
+    - Claims (example): `iss`, `sub` (ed25519:<pubkey>), `aud` ("gatos-node:<node-id>"), `exp`, `nbf`, `jti`, `method` ("POST"), `path` ("/gatos/private/blobs/resolve"), `digest` (MUST match body.digest).
+    - Clock skew tolerance: ±300 seconds.
+-   Authorization: Node evaluates policy for `<sub>` on `<digest>`.
+-   Response (200 OK):
+    - Headers: `Digest: sha-256=<base64-of-body>`, `X-BLAKE3-Digest: blake3:<hex-of-returned-bytes>`
+    - Body: requested bytes (ciphertext or plaintext).
+
+Errors: 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 DigestMismatch, 503 CapabilityUnavailable.
+
+Optional profile (HTTP Message Signatures, RFC 9421):
+- Clients MAY authenticate by signing components: `@method`, `@target-uri`, `date`, `host`, `content-digest` (SHA-256 over request body) and sending `Signature-Input: sig1=...` and `Signature: sig1=:<base64(signature)>:`.
+- Servers STILL apply policy and SHOULD return `Digest` and `X-BLAKE3-Digest` headers.
+
+Pointer Rotation (Rekey):
+- Implement a rotation that: (1) fetches; (2) decrypts; (3) re‑encrypts; (4) stores; (5) emits an audit event updating pointer fields while keeping plaintext `digest` stable. Add trailer `Privacy-Pointer-Rotations: <n>` when a projection commit includes rotations.
 
 ---
 
