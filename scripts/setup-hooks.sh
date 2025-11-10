@@ -24,8 +24,8 @@ hook_dst="$local_hooks_dir/pre-commit"
 
 install() {
   # Force this repository to use its own hooks directory regardless of any global core.hooksPath
-  if [[ ! -f "$hook_src" ]]; then
-    echo "[hooks][ERROR] Hook source not found: $hook_src" >&2
+  if [[ ! -f "$hook_src" || ! -r "$hook_src" ]]; then
+    echo "[hooks][ERROR] Hook source missing or not readable: $hook_src" >&2
     exit 1
   fi
   git config --local core.hooksPath "$local_hooks_dir" || { echo "[hooks][ERROR] git config --local core.hooksPath '$local_hooks_dir' failed" >&2; exit 1; }
