@@ -118,7 +118,7 @@ Errors (normative):
 
 ### 7) Consumer Checkpoints
 
-- `refs/gatos/consumers/<group>/<topic>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`.
+- `refs/gatos/consumers/<group>/<topic>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`. The `commit_oid` value MUST be lowercase hex.
 
 ### 8) Privacy Interactions (ADR‑0004)
 
