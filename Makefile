@@ -1,4 +1,5 @@
-.PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit
+.PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit \
+        xtask ci-diagrams ci-schemas ci-linkcheck
 
 all: schemas lint-md link-check
 
@@ -122,3 +123,18 @@ pre-commit:
 	   else echo "lychee not found and Docker unavailable; skipping link check" >&2; fi; \
 	 fi; \
 	 echo "[make pre-commit] Done."'
+## ---- xtask shims (Rust orchestrator) ----
+
+# Generic xtask passthrough: `make xtask ARGS="schemas all"`
+xtask:
+	@cargo run -p xtask -- $(ARGS)
+
+# CI-parity shims
+ci-diagrams:
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all
+
+ci-schemas:
+	@cargo run -p xtask -- schemas all
+
+ci-linkcheck:
+	@cargo run -p xtask -- links
