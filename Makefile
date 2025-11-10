@@ -74,42 +74,51 @@ schemas: schema-compile schema-validate schema-negative
 
 pre-commit:
 	@bash -lc 'set -euo pipefail; \
-	 STAGED_MD="$$(git diff --cached --name-only --diff-filter=ACM | grep -E "\\.md$$" || true)"; \
-	 STAGED_FMT="$$(git diff --cached --name-only --diff-filter=ACM | grep -E "\\.(json|ya?ml)$$" || true)"; \
 	 echo "[make pre-commit] markdownlint fix…"; \
-	 if [ -n "$$STAGED_MD" ]; then \
+	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
 	   if command -v node >/dev/null 2>&1; then \
-	     npx -y markdownlint-cli $$STAGED_MD --fix --config .markdownlint.json; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 npx -y markdownlint-cli --fix --config .markdownlint.json --; \
 	   elif command -v docker >/dev/null 2>&1; then \
-	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli $$STAGED_MD --fix --config .markdownlint.json"; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
+	           "npx -y markdownlint-cli --fix --config .markdownlint.json -- \"{}\""; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
-	   echo "$$STAGED_MD" | xargs git add; \
+	   git diff --cached --name-only -z --diff-filter=ACM -- "*.md" | xargs -0 git add --; \
 	 fi; \
 	 echo "[make pre-commit] Prettier JSON/YAML…"; \
-	 if [ -n "$$STAGED_FMT" ]; then \
+	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "*.yaml")" ]; then \
 	   if command -v node >/dev/null 2>&1; then \
-	     npx -y prettier -w $$STAGED_FMT; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" \
+	       | xargs -0 npx -y prettier -w --; \
 	   elif command -v docker >/dev/null 2>&1; then \
-	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y prettier -w $$STAGED_FMT"; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
+	           "npx -y prettier -w -- \"{}\""; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
-
-	   echo "$$STAGED_FMT" | xargs git add; \
+	   git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" | xargs -0 git add --; \
 	 fi; \
 	 echo "[make pre-commit] Mermaid (staged MD only)…"; \
-	 if [ -n "$$STAGED_MD" ]; then \
+	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
 	   if command -v node >/dev/null 2>&1; then \
-	     node scripts/mermaid/generate.mjs $$STAGED_MD; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 node scripts/mermaid/generate.mjs; \
 	   elif command -v docker >/dev/null 2>&1; then \
-	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs $$STAGED_MD"; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
+	           "npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs \"{}\""; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
-	   if [ -d docs/diagrams/generated ]; then git add docs/diagrams/generated; fi; \
+	   if [ -d docs/diagrams/generated ]; then git add -- docs/diagrams/generated; fi; \
 	 fi; \
 	 echo "[make pre-commit] Link check (staged MD)…"; \
-	 if [ -n "$$STAGED_MD" ]; then \
+	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
 	   if command -v lychee >/dev/null 2>&1; then \
-	     lychee --no-progress --config .lychee.toml $$STAGED_MD; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 lychee --no-progress --config .lychee.toml --; \
 	   elif command -v docker >/dev/null 2>&1; then \
-	     docker run --rm -v "$$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml $$STAGED_MD; \
+	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest \
+	           --no-progress --config .lychee.toml \"{}\"; \
 	   else echo "lychee not found and Docker unavailable; skipping link check" >&2; fi; \
 	 fi; \
 	 echo "[make pre-commit] Done."'
