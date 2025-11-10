@@ -38,7 +38,7 @@ Many integrations require an append‑only stream rather than only snapshot stat
 classDiagram
   class EventEnvelope {
     +string ulid
-    +string ns                  // topic namespace (e.g., "governance")
+    +string topic                  // topic namespace (e.g., "governance")
     +string type                // logical event type
     +object payload             // canonical JSON (JCS)
     +map<string, blake3Digest> refs  // OPTIONAL cross-refs
@@ -64,7 +64,7 @@ graph TD
 ### 3) Event Envelope (Schema)
 
 - Canonical JSON envelope at `schemas/v1/shiplog/event_envelope.schema.json` (draft‑2020‑12).
-- Required fields: `ulid`, `ns`, `type`, `payload`.
+- Required fields: `ulid`, `topic`, `type`, `payload`.
 - Optional `refs` (map<string, blake3Digest>) to link related state or IDs.
 - Privacy (ADR‑0004): Payload MUST NOT embed private overlay data. Redacted values MUST be replaced by `OpaquePointer` envelopes per `schemas/v1/privacy/opaque_pointer.schema.json`.
 
@@ -134,8 +134,8 @@ $ gatosd shiplog append --topic governance --file event.json
 ok  commit=8b1c1e4 content_id=blake3:2a6c... ulid=01HF4Y9Q1SM8Q7K9DK2R3V4AWB
 
 $ gatosd shiplog read --topic governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
-01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c...  8b1c1e4  {"ulid":"01HF4Y9...","ns":"governance",...}
-01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2...  9f0aa21  {"ulid":"01HF4Y9...","ns":"governance",...}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c...  8b1c1e4  {"ulid":"01HF4Y9...","topic":"governance",...}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2...  9f0aa21  {"ulid":"01HF4Y9...","topic":"governance",...}
 
 $ gatosd shiplog checkpoint set --group analytics --topic governance --commit 8b1c1e4
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
