@@ -2,7 +2,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 
 const repoRoot = process.cwd();
 const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
@@ -57,7 +57,6 @@ async function listMarkdownFiles() {
     return files;
   }
   // --all: use git-tracked files for reproducibility
-  const { execSync } = await import('child_process');
   const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8' });
   return out.split(/\r?\n/).filter(Boolean);
 }
@@ -87,6 +86,9 @@ async function renderTask(task, mmdcPath) {
   await fs.writeFile(tmpIn, task.code, 'utf8');
   const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
   const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+  // Pin to 10.9.0 for stable Mermaid syntax support and reproducible CI output.
+  // Override via MERMAID_CLI_VERSION env var; must match CI (.github/workflows/ci.yml)
+  // and docker-compose.yml (ci-diagrams service) for consistency.
   const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
   const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
   if (await hasLocal(mmdcPath)) {

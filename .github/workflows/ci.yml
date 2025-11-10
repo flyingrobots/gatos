@@ -102,19 +102,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-20-npx-cache-v1
+          # Increment v2 when updating markdownlint-cli version pin
+          key: ${{ runner.os }}-node-20-npx-cache-v2
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: markdownlint (check only)
-        run: npx -y markdownlint-cli "**/*.md" --config .markdownlint.json
+        run: npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
 
   schemas:
     runs-on: ubuntu-latest
     name: Schema validation (v1)
     steps:
       - uses: actions/checkout@v4
+      - name: Cache npm (global)
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20-ajv-cache-v1
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
