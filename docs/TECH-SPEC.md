@@ -232,7 +232,7 @@ sequenceDiagram
     participant Client as Client (SDK/CLI)
     participant Daemon as gatosd
 
-    Client->>Daemon: {"type":"append_event", "id":"01A", "ns":"...", "event":{...}}
+    Client->>Daemon: {"type":"append_event", "id":"01A", "topic":"...", "event":{...}}
     Daemon-->>Client: {"ok":true, "id":"01A", "commit_id":"..."}
 
     Client->>Daemon: {"type":"bus.subscribe", "id":"01C", "topic":"..."}
@@ -313,9 +313,9 @@ sequenceDiagram
 Examples
 
 ```json
-{"type":"append_event","id":"01A","ns":"finance","event":{}}
+{"type":"append_event","id":"01A","topic":"finance","event":{}}
 {"type":"bus.subscribe","id":"01C","topic":"gatos.jobs.pending"}
-{"type":"fold_state","id":"01D","ns":"finance","channel":"table","spec":"folds/invoices.yaml"}
+{"type":"fold_state","id":"01D","topic":"finance","channel":"table","spec":"folds/invoices.yaml"}
 {"type":"governance.proposal.new","id":"02A","action":"publish.artifact","target":"gatos://assets/model.bin","quorum":"2-of-3@leads"}
 {"type":"governance.approval.add","id":"02B","proposal":"<proposal-id-hash>"}
 {"type":"governance.grant.verify","id":"02C","grant":"<grant-id-hash>"}

@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "ulid",
-    "ns",
+    "topic",
     "type",
     "payload"
   ],
@@ -33,11 +33,11 @@
       },
       "description": "Optional cross-references to related state roots or objects (blake3:...)."
     },
-    "ns": {
+    "topic": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9._-]{0,63}$",
       "description": "Topic name (ASCII, lowercase start)."
     }
   },
-  "description": "Canonical Shiplog event envelope. Content-Id is blake3(JCS(envelope)). Payload MUST NOT embed private data; replace with Opaque Pointer per privacy schema."
+  "description": "Canonical Shiplog event envelope. Content-Id = blake3(JCS(envelope)). Precision‑sensitive values (e.g., money/time) MUST be encoded as integers or strings. Payload MUST NOT embed private data; replace with Opaque Pointer per privacy schema."
 }
