@@ -204,7 +204,19 @@ async function renderTask(task, mmdcPath) {
     // and docker-compose.yml (ci-diagrams service) for consistency.
     const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
     const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-    const timeoutMs = Math.max(10000, parseInt(process.env.MERMAID_CMD_TIMEOUT_MS || '', 10) || 120000);
+    // Parse and validate timeout from env (ms). Fall back to 120000 on any invalid value.
+    const envTimeout = process.env.MERMAID_CMD_TIMEOUT_MS;
+    const DEFAULT_TIMEOUT = 120000; // 2 minutes
+    const MIN_TIMEOUT = 10000;      // 10 seconds (floor)
+    const MAX_TIMEOUT = 900000;     // 15 minutes (ceiling)
+    let validated = DEFAULT_TIMEOUT;
+    if (typeof envTimeout === 'string' && envTimeout.trim() !== '') {
+      const parsed = Number.parseInt(envTimeout, 10);
+      if (Number.isFinite(parsed) && Number.isSafeInteger(parsed) && parsed >= MIN_TIMEOUT && parsed <= MAX_TIMEOUT) {
+        validated = parsed;
+      }
+    }
+    const timeoutMs = Math.max(MIN_TIMEOUT, validated);
     if (await hasLocal(mmdcPath)) {
       await run(mmdcPath, argsLocal, {}, timeoutMs);
     } else {
