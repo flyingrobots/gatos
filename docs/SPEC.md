@@ -673,7 +673,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
 `Proof-Of-Consensus` is the BLAKE3 of a canonical JSON envelope containing:
 
 - The canonical proposal envelope (by value or `Proposal-Id`).
-- A sorted list (by `Signer`) of all valid approvals used to reach quorum (by value or `Approval-Id`).
+- A lexicographically sorted list (by Signer's public key) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
 - The governance rule id (`Policy-Rule`) and effective quorum parameters.
 
 PoC envelope MUST be stored canonically under `refs/gatos/audit/proofs/governance/<proposal-id>`; the Grant’s `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
