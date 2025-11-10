@@ -36,10 +36,7 @@ enum Cmd {
         files: Vec<PathBuf>,
     },
     /// Validate JSON Schemas and examples (v1)
-    Schemas {
-        #[command(subcommand)]
-        sub: SchemaSub,
-    },
+    Schemas,
     /// Link checker for Markdown (lychee)
     Links {
         /// Optional file globs (default: **/*.md)
@@ -48,25 +45,21 @@ enum Cmd {
     },
 }
 
-#[derive(Subcommand, Debug)]
-enum SchemaSub {
-    /// Compile + validate + negatives (full suite)
-    All,
-}
+// No subcommands for schemas; always run the full suite
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::PreCommit => pre_commit(),
         Cmd::Diagrams { all, files } => diagrams(all, &files),
-        Cmd::Schemas { sub } => schemas(sub),
+        Cmd::Schemas => schemas(),
         Cmd::Links { files } => links(files),
     }
 }
 
 fn pre_commit() -> Result<()> {
-    // Use existing Make target to keep parity; we can inline later
-    run("bash", ["-lc", "make -s pre-commit"], None)
+    // Call make directly (no shell), relies on CI/dev environment having make
+    run("make", ["-s", "pre-commit"], None)
 }
 
 fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
@@ -91,16 +84,12 @@ fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
     Ok(())
 }
 
-fn schemas(which: SchemaSub) -> Result<()> {
+fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    match which {
-        SchemaSub::All => run(
-            "bash",
-            ["-lc", script.to_string_lossy().as_ref()],
-            Some(&repo),
-        )?,
-    }
+    // Execute the script directly (it has a shebang and is executable)
+    let script_str = script.to_string_lossy().to_string();
+    run(&script_str, [] as [&str; 0], Some(&repo))?;
     Ok(())
 }
 
@@ -118,7 +107,7 @@ fn links(files: Vec<String>) -> Result<()> {
             args.push(g);
         }
         run("lychee", args, Some(&repo))?;
-        return Ok(());
+        Ok(())
     } else if which::which("docker").is_ok() {
         let mut docker_args: Vec<String> = vec![
             "run".to_string(),
@@ -136,7 +125,7 @@ fn links(files: Vec<String>) -> Result<()> {
             docker_args.push(g.clone());
         }
         run("docker", docker_args, Some(&repo))?;
-        return Ok(());
+        Ok(())
     } else {
         bail!("Link check requires 'lychee' in PATH or Docker. Install lychee (https://github.com/lycheeverse/lychee) or install Docker to run the containerized check.")
     }
@@ -161,24 +150,6 @@ fn repo_root() -> Result<PathBuf> {
         "Could not locate repository root from {:?}. Run xtask from within the repository or a child directory.",
         cwd
     )
-}
-
-fn which(bin: &str) -> Option<PathBuf> {
-    let path = std::env::var_os("PATH")?;
-    for p in std::env::split_paths(&path) {
-        let cand = p.join(bin);
-        if cand.is_file() {
-            return Some(cand);
-        }
-        // Windows exe
-        if cfg!(windows) {
-            let ex = p.join(format!("{}.exe", bin));
-            if ex.is_file() {
-                return Some(ex);
-            }
-        }
-    }
-    None
 }
 
 fn run<I, S>(cmd: &str, args: I, cwd: Option<&Path>) -> Result<()>
