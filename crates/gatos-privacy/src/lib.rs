@@ -39,4 +39,3 @@ pub enum Kind {
 pub enum Algo {
     Blake3,
 }
-
