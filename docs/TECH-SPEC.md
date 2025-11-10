@@ -197,7 +197,7 @@ The `PrivateStore` is a pluggable trait, allowing for backends like a local file
 
 The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.
 
--   **Endpoint**: `gatosd` will listen for authenticated requests, for example at `/gatos/private/blobs/{digest}`.
+-   **Endpoint**: `gatosd` will listen for authenticated `GET` requests at `/gatos/private/blobs/{digest}`.
 -   **Authentication**: The client SDK **MUST** send a `Authorization` header containing a JSON Web Signature (JWS) with a detached payload. The JWS payload **MUST** be the BLAKE3 hash of the request body. `gatosd` verifies the signature against the actor's public key.
 -   **Authorization**: Upon receiving a valid request, `gatosd` queries `gatos-policy` to determine if the requesting actor has the capability to access the blob identified by `{digest}`.
 -   **Response**: If authorized, `gatosd` fetches the (likely encrypted) blob from its configured `PrivateStore` and returns it to the client. The client is then responsible for decryption via the `capability` URI.
