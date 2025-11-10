@@ -150,7 +150,16 @@ async function collectRenderTasks(mdFiles) {
   const tasks = [];
   const seen = new Set();
   for (const mdPath of mdFiles) {
-    const text = await fs.readFile(mdPath, 'utf8');
+    let text;
+    try {
+      text = await fs.readFile(mdPath, 'utf8');
+    } catch (e) {
+      const msg = e && e.message ? e.message : String(e);
+      console.error(`[mermaid] error: failed to read ${mdPath}: ${msg}`);
+      continue; // skip unreadable file, continue with the rest
+    }
+    // Reset regex index for each new file to avoid cross-file state with /g
+    MERMAID_RE.lastIndex = 0;
     let match; let idx = 0;
     while ((match = MERMAID_RE.exec(text)) !== null) {
       idx += 1;
