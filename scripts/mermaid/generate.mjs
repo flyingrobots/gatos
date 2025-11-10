@@ -181,27 +181,33 @@ async function hasLocal(cmdPath) {
 
 async function renderTask(task, mmdcPath) {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gatos-mmd-'));
-  const tmpIn = path.join(tmpDir, 'in.mmd');
-  await fs.writeFile(tmpIn, task.code, 'utf8');
-  const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
-  // Validate puppeteer config exists to surface clear errors if missing
   try {
-    await fs.access(puppetCfg);
-  } catch {
-    throw new Error(`Puppeteer config not found: ${puppetCfg}`);
+    const tmpIn = path.join(tmpDir, 'in.mmd');
+    await fs.writeFile(tmpIn, task.code, 'utf8');
+    const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
+    // Validate puppeteer config exists to surface clear errors if missing
+    try {
+      await fs.access(puppetCfg);
+    } catch {
+      throw new Error(`Puppeteer config not found: ${puppetCfg}`);
+    }
+    const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+    // Pin to 10.9.0 for stable Mermaid syntax support and reproducible CI output.
+    // Override via MERMAID_CLI_VERSION env var; must match CI (.github/workflows/ci.yml)
+    // and docker-compose.yml (ci-diagrams service) for consistency.
+    const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
+    const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+    const timeoutMs = Math.max(10000, parseInt(process.env.MERMAID_CMD_TIMEOUT_MS || '', 10) || 120000);
+    if (await hasLocal(mmdcPath)) {
+      await run(mmdcPath, argsLocal, {}, timeoutMs);
+    } else {
+      await run('npx', argsNpx, {}, timeoutMs);
+    }
+  } finally {
+    // Clean up temporary directory regardless of success/failure
+    try { await fs.rm(tmpDir, { recursive: true, force: true }); } catch {}
   }
-  const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-  // Pin to 10.9.0 for stable Mermaid syntax support and reproducible CI output.
-  // Override via MERMAID_CLI_VERSION env var; must match CI (.github/workflows/ci.yml)
-  // and docker-compose.yml (ci-diagrams service) for consistency.
-  const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
-  const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-  const timeoutMs = Math.max(10000, parseInt(process.env.MERMAID_CMD_TIMEOUT_MS || '', 10) || 120000);
-  if (await hasLocal(mmdcPath)) {
-    await run(mmdcPath, argsLocal, {}, timeoutMs);
-  } else {
-    await run('npx', argsNpx, {}, timeoutMs);
-  }
+  // Post-process the output file after temp cleanup
   if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
     await normalizeSvgIntrinsicSize(task.outFile);
   }
