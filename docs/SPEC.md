@@ -675,7 +675,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
 - A sorted list (by `Signer`) of all valid approvals used to reach quorum (by value or `Approval-Id`).
 - The governance rule id (`Policy-Rule`) and effective quorum parameters.
 
-PoC envelope SHOULD be stored canonically under `refs/gatos/audit/proofs/governance/<proposal-id>`; the Grant’s `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
+PoC envelope MUST be stored canonically under `refs/gatos/audit/proofs/governance/<proposal-id>`; the Grant’s `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
 
 ### 20.4 Lifecycle States
 
