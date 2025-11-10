@@ -42,6 +42,10 @@ declare -A EXAMPLES=(
 
 for schema in "${!EXAMPLES[@]}"; do
   data="${EXAMPLES[$schema]}"
+  # Skip governance_policy here; it is validated separately without -r for consistency
+  if [[ "$schema" == "schemas/v1/policy/governance_policy.schema.json" ]]; then
+    continue
+  fi
   echo "  - ajv validate: $data against $schema"
   ajv validate "${AJV_BASE_ARGS[@]}" -s "$schema" -d "$data" -r "$AJV_COMMON_REF"
 done
