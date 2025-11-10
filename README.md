@@ -256,8 +256,8 @@ This design provides several powerful benefits:
 
 Canonical JSON Schemas for GATOS envelopes live under `schemas/v1/`, with versioned examples under `examples/v1/`.
 
-- Governance (ADR‑0003): `schemas/v1/governance/*.schema.json`
-- Job Plane (ADR‑0002): `schemas/v1/job/*.schema.json`
+- Governance ([ADR-0003](docs/decisions/ADR-0003/DECISION.md)): `schemas/v1/governance/*.schema.json`
+- Job Plane ([ADR-0002](docs/decisions/ADR-0002/DECISION.md)): `schemas/v1/job/*.schema.json`
 - Common encodings: `schemas/v1/common/ids.schema.json`
 
 Consumers SHOULD pin to a specific major (e.g., `v1`). CI validates example documents against these schemas.
