@@ -35,6 +35,6 @@
       }
     },
     "policy_root": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-    "ulid": { "type": "string" }
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" }
   }
 }

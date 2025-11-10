@@ -1,4 +1,12 @@
-.PHONY: diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit
+.PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit
+
+all: schemas lint-md link-check
+
+clean:
+	@rm -f docs/diagrams/generated/*.svg || true
+
+test:
+	@cargo test --workspace --locked
 
 diagrams:
 	@bash -lc 'scripts/mermaid/generate_all.sh'
@@ -48,7 +56,8 @@ schema-validate:
 	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json; \
 	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json; \
 	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json; \
-	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json'
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \
@@ -56,8 +65,10 @@ schema-negative:
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
 	 echo "{\"governance\":{\"x\":{\"ttl\":\"P\"}}}" > /tmp/bad1.json; \
 	 echo "{\"governance\":{\"x\":{\"ttl\":\"PT\"}}}" > /tmp/bad2.json; \
-	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json && { echo "Should have rejected ttl=P" >&2; exit 1; } || echo "Rejected ttl=P as expected"; \
-	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json && { echo "Should have rejected ttl=PT" >&2; exit 1; } || echo "Rejected ttl=PT as expected"'
+	 if npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then \
+	   echo "Should have rejected ttl=P" >&2; exit 1; else echo "Rejected ttl=P as expected"; fi; \
+	 if npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then \
+	   echo "Should have rejected ttl=PT" >&2; exit 1; else echo "Rejected ttl=PT as expected"; fi'
 
 schemas: schema-compile schema-validate schema-negative
 

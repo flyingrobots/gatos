@@ -145,6 +145,7 @@ jobs:
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json
+          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
 
   # (removed duplicate markdownlint job id)
 

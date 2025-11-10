@@ -113,6 +113,10 @@ graph TD
 
 ## 3. Fold Engine (Echo integration)
 
+Note on policy rule naming
+
+- Governance actions are referenced as `governance.<action>`; `action` tokens use dot‑notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
+
 The Fold Engine consumes canonicalized events to produce a canonical state tree.
 
 ```mermaid
