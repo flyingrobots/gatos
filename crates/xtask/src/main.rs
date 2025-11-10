@@ -4,7 +4,13 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[derive(Parser, Debug)]
-#[command(name = "xtask", version, about = "Repo task runner (cargo xtask)")]
+#[command(
+    name = "xtask",
+    version,
+    about = "Repo task runner (cargo xtask)",
+    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nENV:\n  MERMAID_MAX_PARALLEL     Concurrency for diagrams (default: min(cpu, 8))\n  MERMAID_CLI_VERSION      @mermaid-js/mermaid-cli pin (default: 10.9.0)\n  MERMAID_CMD_TIMEOUT_MS   Timeout for mmdc/npx (10s..15m, default: 120s)\n\nEXAMPLES:\n  cargo run -p xtask -- diagrams --all\n  cargo run -p xtask -- diagrams docs/TECH-SPEC.md\n  cargo run -p xtask -- schemas all\n  cargo run -p xtask -- links\n",
+    after_help = "Tip: use 'make ci-*' shims or 'cargo run -p xtask -- <command>' for CI parity."
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -80,7 +86,7 @@ fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
         }
         run("node", &args, Some(&repo))?
     } else {
-        bail!("pass --all or one or more files");
+        bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
     }
     Ok(())
 }
@@ -132,7 +138,7 @@ fn links(files: Vec<String>) -> Result<()> {
         run("docker", docker_args, Some(&repo))?;
         return Ok(());
     } else {
-        bail!("lychee or docker required for link check")
+        bail!("Link check requires 'lychee' in PATH or Docker. Install lychee (https://github.com/lycheeverse/lychee) or install Docker to run the containerized check.")
     }
 }
 
@@ -151,7 +157,10 @@ fn repo_root() -> Result<PathBuf> {
             break;
         }
     }
-    bail!("could not locate repo root from {:?}", cwd)
+    bail!(
+        "Could not locate repository root from {:?}. Run xtask from within the repository or a child directory.",
+        cwd
+    )
 }
 
 fn which(bin: &str) -> Option<PathBuf> {
