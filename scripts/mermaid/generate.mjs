@@ -439,6 +439,22 @@ function sha256(s) {
 }
 
 async function embedMeta(svgPath, task, cliVer) {
+  // Check for existing metadata and warn if inconsistent before writing
+  try {
+    const existing = await fs.readFile(svgPath, 'utf8');
+    const existingMeta = extractMeta(existing);
+    if (existingMeta) {
+      const expectedSrc = path.relative(repoRoot, task.mdPath).split(path.sep).join('/');
+      if (existingMeta.src !== expectedSrc || existingMeta.index !== task.index) {
+        console.warn(
+          `[meta] ${path.relative(repoRoot, svgPath)}: replacing inconsistent metadata ` +
+          `(had src=${existingMeta.src} index=${existingMeta.index}, want src=${expectedSrc} index=${task.index})`
+        );
+      }
+    }
+  } catch {
+    // File may not exist yet; proceed
+  }
   const meta = {
     src: path.relative(repoRoot, task.mdPath).split(path.sep).join('/'),
     index: task.index,
@@ -516,7 +532,10 @@ async function verifyTasks(tasks) {
       }
       const codeHash = sha256(t.code);
       if (meta.code_sha256 !== codeHash) {
-        errs.push(`${usedLegacy ? relLegacy : relHashed}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash})`);
+        // Include a short snippet (first few lines, truncated) to aid debugging
+        const firstLines = t.code.split('\n').slice(0, 8).join('\n');
+        const truncated = (firstLines.length > 400 ? firstLines.slice(0, 400) + '…' : firstLines).replace(/\n/g, '\\n');
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash}) — snippet: ‹${truncated}›`);
       }
       const wantCli = process.env.MERMAID_CLI_VERSION || '10.9.0';
       if (meta.cli !== wantCli) {
