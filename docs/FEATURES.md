@@ -193,11 +193,9 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 
 ### F9-US-DEV
 
-|   |   |
-|--|--|
-| **As a...** | App Developer |
-| **I want..** | to store sensitive data (PII, secrets) in a private store |
-| **So that...** | my public, verifiable state does not contain confidential information |
+**Given** I am an App Developer
+**When** I define a piece of state as sensitive in my policy
+**Then** that state should be stored in a private store and replaced with an Opaque Pointer in the public state.
 
 #### Acceptance Criteria
 
