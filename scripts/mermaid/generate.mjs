@@ -131,7 +131,13 @@ async function listMarkdownFiles() {
     const files = [];
     for (const f of cliFiles) {
       if (!f.toLowerCase().endsWith('.md')) continue;
-      try { await fs.access(f); files.push(f); } catch { /* skip missing */ }
+      try {
+        await fs.access(f);
+        files.push(f);
+      } catch (e) {
+        const msg = e && e.message ? e.message : String(e);
+        console.warn(`[mermaid] warning: skipping missing/inaccessible file: ${f} (${msg})`);
+      }
     }
     return files;
   }
