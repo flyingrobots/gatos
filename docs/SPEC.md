@@ -657,7 +657,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
   Proposal-Id: blake3:<hex>
   Approval-Id: blake3:<hex>
   Signer: ed25519:<pubkey>
-  Expires-At: <ISO8601>   # OPTIONAL
+  Expires-At: <ISO8601>   # OPTIONAL. If present, the approval is only valid until this time. It cannot extend the proposal's expiration.
   ```
 
 - Grant (at `refs/gatos/grants/…`):
