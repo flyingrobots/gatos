@@ -19,3 +19,4 @@ Each ADR will have a status, typically one of the following:
 |:---|:---|:---|:---|
 | [ADR-0001](./ADR-0001/DECISION.md) | Split gatos-ledger into no_std Core and std Backends | Accepted | 2025-11-08 |
 | [ADR-0002](./ADR-0002/DECISION.md) | Distributed Compute via a Job Plane | Accepted | 2025-11-08 |
+| [ADR-0003](./ADR-0003/DECISION.md) | Consensus Governance for Gated Actions | Accepted | 2025-11-08 |

@@ -1,0 +1,9 @@
+{
+  "action": "publish.artifact",
+  "target": "https://example.com/assets/model.bin",
+  "proposal_id": "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "required_quorum": "2-of-3@leads",
+  "expire_at": "2025-12-01T00:00:00Z",
+  "policy_rule": "governance.publish.artifact",
+  "created_by": "user:alice"
+}

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v make >/dev/null 2>&1; then
+  make -s pre-commit
+else
+  echo "make is not installed; please run 'make pre-commit' manually or install make" >&2
+  exit 1
+fi

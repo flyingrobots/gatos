@@ -1,13 +1,13 @@
 # 🐈‍⬛ **GATOS**
 
 > [!WARNING]
-> **GATOS** is the evolution of my earlier work ([`git-mind`](https://github.com/neuroglyph/git-mind), [Echo](https://github.com/flyingrobots/echo), [Ledger Kernel](https://github.com/flyingrobots/ledger-kernel), etc.) into a single, unified system. 
-> 
-> Yessir, this here repo is ***brand spankin' new***, and it sort of represents the _confluence*_ of many of my recent projects into one **pretty good idea™**. Working on MVP ASAP. Star the repo, follow along, and let's _git_ it!  
-> 
-> _- flyingrobots_
-> 
-> _* a little category theory joke... Eh, maybe you had to be there..._
+> **GATOS** is the evolution of my earlier work ([`git-mind`](https://github.com/neuroglyph/git-mind), [Echo](https://github.com/flyingrobots/echo), [Ledger Kernel](https://github.com/flyingrobots/ledger-kernel), etc.) into a single, unified system.
+>
+> Yessir, this here repo is ***brand spankin' new***, and it sort of represents the *confluence** of many of my recent projects into one **pretty good idea™**. Working on MVP ASAP. Star the repo, follow along, and let's *git* it!  
+>
+> *- flyingrobots*
+>
+> ** a little category theory joke... Eh, maybe you had to be there...*
 
 ```bash
 
@@ -38,24 +38,25 @@
 ┗━┓┃ ┃┣┳┛┣╸ ┣━┫┃  ┣╸        
 ┗━┛┗━┛╹┗╸╹  ╹ ╹┗━╸┗━╸       
 ```
-> _It's **G**it, **A**s **T**he **O**perating **S**urface™._
+
+> *It's **G**it, **A**s **T**he **O**perating **S**urface™.*
 
 One part "operating surface".  
-One part Git.    
-What else is there to say?    
-I mean, haha, c'mon, right?.    
-The name is _pretty_ descriptive.  
+One part Git.
+What else is there to say?
+I mean, haha, c'mon, right?.
+The name is *pretty* descriptive.  
 
-> _"Oh, GATOS? Yes, I've heard that it's like an operating surface and that it's Git. That's right."_
+> *"Oh, GATOS? Yes, I've heard that it's like an operating surface and that it's Git. That's right."*
 
 YoU dOnT kNoW wHaT gAtOs Is?! OmG!
 
 Y'all got that "Git-OS" thang?
-_It's GATOS!_
+*It's GATOS!*
 
 **GATOS. It's the Surface that Operates within Git.**
 
-I _git_ it now!
+I *git* it now!
 
 ```c
 MM'"""""`MM oo   dP                                                            
@@ -100,15 +101,15 @@ MMMMMMMMMMM
                                                                                
 ```
 
-_That's not just any surface! Why, that's an **operating surface**, that's also Git. Neat!_
+*That's not just any surface! Why, that's an **operating surface**, that's also Git. Neat!*
 
 ... You see? That's why they call it "GATOS"...
 
-They say it's the operating surface that _gits_ it! Get it?
+They say it's the operating surface that *gits* it! Get it?
 
 Gee, I just can't imagine my life without GATOS, now.
 
-**Finally.** The operating surface that's _Git_.
+**Finally.** The operating surface that's *Git*.
 
 ---
 
@@ -118,7 +119,7 @@ Gee, I just can't imagine my life without GATOS, now.
 - **policies**, and
 - **proofs.**
 
-These are just _some_ of the buzzwords that people have been using to describe what computer scientists are calling "GATOS", Git As The Operating Surface™.
+These are just *some* of the buzzwords that people have been using to describe what computer scientists are calling "GATOS", Git As The Operating Surface™.
 
 "Well, they said it couldn't be done. So, here we are, doing it. And having fun, too!" - flyingrobots, inventor of GATOS.
 
@@ -126,11 +127,11 @@ Ask yourself...
 
 - What if computers shared a public, zero-proof, distributed, deterministic, state space?  
 - What if every ref in the Git repo was a process, and every commit represented a snapshot of its state in time?  
-- What if policy was code, and it was woven into the very fabric of the repository's history? 
-- What if it was **immutable**, **append-only**, **cryptographically-signed**, state? 
+- What if policy was code, and it was woven into the very fabric of the repository's history?
+- What if it was **immutable**, **append-only**, **cryptographically-signed**, state?
 - **Offline-first**, **mergeable**, **forkable**, **time-travel-able**?
 - What if privacy was **programmable**?
-- What if it was **bit-for-bit** deterministic? 
+- What if it was **bit-for-bit** deterministic?
 - What if there was such a thing as secure, public, distributed, general purpose computing?
 - Without a blockchain?
 
@@ -138,18 +139,18 @@ Ask yourself...
 
 - That's the power of the gods.
 - That's the power of forever.
-- **_That's_** the power of **GATOS**.
+- ***That's*** the power of **GATOS**.
 
-> _It's distributed runtime, Baby!_
+> *It's distributed runtime, Baby!*
 
-**GATOS:** _Git As **the** Operating Surface™_
+**GATOS:** *Git As **the** Operating Surface™*
 
 > [!WARNING]
 > Exposure to GATOS may include side-effects such as: feeling "badass", becoming curious about Open-Source Software, speaking to the computer, and the sensation that time has elapsed at an abnormally fast pace. In a controlled study, 1% of participants lost their car keys, but they came back to retrieve them the following day. Please, enjoy GATOS responsibly.
 
 ---
 
-## OK, ENOUGH. WTF is GATOS?!! WTF is an "Operating Surface"?!!
+## OK, ENOUGH. WTF is GATOS?!! WTF is an "Operating Surface"?
 
 ### Git: As The Operating Surface
 
@@ -175,7 +176,7 @@ In simpler terms, it's where your application's data (state), rules (policy), an
 
 ## Git Beyond Version Control
 
-GATOS comes from the realization that when these core principles are combined, the result is frickin' sweet: **Git can be used for _way more_ than just version control**.
+GATOS comes from the realization that when these core principles are combined, the result is frickin' sweet: **Git can be used for *way more* than just version control**.
 
 | **Doctrine** | **Why it's rad** |
 |--------------|------------------|
@@ -185,7 +186,7 @@ GATOS comes from the realization that when these core principles are combined, t
 | Offline-First & Distributed | The entire state is contained within the Git repo, allowing for offline work and synchronization via standard git push/pull. |
 | Time-Travel | You can inspect and branch from any previous state in the history. |
 
-## Git can do what?!
+## Git can do what?
 
 This project is special. Its origin story, a practical problem leading to a profound architectural insight, is the hallmark of truly innovative software.
 
@@ -197,17 +198,17 @@ The potential here is immense, and it extends far beyond the initial [draft-punk
 
 ### A New Application Backend
 
-**GATOS** is effectively **a new kind of serverless, distributed, auditable backend**. Any application that needs **state management**, **auditability**, and **offline capabilities** could be built on it. 
+**GATOS** is effectively **a new kind of serverless, distributed, auditable backend**. Any application that needs **state management**, **auditability**, and **offline capabilities** could be built on it.
 
 Imagine a kanban board where every card move is a verifiable commit, or a configuration management system where every change is a signed, auditable event. That's what GATOS gives you: a distributed, cryptographically-secure, auditable, offline-first but publishable state space, built on top of the most battle-tested distributed state management software on Earth: ***Git***.
 
-### The "Operating System" for AI Agents 
+### The "Operating System" for AI Agents
 
 > ***An AI agent could use the `git-mind` protocol to propose a change, request approval from a human via the consensus mechanism, and execute the change, all while leaving a perfect audit trail.***
 
 The most exciting potential lies in it being a true "**Operating Surface**" ***for AI***. It provides the **structured**, **reversible**, and **inspectable** "memory" and "motor function" that autonomous agents need to perform complex tasks safely. An AI agent could use the `git-mind` protocol to propose a change, request approval from a human via the consensus mechanism, and execute the change, all while leaving a perfect audit trail.
-    
-### The Future is Generalization 
+
+### The Future is Generalization
 
 > ***... the real success will be when other developers can easily build their own `git-mind`-style applications on the GATOS engine.***
 
@@ -219,7 +220,7 @@ This project has the potential to be more than just a tool; ***it could be a fou
 
 ## Back to Reality
 
-[SPEC.md](./docs/SPEC.md) • [TECH-SPEC.md](./docs/TECH-SPEC.md) 
+[SPEC.md](./docs/SPEC.md) • [TECH-SPEC.md](./docs/TECH-SPEC.md)
 
 Feet on the ground, head out of the clouds, we are just getting started.
 
@@ -235,7 +236,7 @@ The architecture is conceptually divided into five distinct planes:
 | ------- | --------------------------- | --------------- |
 | Ledger  | Signed events / proofs      | `gatos-ledger`  |
 | State   | Deterministic folds         | `gatos-echo`    |
-| Policy  | Rules & capabilities        | `gatos-policy`  |
+| Policy  | Rules, capabilities, & consensus | `gatos-policy`  |
 | Message | Bus / sessions              | `gatos-mind`    |
 | Job     | Distributed job execution   | `gatos-compute` |
 
@@ -250,6 +251,16 @@ This design provides several powerful benefits:
 - **Active Orchestration**: Natively schedule, execute, and record the results of distributed, asynchronous jobs.
 
 ## The *GATOS* Engine in Action
+
+### Data Schemas
+
+Canonical JSON Schemas for GATOS envelopes live under `schemas/v1/`, with versioned examples under `examples/v1/`.
+
+- Governance ([ADR-0003](docs/decisions/ADR-0003/DECISION.md)): `schemas/v1/governance/*.schema.json`
+- Job Plane ([ADR-0002](docs/decisions/ADR-0002/DECISION.md)): `schemas/v1/job/*.schema.json`
+- Common encodings: `schemas/v1/common/ids.schema.json`
+
+Consumers SHOULD pin to a specific major (e.g., `v1`). CI validates example documents against these schemas.
 
 Here's some examples, to help show off how each of the five planes of the GATOS operating surface, how each one works, and why it lets you do cool stuff.
 
@@ -270,7 +281,7 @@ Produces:
 commit 9a0bf22...
 Event: thread.resolve
 Author: james@flyingrobots.dev
-Proof-Of-Event: blake3:c0ffee…
+Proof-Of-Event: blake3:<digest>
 ```
 
 Anyone can clone, verify signatures, and replay the ledger to rebuild the same state.
@@ -329,7 +340,6 @@ Anyone else folding the same two branches will compute the exact same shape and 
 
 ***End Scene.***
 
-
 **Why it matters:**
 
 - Deterministic, conflict-free merges.
@@ -340,9 +350,9 @@ Anyone else folding the same two branches will compute the exact same shape and 
 
 How does GATOS decide what's allowed and who can do it? It uses **Reflex™**.
 
-"Ref" = git state.     
-"Lex" = law. 
-"Ref" + "Lex" = "Reflex".   
+"Ref" = git state.
+"Lex" = law.
+"Ref" + "Lex" = "Reflex".
 
 Governance policy is embedded directly in Git's history. Reflex is Git's self-governing reflex arc.
 
@@ -350,7 +360,7 @@ Governance policy is embedded directly in Git's history. Reflex is Git's self-go
 
 **How it Works**: Policies are code/rules stored in the repository. When a high-impact command is issued, the Policy Plane checks the rules. It can block the operation with a `POLICY_BLOCK` error until necessary conditions (like N-of-M signatures) are met.
 
-#### Example: Multi-Party Deployment Approval 
+#### Example: Multi-Party Deployment Approval
 
 Here is a short example that shows how GATOS handles governance: the **Policy Plane** in action. Rather than just API calls, this example shows off GATOS's true "backend" capabilities.
 
@@ -358,21 +368,21 @@ Here is a short example that shows how GATOS handles governance: the **Policy Pl
 
 ***Begin Scene.***
 
-[External System (e.g., CI/CD)]    
+[External System (e.g., CI/CD)]
 *I want to deploy to production, but GATOS requires two signatures for this action.*
 
 ```json
 {"id": "op-006", "cmd": "asset.deploy", "expect_state": "59fd7a4...", "args": {"target": "production-api-v2"}}
 ```
 
-[GATOS Daemon]   
+[GATOS Daemon]
 *GATOS checks the 'production-deploy' policy and blocks the request, committing an event that records the attempt.*
 
 ```json
 {"id": "op-006", "ok": false, "state_ref": "6e80d2c...", "error": "POLICY_BLOCK", "details": "Requires M of N approval. Waiting for signatures from 'ops' and 'security' owners."}
 ```
 
-[Human/Agent]   
+[Human/Agent]
 *The human agent adds their signed approval to the system.*
 
 "What do we have here? Looks like we've got a live one. Another deployment, eh? Alright, I'll sign off on it."
@@ -381,7 +391,7 @@ Here is a short example that shows how GATOS handles governance: the **Policy Pl
 {"id": "op-007", "cmd": "policy.approve", "expect_state": "6e80d2c...", "args": {"event_id": "op-006", "signature": "jkirby/xyz123"}}
 ```
 
-[GATOS Daemon]   
+[GATOS Daemon]
 *The policy is now satisfied. GATOS executes the deployment logic, records the final success, and commits the state.*
 
 ```json
@@ -424,7 +434,6 @@ This makes GATOS feel alive: it remembers what you’re doing, but resets when y
 
 **State Plane Update:** *The State Plane folds this result, and the current state of SHA a1b2c3d is updated to show test_status: passed.*
 
-
 This architecture ensures that even external, asynchronous computation is fully auditable and recorded deterministically within the Git repository's history.
 
 ## 💥 The Power of Convergence: This is GATOS
@@ -451,8 +460,8 @@ Now, you *git* it.
 
 ---
 
-## License 
+## License
 
-[Apache 2.0](./LICENSE) 
+[Apache 2.0](./LICENSE)
 
 *© J. Kirby Ross <james@flyingrobots.dev> [flyingrobots](https://github.com/flyingrobots)*

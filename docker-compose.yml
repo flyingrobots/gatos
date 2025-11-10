@@ -1,0 +1,28 @@
+services:
+  ci-diagrams:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    environment:
+      MERMAID_MAX_PARALLEL: ${MERMAID_MAX_PARALLEL:-6}
+      MERMAID_CLI_VERSION: ${MERMAID_CLI_VERSION:-10.9.0}
+      PUPPETEER_EXECUTABLE_PATH: ''
+    command: >-
+      bash -lc "npx -y @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION:-10.9.0} &&
+      node scripts/mermaid/generate.mjs --all"
+
+  ci-schemas:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: >-
+      bash -lc "./scripts/validate_schemas.sh"
+
+  ci-markdownlint:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: ["npx", "-y", "markdownlint-cli", "**/*.md", "--config", ".markdownlint.json"]

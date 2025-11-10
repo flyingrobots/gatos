@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/governance/approval.schema.json",
+  "title": "GATOS Governance Approval (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["proposal_id", "approval_id", "signer"],
+  "properties": {
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "approval_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "signer": { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  }
+}

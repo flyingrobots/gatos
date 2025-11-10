@@ -1,46 +1,60 @@
+---
+Status: Accepted
+Date: 2025-11-08
+ADR: ADR-0002
+Authors: [flyingrobots]
+Requires: [ADR-0001]
+Related: [ADR-0003]
+Tags: [Job Plane, Compute, PoE]
+Schemas:
+  - schemas/v1/job/job_manifest.schema.json
+  - schemas/v1/job/proof_of_execution_envelope.schema.json
+Supersedes: []
+Superseded-By: []
+---
 
-## ADR-0002: Distributed Compute via a Job Plane
+# ADR-0002: Distributed Compute via a Job Plane
 
 - **Status:** Accepted
 - **Date:** 2025-11-08
 
-### Scope
+## Scope
 
 This ADR defines a system within GATOS for scheduling, executing, and recording the results of distributed, asynchronous jobs. This decision introduces the **Job Plane** and its associated Git namespaces and protocols.
 
-### Rationale
+## Rationale
 
 **Problem:** GATOS can track and govern state, but cannot currently orchestrate or react to state changes with computation.
 
 **Context:** To fulfill the vision of “Git as an Operating Surface”, computation must be a native citizen. Commits as “speech-acts” (the original metaphor) become literal when a commit can trigger a verifiable job.
 
-### Decision
+## Decision
 
 1. A new **Job Plane** **MUST** be introduced to the GATOS architecture.
 2. The `refs/gatos/jobs/` namespace is reserved for this plane.
 3. When a **Job** commit is created, the **Ledger Service** (e.g., `gatosd`) **MUST** publish a corresponding message to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers. Publication is an automatic system behavior on commit acceptance.
 4. The job lifecycle **MUST** be represented entirely through Git objects:
-   - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation.
+   - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation. See schema: [`schemas/v1/job/job_manifest.schema.json`](../../../schemas/v1/job/job_manifest.schema.json).
    - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare‑and‑swap) to prevent race conditions.
    - **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
-5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment.
+5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. See envelope schema: [`schemas/v1/job/proof_of_execution_envelope.schema.json`](../../../schemas/v1/job/proof_of_execution_envelope.schema.json).
 6. Each `Result` commit **MUST** include trailers for discoverability:
-   - `Job-Id: <blake3:…>`
-   - `Proof-Of-Execution: <blake3:…>`
-   - `Worker-Id: <pubkey>`
+   - `Job-Id: blake3:<hex>`
+   - `Proof-Of-Execution: blake3:<hex>`
+   - `Worker-Id: ed25519:<base64|hex>`
    - `Attest-Program: <hash-of-runner-binary>` (optional)
    - `Attest-Sig: <signature>` (optional)
 
-#### Canonical Job Identifier
+### Canonical Job Identifier
 
 The canonical job identifier is the job’s `content_id` (the BLAKE3 hash of the canonical serialization of the unsigned job core). All protocol elements that refer to a job MUST use this `job-id`.
 
 - Claim refs MUST be named `refs/gatos/jobs/<job-id>/claims/<worker-id>`.
-- Result trailers MUST use `Job-Id: <blake3:…>` corresponding to the same `job-id`.
+- Result trailers MUST use `Job-Id: blake3:<hex>` corresponding to the same `job-id`.
 
 ULIDs MAY be used as human-friendly aliases in messages (for deduplication, sorting, and UX). When present, the ULID MUST also be recorded in the job manifest. Workers MUST resolve ULIDs to the canonical `job-id` by reading the job commit and computing its `content_id`. ULIDs MUST NOT be used as ref keys for claims or results.
 
-#### Job Manifest Schema (Authoritative and Canonicalization)
+### Job Manifest Schema (Authoritative and Canonicalization)
 
 The job manifest is stored as `job.yaml` but the authoritative form for hashing and `content_id` computation is Canonical JSON.
 
@@ -53,7 +67,7 @@ The job manifest is stored as `job.yaml` but the authoritative form for hashing 
 - Optional fields:
   - `env: object` — map<string,string>; keys unique; values UTF‑8 strings.
   - `cwd: string` — working directory.
-  - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"…", "size":123 }`).
+  - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"<hex>", "size":123 }`).
   - `policy_root: string` — `sha256:<hex>` of policy bundle used.
   - `ulid: string` — human‑friendly identifier; not used for hashing.
 
@@ -81,7 +95,7 @@ Canonical JSON used for hashing:
 {"args":["echo","hello"],"command":["/usr/bin/env","bash","-lc"],"env":{"GREETING":"hello"},"timeout":30}
 ```
 
-#### Atomic Claim Protocol (CAS)
+### Atomic Claim Protocol (CAS)
 
 Claim creation MUST use Git’s reference update protocol with an expected old object id:
 
@@ -90,7 +104,7 @@ Claim creation MUST use Git’s reference update protocol with an expected old o
 - Deployments MUST designate a single authoritative push endpoint (leader) for claim creation to guarantee atomicity across replicas. Retrying against non‑authoritative replicas MUST converge via eventual consistency.
 - Workers SHOULD use exponential backoff with jitter on CAS failures.
 
-#### Trailer Encoding (Result Commit)
+### Trailer Encoding (Result Commit)
 
 All trailers MUST use canonical, prefixed encodings:
 
@@ -101,9 +115,10 @@ All trailers MUST use canonical, prefixed encodings:
 - `Attest-Sig: ed25519:<base64|hex>` — signature over attestation envelope (OPTIONAL).
 
 Encodings MUST be lowercase hex for BLAKE3 digests; key/signature encodings MUST declare algorithm via prefix and use a standard encoding (hex or base64) documented by the implementation.
-### Diagrams
 
-#### Job Lifecycle
+## Diagrams
+
+### Job Lifecycle
 
 This diagram shows the standard lifecycle states for a job as it moves through the system.
 
@@ -120,7 +135,7 @@ stateDiagram-v2
     pending --> aborted: Canceled by user/policy
 ```
 
-#### Job Discovery and Execution Flow
+### Job Discovery and Execution Flow
 
 This sequence shows how the different GATOS planes interact to schedule and execute a job.
 
@@ -146,7 +161,7 @@ sequenceDiagram
     end
 ```
 
-### Consequences
+## Consequences
 
 ### Pros
 
@@ -159,12 +174,12 @@ sequenceDiagram
 - Increases complexity; requires new runner/worker components to be built.
 - Adds storage overhead for job logs and artifacts.
 
-### Alternatives Considered
+## Alternatives Considered
 
 1. **External CI/CD Systems** — Rejected: breaks the self-contained, Git-native model.
 2. **Webhooks** — Rejected: less reliable and less auditable than Git-tracked claims/results.
 
-### Terminology and References
+## Terminology and References
 
 - `content_id`: The BLAKE3 hash of the canonical serialization of the unsigned job core. This mirrors the definition used for commits in ADR‑0001 and applies here to the job manifest’s canonical form. See ADR‑0001 for canonical serialization rules and the `CommitCore` pattern.
 - `unsigned job core`: The canonical, serialized job content used for hashing and signatures; derived from the job manifest (e.g., `job.yaml`) and fixed fields, excluding any signatures, claims, or result artifacts. This parallels ADR‑0001’s "unsigned commit core" concept.

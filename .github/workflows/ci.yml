@@ -2,7 +2,8 @@ name: CI
 
 on:
   pull_request:
-    branches: ["**"]
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -91,3 +92,67 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: cargo test (MSRV)
         run: cargo test --workspace --locked
+
+  markdownlint:
+    runs-on: ubuntu-latest
+    name: Markdownlint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache npm (npx)
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20-npx-cache-${{ hashFiles('.github/workflows/ci.yml') }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: markdownlint (check only)
+        run: npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+
+  schemas:
+    runs-on: ubuntu-latest
+    name: Schema validation (v1)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache npm (global)
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20-ajv-cache-v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate schemas and examples (v1)
+        run: ./scripts/validate_schemas.sh
+
+  # (removed duplicate markdownlint job id)
+
+  diagrams:
+    runs-on: ubuntu-latest
+    name: Mermaid Diagrams Up-to-date
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache npm (npx)
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20-npx-cache-v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate Mermaid diagrams (full repo)
+        run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
+      - name: Fail if generation produced diffs
+        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
+  linkcheck:
+    runs-on: ubuntu-latest
+    name: Link Check (lychee)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --config ./.lychee.toml **/*.md
+          fail: true

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/job/job_manifest.schema.json",
+  "title": "GATOS Job Manifest (v1 Canonical JSON)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["command", "timeout"],
+  "properties": {
+    "command": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "args": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "timeout": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0, "description": "Timeout in seconds" },
+        {
+          "type": "string",
+          "description": "Timeout as ISO 8601 duration (e.g., PT30S, PT5M, P1DT2H)",
+          "pattern": "^P(?:(?:\\d+[YMWD])+(?:T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)?|T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)$"
+        }
+      ]
+    },
+    "env": { "type": "object", "additionalProperties": { "type": "string" }, "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" } },
+    "cwd": { "type": "string", "minLength": 1 },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "algo", "hash"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["blobptr"] },
+          "algo": { "type": "string", "const": "blake3" },
+          "hash": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+          "size": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "policy_root": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" }
+  }
+}

@@ -5,8 +5,8 @@
 - [ ] Implement GitLedger.append (CAS update-ref)
 - [ ] Canonical JSON (sorted keys) serializer
 - [ ] CLI: `gatos event add`
-- [ ] Tests: 
-  - [ ] concurrent append, 
+- [ ] Tests:
+  - [ ] concurrent append,
   - [ ] deny audit
 
 ## EPIC-2: Policy VM
@@ -24,11 +24,11 @@
 
 ## EPIC-4: Message Bus
 
-- [ ] Topics/shards; 
+- [ ] Topics/shards;
 - [ ] publish/subscribe
-- [ ] Acks & commitments; 
+- [ ] Acks & commitments;
 - [ ] dedupe
-- [ ] Tests: 
+- [ ] Tests:
   - [ ] exactly-once torture
 
 ## EPIC-5: Sessions
@@ -41,21 +41,21 @@
 
 ## EPIC-6: CAS & Opaque Pointers
 
-- [ ] FastCDC integration; 
+- [ ] FastCDC integration;
 - [ ] manifests
-- [ ] Rekey; 
+- [ ] Rekey;
 - [ ] export policy controls
 
 ## EPIC-7: Epochs & Compaction
 
-- [ ] epoch anchors; 
+- [ ] epoch anchors;
 - [ ] compact & verify
 - [ ] `gatos doctor` invariants
 
 ## EPIC-8: Observability
 
-- [ ] `/healthz`, 
-- [ ] `/readyz`, 
+- [ ] `/healthz`,
+- [ ] `/readyz`,
 - [ ] `/metrics`
 - [ ] Prometheus exporter
 
@@ -66,11 +66,12 @@
 
 ## EPIC-10: Wesley Target
 
-- [ ] schema emission; 
+- [ ] schema emission;
 - [ ] RLS bundles
 - [ ] example demo repo
 
 ## EPIC-11: Push-Gate Profile
-- [ ] Gateway service; 
+
+- [ ] Gateway service;
 - [ ] RYW waiters
 - [ ] Split-brain repair tools

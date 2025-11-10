@@ -1,13 +1,13 @@
 # GATOS — SPEC v0.3 (Draft)
 
-> _The key to understanding GATOS is understanding that it's just Git._
+> *The key to understanding GATOS is understanding that it's just Git.*
 
 ## Git As The Operating Surface
 
 > You use Git for source control.  
-> _I use Git for reality control._  
-> _We are not the same._  
-> **GATOS: Git Different.** 
+> *I use Git for reality control.*  
+> *We are not the same.*  
+> **GATOS: Git Different.**
 
 |  |  |
 |--|--|
@@ -43,7 +43,7 @@ A **GATOS node** is a Git repository with a disciplined layout of refs, notes, a
 
 1) **Ledger plane** — append‑only journals (**events**).  
 2) **State plane** — deterministic folds (**state roots**).  
-3) **Policy/Trust plane** — enforceable rules and grants.  
+3) **Policy/Trust plane** — enforceable rules, grants, and multi‑party consensus governance.  
 4) **Message plane** — a commit‑backed pub/sub bus.
 5) **Job plane** — Distributed, verifiable job execution.
 
@@ -153,6 +153,10 @@ The normative layout is as follows:
 │       ├── jobs/
 │       │   └── <job-id>/
 │       │       └── claims/<worker-id>
+│       ├── proposals/
+│       ├── approvals/
+│       ├── grants/
+│       └── revocations/
 │       ├── sessions/
 │       ├── audit/
 │       ├── cache/
@@ -450,7 +454,7 @@ graph TD
 
 ## 16.  Compliance & Tests (Normative)
 
-Implementations **MUST** pass a five-point certification inspection.
+Implementations **MUST** pass a six-point certification inspection.
 
 ```mermaid
 graph TD
@@ -460,7 +464,13 @@ graph TD
     B --> E(Offline Reconcile);
     B --> F(Deny Audit);
     B --> G(Blob Integrity);
+    B --> H(Consensus Integrity);
 ```
+
+### 16.1 Consensus Integrity (Normative)
+
+- An action gated by a `2-of-3` quorum policy MUST be denied with 1 approval and MUST be allowed with 2 approvals.
+- A revoked grant MUST NOT be usable.
 
 ---
 
@@ -524,6 +534,8 @@ sequenceDiagram
 
 ## 19. Job Plane (Compute)
 
+See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+
 The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs.
 
 ### 19.1 Job Lifecycle
@@ -549,9 +561,9 @@ stateDiagram-v2
 
 The lifecycle is represented entirely through Git objects:
 
--   **Job:** A commit whose tree contains a `job.yaml` manifest.
--   **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
--   **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
+- **Job:** A commit whose tree contains a `job.yaml` manifest.
+- **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
+- **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
 
@@ -570,11 +582,103 @@ The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id
 Example (trailers):
 
 ```text
-Job-Id: blake3:9f0a…
-Worker-Id: ed25519:03ab…
-Proof-Of-Execution: blake3:7c2e…
-Attest-Program: blake3:11dd…
-Attest-Sig: ed25519:8a77…
+Job-Id: blake3:<hex>
+Worker-Id: ed25519:<pubkey>
+Proof-Of-Execution: blake3:<hex>
+Attest-Program: blake3:<hex>
+Attest-Sig: ed25519:<sig>
 ```
 
 See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definition of `content_id` and canonical serialization.
+
+---
+
+## 20. Consensus Governance (Normative)
+
+See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+
+Governs gated actions via proposals, approvals, and grants. Governance artifacts are Git commits under dedicated refs (see on‑disk layout). All trailers MUST use canonical, prefixed encodings (`blake3:<hex>`, `ed25519:<pubkey>`).
+
+### 20.1 Workflow
+
+Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MUST be defined in the trust graph (`gatos/trust/graph.json`).
+
+### 20.2 Commit Structures (Trailers)
+
+- Proposal (at `refs/gatos/proposals/…`):
+
+  ```text
+  Action: <string>
+  Target: <uri>
+  Proposal-Id: blake3:<hex>
+  Required-Quorum: <expr>
+  Expire-At: <ISO8601>
+  Policy-Rule: <policy id>
+  Created-By: <actor>
+  ```
+
+  (Note: `gatos://` is the canonical URI scheme for addressing resources managed within the GATOS operating surface.)
+- Approval (at `refs/gatos/approvals/…`):
+
+  ```text
+  Proposal-Id: blake3:<hex>
+  Approval-Id: blake3:<hex>
+  Signer: ed25519:<pubkey>
+  Expires-At: <ISO8601>   # OPTIONAL
+  ```
+
+- Grant (at `refs/gatos/grants/…`):
+
+  ```text
+  Proposal-Id: blake3:<hex>
+  Grant-Id: blake3:<hex>
+  Proof-Of-Consensus: blake3:<hex>
+  ```
+
+### 20.3 Proof‑Of‑Consensus (PoC)
+
+`Proof-Of-Consensus` is the BLAKE3 of a canonical JSON envelope containing:
+
+- The canonical proposal envelope (by value or `Proposal-Id`).
+- A sorted list (by `Signer`) of all valid approvals used to reach quorum (by value or `Approval-Id`).
+- The governance rule id (`Policy-Rule`) and effective quorum parameters.
+
+PoC envelope SHOULD be stored canonically under `refs/gatos/audit/proofs/governance/<proposal-id>`; the Grant’s `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
+
+### 20.4 Lifecycle States
+
+| State    | Meaning                         |
+|:---------|:--------------------------------|
+| proposal | Awaiting votes                  |
+| partial  | Some approvals collected        |
+| granted  | Quorum reached; action allowed  |
+| expired  | Proposal timed out              |
+| revoked  | Grant withdrawn or superseded   |
+
+```mermaid
+stateDiagram-v2
+    [*] --> proposal
+    proposal --> partial: approval received
+    partial --> partial: additional approvals
+    proposal --> expired: ttl elapsed
+    partial --> expired: ttl elapsed
+    partial --> granted: quorum satisfied
+    granted --> revoked: revocation committed
+    expired --> [*]
+    revoked --> [*]
+```
+
+### 20.5 Revocation
+
+A grant MAY be revoked by creating a `revocation` commit under `refs/gatos/revocations/` with trailers:
+
+```text
+Grant-Id: blake3:<hex>
+Revocation-Id: blake3:<hex>
+Reason: <free-text>
+Revoked-By: <actor>
+```
+
+### 20.6 Bus Topics (recommended)
+
+`gatos.governance.proposal.created`, `gatos.governance.approval.created`, `gatos.governance.grant.created`, `gatos.governance.grant.revoked`.

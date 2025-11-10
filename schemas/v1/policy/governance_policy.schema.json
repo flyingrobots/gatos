@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/policy/governance_policy.schema.json",
+  "title": "GATOS Governance Policy Section (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "governance": {
+      "$comment": "Rule names are enumerated in policy YAML (see ADR-0003 §8); schema remains permissive for extensibility.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "quorum": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["at_least", "group"],
+                "properties": {
+                  "at_least": { "type": "integer", "minimum": 1 },
+                  "group": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["all_of"],
+                "properties": {
+                  "all_of": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "ttl": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0, "description": "TTL in seconds" },
+              {
+                "type": "string",
+                "description": "TTL as ISO 8601 duration (e.g., PT1H, P2D)",
+                "pattern": "^P(?:(?:\\d+[YMWD])+(?:T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)?|T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)$"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

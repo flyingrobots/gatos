@@ -1,0 +1,9 @@
+{
+  "governance": {
+    "publish.artifact": {
+      "quorum": { "at_least": 2, "group": "leads" },
+      "ttl": "PT1H"
+    }
+  }
+}
+

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/governance/revocation.schema.json",
+  "title": "GATOS Governance Grant Revocation (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["grant_id", "revocation_id"],
+  "properties": {
+    "grant_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "revocation_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Human-readable reason for revocation (non-empty; max 256 chars)."
+    },
+    "revoked_by": {
+      "$ref": "../common/ids.schema.json#/$defs/actorId",
+      "description": "Identity of the revoker using canonical actor encoding (e.g., user:alice, agent:bot, service:policy)."
+    }
+  }
+}

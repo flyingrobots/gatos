@@ -1,8 +1,8 @@
 # GATOS — TECH-SPEC v0.3
 
-**Implementation Plan, Data Structures, and Algorithms**
+## Implementation Plan, Data Structures, and Algorithms
 
-> _This is how we GATOS._
+> *This is how we GATOS.*
 
 ---
 
@@ -28,9 +28,9 @@ graph TD
 
 ### Reuse & refactor recommendations
 
--   Reuse **Echo** crates for fold determinism (`rmg-core` as the fold engine).
--   Adopt **`git-kv`** “Stargate” concepts for optional `push-gate` profile.
--   Integrate **Wesley** as a compiler target to emit schemas and fold specs.
+- Reuse **Echo** crates for fold determinism (`rmg-core` as the fold engine).
+- Adopt **`git-kv`** “Stargate” concepts for optional `push-gate` profile.
+- Integrate **Wesley** as a compiler target to emit schemas and fold specs.
 
 ---
 
@@ -102,7 +102,7 @@ graph TD
 | `gatos-ledger` | Composes ledger components via feature flags. |
 | `gatos-mind` | Asynchronous, commit-backed message bus (pub/sub). |
 | `gatos-echo` | Deterministic state engine for processing events ("folds"). |
-| `gatos-policy` | Deterministic policy engine for executing compiled rules. |
+| `gatos-policy` | Deterministic policy engine for executing compiled rules and managing the Consensus Governance lifecycle. |
 | `gatos-kv` | Git-backed key-value state cache. |
 | `gatosd` | Main binary for the CLI and the JSONL RPC daemon. |
 | `gatos-compute` | Worker that discovers and executes jobs from the Job Plane. |
@@ -112,6 +112,10 @@ graph TD
 ---
 
 ## 3. Fold Engine (Echo integration)
+
+Note on policy rule naming
+
+- Governance actions are referenced as `governance.<action>`; `action` tokens use dot‑notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
 
 The Fold Engine consumes canonicalized events to produce a canonical state tree.
 
@@ -176,7 +180,7 @@ sequenceDiagram
 
 ## 7. JSONL Protocol
 
-Communication with `gatosd` occurs over a JSONL RPC protocol.
+Communication with `gatosd` occurs over a JSONL RPC protocol. Long‑running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
 
 ```mermaid
 sequenceDiagram
@@ -258,6 +262,17 @@ sequenceDiagram
     end
 ```
 
+Examples
+
+```json
+{"type":"append_event","id":"01A","ns":"finance","event":{}}
+{"type":"bus.subscribe","id":"01C","topic":"gatos.jobs.pending"}
+{"type":"fold_state","id":"01D","ns":"finance","channel":"table","spec":"folds/invoices.yaml"}
+{"type":"governance.proposal.new","id":"02A","action":"publish.artifact","target":"gatos://assets/model.bin","quorum":"2-of-3@leads"}
+{"type":"governance.approval.add","id":"02B","proposal":"<proposal-id-hash>"}
+{"type":"governance.grant.verify","id":"02C","grant":"<grant-id-hash>"}
+```
+
 ---
 
 ## 11.  Performance Guidance
@@ -329,6 +344,8 @@ classDiagram
 
 ## 15. Compute Engine (Job Runner)
 
+See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+
 The `gatos-compute` crate provides the GATOS worker process.
 
 ```mermaid
@@ -350,8 +367,66 @@ sequenceDiagram
 
 ### Implementation Plan
 
-1.  **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
-2.  **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a Git ref.
-3.  **Execution:** The worker will execute the job's `command` in a sandboxed environment.
-4.  **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
-5.  **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
+1. **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
+2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a Git ref.
+3. **Execution:** The worker will execute the job's `command` in a sandboxed environment.
+4. **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
+5. **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
+
+---
+
+## 16. Governance Engine
+
+See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+
+### Engine Responsibilities
+
+- Watchers: a service in `gatos-policy` watches `refs/gatos/proposals/**` and `refs/gatos/approvals/**`.
+- Verification: for each new Approval, verify signature and eligibility using the trust graph.
+- Quorum check: evaluate the policy rule (`governance.<action>`) to determine if quorum is satisfied.
+- Grant creation: when quorum is met, create a Grant commit with a canonical Proof‑Of‑Consensus envelope and update `refs/gatos/grants/...`.
+- Gate enforcement: the Policy Gate checks for a valid Grant before allowing any governed action.
+
+### CLI Skeleton (This defines the normative CLI user interface; stub behavior acceptable initially)
+
+- `gatos proposal new --action <id> --target <uri> --quorum <expr> [--ttl <dur>]`
+- `gatos approve --proposal <blake3:…> [--expires-at <ts>]`
+- `gatos grant verify --grant <blake3:…>`
+
+### Group Resolution
+
+Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads`) against `gatos/trust/graph.json`.
+
+### Revocation Propagation
+
+Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
+
+### End‑to‑End Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Ledger as GATOS (Ledger)
+    participant Policy as Policy Engine
+    participant Bus as Message Bus
+    participant Approver as Approver (via CLI)
+
+    Client->>Ledger: 1. Create Proposal (Action, Target, Quorum)
+    Ledger->>Policy: 2. Validate proposal
+    Policy-->>Ledger: 3. Accepted
+    Ledger->>Bus: 4. Publish proposal.created
+
+    loop Approvals
+        Approver->>Ledger: 5. Create Approval (Signer, Proposal-Id)
+        Ledger->>Policy: 6. Verify signature + eligibility
+        Policy-->>Ledger: 7. Approval valid
+    end
+
+    Ledger->>Policy: 8. Check quorum
+    alt Quorum satisfied
+        Ledger->>Ledger: 9. Create Grant (Proof-Of-Consensus)
+        Ledger->>Bus: 10. Publish grant.created
+    else Not yet satisfied
+        Ledger-->>Client: Pending (partial)
+    end
+```

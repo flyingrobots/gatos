@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/common/ids.schema.json",
+  "title": "Common Identifier Encodings (v1)",
+  "type": "object",
+  "$defs": {
+    "blake3Digest": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$",
+      "description": "Lowercase hex-encoded 32-byte BLAKE3 digest with prefix."
+    },
+    "ed25519Key": {
+      "type": "string",
+      "pattern": "^ed25519:(?:[0-9a-f]{64}|[A-Za-z0-9+/]{43}=|[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]{43}=)$",
+      "description": "Ed25519 public key (32 bytes) encoded as: lowercase hex (64 chars), standard base64 with one '=' padding (44 chars), or base64url unpadded (43 chars) or with one '=' padding (44 chars); all prefixed with 'ed25519:'."
+    },
+    "ed25519Sig": {
+      "type": "string",
+      "pattern": "^ed25519:(?:[0-9a-f]{128}|[A-Za-z0-9+/]{86}==|[A-Za-z0-9_-]{86}|[A-Za-z0-9_-]{86}==)$",
+      "description": "Ed25519 signature (64 bytes) encoded as: lowercase hex (128 chars), standard base64 with '==' padding (88 chars), or base64url unpadded (86 chars) or with '==' padding (88 chars); all prefixed with 'ed25519:'."
+    },
+    "uri": { "type": "string", "format": "uri" }
+    ,
+    "actorId": {
+      "type": "string",
+      "pattern": "^(user|agent|service):[A-Za-z0-9._-]+$",
+      "description": "Actor identity string: user:<name>, agent:<name>, or service:<name>"
+    }
+  }
+}

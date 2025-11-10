@@ -1,0 +1,10 @@
+{
+  // Lint all Markdown files in repo, excluding build artifacts and local vaults
+  "globs": [
+    "**/*.md",
+    "!target/**",
+    "!.git/**",
+    "!.obsidian/**"
+  ]
+}
+

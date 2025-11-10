@@ -1,3 +1,5 @@
+# FAQ
+
 Yes. Holy shit indeed.
 
 Let’s lock it in with clear answers to your questions, call out any missing pieces, and tighten a few bolts so the implementation path is zero‑ambiguity.
@@ -40,7 +42,6 @@ folds/invoices.rgf.sha # contains fold_root = sha256:<hex>
 
 Checkpoints carry:
 
-
 ```json
 {
   "state_root":"blake3:…",
@@ -50,9 +51,10 @@ Checkpoints carry:
 }
 ```
 
-Why compiled? 
-- Determinism + speed + auditability. 
-- YAML stays UX; 
+Why compiled?
+
+- Determinism + speed + auditability.
+- YAML stays UX;
 - RGF is law.
 
 ---
@@ -75,13 +77,13 @@ This makes gatos session merge a deterministic math operation, not a string diff
 
 ## 3) Proof system — ZK choice?
 
-### Phase plan:
+### Phase plan
 
-#### v1 (day‑one) 
+#### v1 (day‑one)
 
 - Commitment proofs (cheap, universal).
 - We record `inputs_root`, `output_root`, `policy_root`, `fold_root` and a `signature → proof.fairness`.
-- Verifier recomputes the public roots and signature. 
+- Verifier recomputes the public roots and signature.
   - No heavy crypto needed.
 
 #### v2 (optional, pluggable)
@@ -96,7 +98,7 @@ Start with small circuits (map‑join‑lww, counters, set membership) to prove 
 
 Support proof aggregation (multi‑step chain → one proof) later.
 
-### Spec tweak 
+### Spec tweak
 
 Add `fold_root` to proof envelope and make proof field type‑tagged:
 
@@ -140,16 +142,16 @@ This gives smooth resharding with exactly‑once semantics intact.
 
 Small, pure rule DSL inspired by Datalog/Rego, compiled to `.rgc` bytecode.
 
-### Features:
+### Features
 
-- Booleans, 
-- numeric/string ops, 
-- set membership, 
-- label checks, 
+- Booleans,
+- numeric/string ops,
+- set membership,
+- label checks,
 - actor/trust lookups.
-- No loops, 
-- no I/O, 
-- no time. 
+- No loops,
+- no I/O,
+- no time.
 - Strictly total functions.
   
 ### Shape
@@ -172,16 +174,16 @@ audit: true
 
 Standard predicates:
 
-- includes, 
-- contains, 
-- in_cidr, 
-- has_cap, 
-- before_epoch, 
+- includes,
+- contains,
+- in_cidr,
+- has_cap,
+- before_epoch,
 - etc.
   
 ### Explainability
 
-- Compiler annotates rule ids; 
+- Compiler annotates rule ids;
 - gate returns `Deny(rule_id, reason)` deterministically.
 
 ---
@@ -194,27 +196,27 @@ We added `fold_root` above — make it mandatory anywhere `policy_root` is manda
 
 ### 2. **Canonical JSON rules**
 
-- Call out key sorting, 
-- UTF‑8 normalization, 
+- Call out key sorting,
+- UTF‑8 normalization,
 - and number encoding explicitly (`u64`/`s128`/`fixed‑point`) so hashes are cross‑platform bit‑exact.
 
 ### 3. Error code taxonomy (for JSONL)
 
-- `POLICY_DENY`, 
-- `CAP_EXPIRED`, 
-- `FF_VIOLATION`, 
-- `ACK_TIMEOUT`, 
-- `DUP_COMMIT`, 
-- `EPOCH_BROKEN`, 
+- `POLICY_DENY`,
+- `CAP_EXPIRED`,
+- `FF_VIOLATION`,
+- `ACK_TIMEOUT`,
+- `DUP_COMMIT`,
+- `EPOCH_BROKEN`,
 - `PROOF_INVALID`.
 
-### 4. Resource URIs 
+### 4. Resource URIs
 
 - Standardize `gatos://<repo>/<ns>/<path>` as the resource field everywhere.
 
-### 5. Idempotency 
+### 5. Idempotency
 
-- Require ulid stability + idempotency keys for exec/bus intents; 
+- Require ulid stability + idempotency keys for exec/bus intents;
 - Deny repeats unless allowed by QoS.
   
 ### 6. Key rotation
@@ -273,37 +275,37 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 ### Kafka / EventStoreDB — event logs at scale
 
-- not offline‑first; 
-- no built‑in deterministic fold proofs; 
+- not offline‑first;
+- no built‑in deterministic fold proofs;
 - no Git audit trail.
   
-**GATOS**
+#### GATOS
 
-- lower TPS, 
-- higher assurance, 
-- portable, 
-- auditable, 
+- lower TPS,
+- higher assurance,
+- portable,
+- auditable,
 - Git‑native.
 
-### Dolt / LakeFS  — data versioning with Git‑like semantics.
+### Dolt / LakeFS  — data versioning with Git‑like semantics
 
-**GATOS**
+#### GATOS
 
-- uses Git itself as database + runtime + policy plane; 
+- uses Git itself as database + runtime + policy plane;
 - no heavyweight DB server.
 
-### DVC / Pachyderm — ML artifact + pipeline versioning.
+### DVC / Pachyderm — ML artifact + pipeline versioning
 
-**GATOS**
+#### GATOS
 
-- adds policy, 
-- proofs, 
-- and deterministic compute on the same DAG; 
+- adds policy,
+- proofs,
+- and deterministic compute on the same DAG;
 - no external control plane.
 
-## Nix/Guix — reproducible builds.
+## Nix/Guix — reproducible builds
 
-**GATOS**: 
+**GATOS**:
 
 - generalizes reproducibility to runtime state, messages, and governance.
 
@@ -311,10 +313,10 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 - huge cost.
 
-**GATOS**: 
+**GATOS**:
 
-- local determinism + cryptographic attestations, 
-- no global chain, 
+- local determinism + cryptographic attestations,
+- no global chain,
 - no miners.
 
 ---
@@ -333,24 +335,24 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 ## Concrete next steps
 
-- **Spec delta**: 
-  - add `fold_root` everywhere `policy_root` appears; 
-  - define canonical JSON rules; 
+- **Spec delta**:
+  - add `fold_root` everywhere `policy_root` appears;
+  - define canonical JSON rules;
   - add error codes.
-- **Compiler**: 
+- **Compiler**:
   - build `rgf` bytecode generator (YAML → Echo IR → CBOR).
-- **Gate**: 
-  - finalize `.rgs` grammar + deterministic interpreter; 
+- **Gate**:
+  - finalize `.rgs` grammar + deterministic interpreter;
   - emit rule ids in Deny.
-- **Bus**: 
+- **Bus**:
   - `mbus-config/<topic>.json` with versioned shard maps + dual‑write migration.
-- **Proofs**: 
-  - implement commitment proofs today; 
+- **Proofs**:
+  - implement commitment proofs today;
   - leave ZK behind a trait.
-- **CLI**: 
-  - `gatos doctor`, 
-  - `gatos epoch new`, 
-  - `gatos prove/verify`, 
+- **CLI**:
+  - `gatos doctor`,
+  - `gatos epoch new`,
+  - `gatos prove/verify`,
   - `gatos bus {publish,subscribe}`.
 
 Ship those, and this stops being “just” a gorgeous spec and becomes an operating surface people can run.
@@ -385,7 +387,7 @@ You’ll run the IR on a small VM with a deterministic standard library and a pu
 | **Iteration order** | pairs() order unspecified | pairs shadowed by dpairs() that sorts keys deterministically; ipairs allowed for arrays |
 | **Tables & hashing** | Hash seed randomized per process | Fixed hash seed inside VM; but you still must not rely on hash order |
 | **Coroutines** | Arbitrary yields | Disallowed (folds are pure; no scheduler) |
-| **Metamethods** | __gc | Finalizer order GC‑dependent | Disallowed; GC visible effects forbidden |
+| **Metamethods (__gc)** | Finalizer order GC‑dependent | Disallowed; GC visible effects forbidden |
 | **FFI/dynamic load** | possible via add‑ons | Forbidden |
 | **Math (exp/log/sin)** | Host‑lib accuracy varies | Deterministic math lib (CR‑libm‑style or pure integer/decimal path) |
 
@@ -401,7 +403,7 @@ You’ll run the IR on a small VM with a deterministic standard library and a pu
 Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lua IR)
                                          │
                                          └─► CBOR bytes  (hash = fold_root)
-```                                         
+```
 
 - **Normalize**: remove syntactic sugar, canonicalize constant folding, resolve upvalues.
 - **Lowering**: emit a small, explicitly typed IR (ops like `map_join`, `reduce`, `emit_json`, `cmp_sort`, etc.) + a minimal VM op set (LOADK, GET, SET, CALL, RET, …).
@@ -466,7 +468,7 @@ The EchoLua VM interprets ELC with:
 
 ## Spec deltas to support EchoLua
 
-### Add these to `SPEC/TECH‑SPEC`:
+### Add these to `SPEC/TECH‑SPEC`
 
 1.Fold compilation outputs
 
@@ -533,9 +535,9 @@ gatos foldc folds/invoices.lua -o folds/invoices.rgf
 
 ## Performance notes
 
-- Interpreted Lua is plenty for control + small reductions; 
+- Interpreted Lua is plenty for control + small reductions;
 - heavy math should be in Echo’s native reducers (map-joins, counters, OR‑sets) callable from Lua as intrinsics.
-- Keep the VM single‑threaded per fold; 
+- Keep the VM single‑threaded per fold;
 - parallelize across partitions upstream (multiple sessions/namespaces) to preserve determinism without scheduler complexity.
 
 ---

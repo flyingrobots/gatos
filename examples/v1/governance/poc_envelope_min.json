@@ -1,0 +1,14 @@
+{
+  "proposal_id": "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "approvals": [
+    {
+      "approval_id": "blake3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "signer": "ed25519:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "approval_id": "blake3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccd",
+      "signer": "ed25519:1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "policy_rule": "governance.publish.artifact"
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/governance/proof_of_consensus_envelope.schema.json",
+  "title": "GATOS Proof-Of-Consensus Envelope (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["proposal_id", "approvals", "policy_rule"],
+  "properties": {
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approval_id", "signer"],
+        "properties": {
+          "approval_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+          "signer": { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" }
+        }
+      },
+      "uniqueItems": true
+    },
+    "policy_rule": { "type": "string" }
+  }
+}
