@@ -125,68 +125,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ajv-cli and formats (pinned)
-        run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
-      - name: Compile schemas (v1)
-        run: |
-          set -euo pipefail
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json
-          ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json
-      - name: Validate examples (v1)
-        run: |
-          set -euo pipefail
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
-      - name: Additional encoding tests (ed25519 base64url forms)
-        run: |
-          set -euo pipefail
-          # Root schemas that reference defs using the canonical $id for proper resolution
-          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
-          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
-          # Positive: base64url unpadded (32B -> 43 chars), (64B -> 86 chars)
-          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_unpadded.json
-          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_unpadded.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_unpadded.json -r schemas/v1/common/ids.schema.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_unpadded.json -r schemas/v1/common/ids.schema.json
-          # Negative: wrongly unpadded to 44/88 chars (should be rejected)
-          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_badlen.json
-          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_badlen.json
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then
-            echo "Unexpected success: 44-char base64url key without '=' should be rejected" >&2; exit 1; fi
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then
-            echo "Unexpected success: 88-char base64url sig without '==' should be rejected" >&2; exit 1; fi
-      - name: Negative tests (invalid ISO8601 durations)
-        run: |
-          set -euo pipefail
-          echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
-          echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
-               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then
-            echo "Unexpected success: ttl=P should be rejected" >&2
-            exit 1
-          else
-            echo "Rejected bad ttl P as expected"
-          fi
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
-               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then
-            echo "Unexpected success: ttl=PT should be rejected" >&2
-            exit 1
-          else
-            echo "Rejected bad ttl PT as expected"
-          fi
+      - name: Validate schemas and examples (v1)
+        run: ./scripts/validate_schemas.sh
 
   # (removed duplicate markdownlint job id)
 

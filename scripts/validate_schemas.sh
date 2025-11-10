@@ -52,24 +52,30 @@ echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
 
-echo "  - positive: base64url unpadded key (43 chars)"
-echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_unpadded.json
+# Generate canonical base64url encodings from actual byte lengths using Node
+KEY_B64URL=$(node -e 'process.stdout.write(Buffer.alloc(32).toString("base64url"))')
+SIG_B64URL=$(node -e 'process.stdout.write(Buffer.alloc(64).toString("base64url"))')
+
+echo "  - positive: base64url unpadded key ($(echo -n "$KEY_B64URL" | wc -c) chars)"
+printf '"ed25519:%s"' "$KEY_B64URL" > /tmp/key_b64url_unpadded.json
 ajv validate "${AJV_BASE_ARGS[@]}" -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_unpadded.json -r "$AJV_COMMON_REF"
 
-echo "  - positive: base64url unpadded sig (86 chars)"
-echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_unpadded.json
+echo "  - positive: base64url unpadded sig ($(echo -n "$SIG_B64URL" | wc -c) chars)"
+printf '"ed25519:%s"' "$SIG_B64URL" > /tmp/sig_b64url_unpadded.json
 ajv validate "${AJV_BASE_ARGS[@]}" -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_unpadded.json -r "$AJV_COMMON_REF"
 
 echo "  - negative: 44-char base64url key without '=' should be rejected"
-echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_badlen.json
+KEY_BADLEN="${KEY_B64URL}A" # 43 -> 44 (no '=')
+printf '"ed25519:%s"' "$KEY_BADLEN" > /tmp/key_b64url_badlen.json
 if ajv validate "${AJV_BASE_ARGS[@]}" -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_badlen.json -r "$AJV_COMMON_REF"; then
-  echo "[FAIL] Unexpected acceptance of bad key length" >&2; exit 1
+  echo "[FAIL] Unexpected acceptance of bad key length (44 without '=')" >&2; exit 1
 fi
 
 echo "  - negative: 88-char base64url sig without '==' should be rejected"
-echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_badlen.json
+SIG_BADLEN="${SIG_B64URL}AA" # 86 -> 88 (no '==')
+printf '"ed25519:%s"' "$SIG_BADLEN" > /tmp/sig_b64url_badlen.json
 if ajv validate "${AJV_BASE_ARGS[@]}" -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r "$AJV_COMMON_REF"; then
-  echo "[FAIL] Unexpected acceptance of bad sig length" >&2; exit 1
+  echo "[FAIL] Unexpected acceptance of bad sig length (88 without '==')" >&2; exit 1
 fi
 
 echo "[schemas] Negative tests (invalid ISO8601 durations)…"
@@ -87,4 +93,3 @@ else
 fi
 
 echo "[schemas] All schema checks passed."
-
