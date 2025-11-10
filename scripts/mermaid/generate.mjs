@@ -221,50 +221,124 @@ async function renderTask(task, mmdcPath) {
 }
 
 // Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
-// - Remove width="100%" and style max-width:…
-// - Set width/height from viewBox numbers
+// Parse and rewrite the opening <svg …> tag using a small attribute parser (avoids fragile regexes).
 async function normalizeSvgIntrinsicSize(svgPath) {
   let text = await fs.readFile(svgPath, 'utf8');
-  let changed = false;
-  const openTagMatch = text.match(/<svg\b[^>]*>/i); // matches across newlines until first '>'
-  if (!openTagMatch) {
-    if (!text.endsWith('\n')) { await fs.writeFile(svgPath, text + '\n', 'utf8'); }
+  const { tag, start, end } = findSvgOpenTag(text) || {};
+  if (!tag) {
+    if (!text.endsWith('\n')) await fs.writeFile(svgPath, text + '\n', 'utf8');
     return;
   }
-
-  const openTag = openTagMatch[0];
-  const start = openTagMatch.index;
-  const end = start + openTag.length;
-
-  // Parse viewBox = "minx miny width height" (accept any origin)
-  const vb = openTag.match(/viewBox\s*=\s*"\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
+  const attrs = parseSvgAttributes(tag);
+  const vb = attrs.get('viewBox');
   if (!vb) {
-    if (!text.endsWith('\n')) { await fs.writeFile(svgPath, text + '\n', 'utf8'); }
+    if (!text.endsWith('\n')) await fs.writeFile(svgPath, text + '\n', 'utf8');
     return;
   }
-  const width = vb[3];
-  const height = vb[4];
+  const parts = vb.trim().split(/\s+/).map(Number);
+  if (parts.length !== 4 || Number.isNaN(parts[2]) || Number.isNaN(parts[3])) {
+    if (!text.endsWith('\n')) await fs.writeFile(svgPath, text + '\n', 'utf8');
+    return;
+  }
+  const width = String(parts[2]);
+  const height = String(parts[3]);
 
-  // Remove width attribute, clean style's max-width, add preserveAspectRatio if missing, and set width/height
-  let newTag = openTag.replace(/\swidth\s*=\s*"[^"]*"/i, '');
-  // clean style attribute safely (property list)
-  newTag = newTag.replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
+  // Remove width; set width/height; clean style's max-width; ensure preserveAspectRatio
+  attrs.delete('width');
+  attrs.set('width', width);
+  attrs.set('height', height);
+
+  if (attrs.has('style')) {
+    const style = attrs.get('style') || '';
     const props = style.split(';').map(s => s.trim()).filter(Boolean);
     const kept = props.filter(p => !/^max-width\s*:/i.test(p));
-    return kept.length ? ` style="${kept.join(';')}"` : '';
-  });
-  if (!/preserveAspectRatio=/i.test(newTag)) {
-    newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
+    if (kept.length) attrs.set('style', kept.join(';'));
+    else attrs.delete('style');
   }
-  newTag = newTag.replace(/<svg\b/i, `<svg width="${width}" height="${height}"`);
+  if (!attrs.has('preserveAspectRatio')) attrs.set('preserveAspectRatio', 'xMidYMid meet');
 
-  if (newTag !== openTag) {
+  const newTag = buildSvgOpenTag(attrs);
+  if (newTag !== tag) {
     text = text.slice(0, start) + newTag + text.slice(end);
-    changed = true;
   }
+  if (!text.endsWith('\n')) text += '\n';
+  await fs.writeFile(svgPath, text, 'utf8');
+}
 
-  if (!text.endsWith('\n')) { text += '\n'; changed = true; }
-  if (changed) await fs.writeFile(svgPath, text, 'utf8');
+function findSvgOpenTag(text) {
+  const start = text.indexOf('<svg');
+  if (start === -1) return null;
+  let i = start + 4;
+  let inQuote = false;
+  let quoteChar = '';
+  while (i < text.length) {
+    const ch = text[i];
+    if (inQuote) {
+      if (ch === quoteChar) inQuote = false;
+    } else {
+      if (ch === '"' || ch === "'") { inQuote = true; quoteChar = ch; }
+      else if (ch === '>') break;
+    }
+    i++;
+  }
+  const end = i + 1;
+  const tag = text.slice(start, end);
+  return { tag, start, end };
+}
+
+function parseSvgAttributes(tag) {
+  // tag is like: <svg attr1="..." attr2='...'>
+  const inside = tag.replace(/^<svg\s*/i, '').replace(/>\s*$/, '');
+  const attrs = new Map();
+  let i = 0;
+  const len = inside.length;
+  while (i < len) {
+    // skip whitespace
+    while (i < len && /\s/.test(inside[i])) i++;
+    if (i >= len) break;
+    // read name
+    let name = '';
+    while (i < len && /[^=\s]/.test(inside[i])) { name += inside[i++]; }
+    name = name.trim();
+    // skip whitespace
+    while (i < len && /\s/.test(inside[i])) i++;
+    let value = '';
+    if (i < len && inside[i] === '=') {
+      i++;
+      while (i < len && /\s/.test(inside[i])) i++;
+      if (i < len && (inside[i] === '"' || inside[i] === "'")) {
+        const q = inside[i++];
+        const start = i;
+        while (i < len && inside[i] !== q) i++;
+        value = inside.slice(start, i);
+        i++; // skip closing quote
+      } else {
+        // unquoted value
+        const start = i;
+        while (i < len && !/\s/.test(inside[i])) i++;
+        value = inside.slice(start, i);
+      }
+    }
+    if (name) attrs.set(name, value);
+  }
+  return attrs;
+}
+
+function buildSvgOpenTag(attrs) {
+  // Keep original order where possible: we don't track it here, but ensure width/height appear first for readability
+  const ordered = new Map();
+  if (attrs.has('width')) ordered.set('width', attrs.get('width'));
+  if (attrs.has('height')) ordered.set('height', attrs.get('height'));
+  if (attrs.has('preserveAspectRatio')) ordered.set('preserveAspectRatio', attrs.get('preserveAspectRatio'));
+  if (attrs.has('style')) ordered.set('style', attrs.get('style'));
+  for (const [k, v] of attrs.entries()) {
+    if (!ordered.has(k)) ordered.set(k, v);
+  }
+  const parts = [];
+  for (const [k, v] of ordered.entries()) {
+    if (v === '') parts.push(k); else parts.push(`${k}="${v}"`);
+  }
+  return `<svg ${parts.join(' ')}>`;
 }
 
 async function main() {
