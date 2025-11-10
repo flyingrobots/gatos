@@ -144,6 +144,24 @@ jobs:
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
+      - name: Additional encoding tests (ed25519 base64url forms)
+        run: |
+          set -euo pipefail
+          # Root schemas that reference defs
+          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
+          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
+          # Positive: base64url unpadded (32B -> 43 chars), (64B -> 86 chars)
+          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_unpadded.json
+          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_unpadded.json
+          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_unpadded.json -r schemas/v1/common/ids.schema.json
+          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_unpadded.json -r schemas/v1/common/ids.schema.json
+          # Negative: wrongly unpadded to 44/88 chars (should be rejected)
+          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_badlen.json
+          echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_badlen.json
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then
+            echo "Unexpected success: 44-char base64url key without '=' should be rejected" >&2; exit 1; fi
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then
+            echo "Unexpected success: 88-char base64url sig without '==' should be rejected" >&2; exit 1; fi
 
   # (removed duplicate markdownlint job id)
 
