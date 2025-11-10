@@ -175,7 +175,7 @@ sequenceDiagram
     participant gatos-echo
     participant gatos-policy
     participant gatos-ledger
-    participant PrivateStore
+    participant "PrivateStore (Interface)" as "Storage Backend"
 
     Echo->>Echo: 1. Fold event history to produce UnifiedState
     Echo->>Policy: 2. Request privacy rules for the current context
