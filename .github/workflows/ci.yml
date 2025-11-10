@@ -169,11 +169,23 @@ jobs:
         run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
       - name: Negative tests (invalid ISO8601 durations)
         run: |
-          set +e
+          set -euo pipefail
           echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
           echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json && exit 1 || echo "Rejected bad ttl P as expected"
-          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json && exit 1 || echo "Rejected bad ttl PT as expected"
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
+               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then
+            echo "Unexpected success: ttl=P should be rejected" >&2
+            exit 1
+          else
+            echo "Rejected bad ttl P as expected"
+          fi
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
+               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then
+            echo "Unexpected success: ttl=PT should be rejected" >&2
+            exit 1
+          else
+            echo "Rejected bad ttl PT as expected"
+          fi
   linkcheck:
     runs-on: ubuntu-latest
     name: Link Check (lychee)
