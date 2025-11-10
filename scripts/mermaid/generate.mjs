@@ -9,13 +9,47 @@ const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
 
 // Simple argv parser: flags first, then files
 const rawArgs = process.argv.slice(2);
+const allowedFlags = new Set(['--all', '-h', '--help']);
 const flags = new Set();
 const cliFiles = [];
+const unknownFlags = [];
 for (const a of rawArgs) {
-  if (a.startsWith('-')) flags.add(a);
-  else cliFiles.push(a);
+  if (a.startsWith('-')) {
+    if (allowedFlags.has(a)) flags.add(a);
+    else unknownFlags.push(a);
+  } else {
+    cliFiles.push(a);
+  }
 }
 const scanAll = flags.has('--all');
+
+function usage() {
+  const lines = [
+    'Usage:',
+    '  node scripts/mermaid/generate.mjs [--all] [file1.md file2.md ...]',
+    '',
+    'Options:',
+    '  --all         Scan all tracked .md files via git ls-files',
+    '  -h, --help    Show this help and exit',
+    '',
+    'Environment:',
+    '  MERMAID_MAX_PARALLEL   Concurrency (default: min(cpu, 8))',
+    '  MERMAID_CLI_VERSION    @mermaid-js/mermaid-cli version (default: 10.9.0)',
+    '  MERMAID_SVG_INTRINSIC_DIM  Set to 0 to disable SVG intrinsic-size normalization',
+  ];
+  return lines.join('\n');
+}
+
+if (flags.has('-h') || flags.has('--help')) {
+  console.log(usage());
+  process.exit(0);
+}
+
+if (unknownFlags.length > 0) {
+  for (const f of unknownFlags) console.error(`Unknown option: ${f}`);
+  console.error('\n' + usage());
+  process.exit(2);
+}
 
 const MERMAID_RE = /```mermaid\s*\n([\s\S]*?)```/g;
 
@@ -139,11 +173,12 @@ async function normalizeSvgIntrinsicSize(svgPath) {
 
 async function main() {
   await ensureDir(outDir);
-  const mdFiles = await listMarkdownFiles();
-  if (mdFiles.length === 0) {
-    console.log('No Markdown files specified; skipping Mermaid generation.');
-    return;
+  if (!scanAll && cliFiles.length === 0) {
+    console.error('Error: no input files provided. Pass one or more .md files or use --all.');
+    console.error('\n' + usage());
+    process.exit(1);
   }
+  const mdFiles = await listMarkdownFiles();
   const tasks = await collectRenderTasks(mdFiles);
   if (tasks.length === 0) {
     console.log('No Mermaid code blocks found in specified files.');
