@@ -212,7 +212,7 @@ The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.
     - Headers: `Digest: sha-256=<base64-of-body>`, `X-BLAKE3-Digest: blake3:<hex-of-returned-bytes>`
     - Body: requested bytes (ciphertext or plaintext).
 
-Errors: 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 DigestMismatch, 503 CapabilityUnavailable.
+Errors: 401 Unauthorized, 403 Forbidden, 404 Not Found, 422 DigestMismatch, 503 CapabilityUnavailable.
 
 Optional profile (HTTP Message Signatures, RFC 9421):
 - Clients MAY authenticate by signing components: `@method`, `@target-uri`, `date`, `host`, `content-digest` (SHA-256 over request body) and sending `Signature-Input: sig1=...` and `Signature: sig1=:<base64(signature)>:`.

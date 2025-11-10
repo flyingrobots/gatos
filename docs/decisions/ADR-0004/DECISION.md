@@ -93,7 +93,7 @@ classDiagram
         +string kind: "opaque_pointer"
         +string algo: "blake3"
         +string digest: "blake3:<hex>"            // plaintext digest
-        +string ciphertext_digest "blake3:<hex>"  // MAY be present
+        +string ciphertext_digest: "blake3:<hex>"  // MAY be present
         +int    size                                // SHOULD be present (bytes)
         +string location
         +string capability                          // MUST NOT embed secrets
@@ -171,8 +171,8 @@ A client resolving an Opaque Pointer **MUST** follow this protocol:
 Response headers on success:
 ```
 Content-Type: application/octet-stream
-X-BLAKE3-Digest: blake3:<hex-of-ciphertext>
-Digest: sha-256=<base64-of-ciphertext>
+X-BLAKE3-Digest: blake3:<hex-of-response-body>
+Digest: sha-256=<base64-of-response-body>
 ```
 
 Optional HTTP Message Signatures profile (RFC 9421):

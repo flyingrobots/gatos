@@ -13,6 +13,20 @@
     "capability": { "type": "string", "format": "uri" },
     "extensions": { "type": "object" }
   },
-  "required": ["kind","algo","digest","location","capability"],
+  "required": ["kind","algo","location","capability"],
+  "anyOf": [
+    {
+      "required": ["digest"],
+      "properties": {
+        "digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" }
+      }
+    },
+    {
+      "required": ["ciphertext_digest"],
+      "properties": {
+        "ciphertext_digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" }
+      }
+    }
+  ],
   "additionalProperties": false
 }

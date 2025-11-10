@@ -89,7 +89,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      - A lexicographically sorted list of approvals by the lowercase ASCII of each approval's `Signer` value (the `ed25519:<hex>` string). Each approval is included by value or via `Approval-Id`.
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
    - Implementations MUST use canonical JSON (UTF‑8, sorted keys, no insignificant whitespace) to build this envelope before hashing. All hex encodings MUST be lowercase. Ordering by signer is an application‑level MUST; JSON Schema cannot enforce sort order.
-   - Storage: The canonical PoC envelope JSON SHOULD be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
+   - Storage: The canonical PoC envelope JSON MUST be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
 
 8. Governance schema (policy integration)
    - Extend `.gatos/policy.yaml` to declare governance rules (JSON Schema: [`schemas/v1/policy/governance_policy.schema.json`](../../../schemas/v1/policy/governance_policy.schema.json)):

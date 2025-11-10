@@ -344,7 +344,7 @@ Verification Steps:
 4. Servers SHOULD return `X-BLAKE3-Digest` and `Digest: sha-256=…` headers for response integrity.
 
 Error Taxonomy:
-- `Unauthorized` (401), `Forbidden` (403), `NotFound` (404), `DigestMismatch` (409), `CapabilityUnavailable` (503), `PolicyDenied` (403).
+- `Unauthorized` (401), `Forbidden` (403), `NotFound` (404), `DigestMismatch` (422), `CapabilityUnavailable` (503), `PolicyDenied` (403).
  
 Optional HTTP Message Signatures profile (RFC 9421):
 - As an alternative to JWT, clients MAY sign `@method`, `@target-uri`, `date`, `host`, `content-digest` and send `Signature-Input`/`Signature` headers. Servers SHOULD still emit `Digest` and `X-BLAKE3-Digest` response headers.
