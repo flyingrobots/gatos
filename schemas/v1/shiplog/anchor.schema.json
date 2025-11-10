@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/shiplog/anchor.schema.json",
+  "title": "GATOS Shiplog Anchor (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ulid", "topic", "head"],
+  "properties": {
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "topic": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
+    "head": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "label": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "notes": { "type": "string" }
+  }
+}
+

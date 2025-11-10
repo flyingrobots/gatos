@@ -19,6 +19,10 @@ SCHEMAS=(
   "schemas/v1/governance/proof_of_consensus_envelope.schema.json"
   "schemas/v1/policy/governance_policy.schema.json"
   "schemas/v1/privacy/opaque_pointer.schema.json"
+  "schemas/v1/shiplog/event_envelope.schema.json"
+  "schemas/v1/shiplog/consumer_checkpoint.schema.json"
+  "schemas/v1/shiplog/deployment_trailer.schema.json"
+  "schemas/v1/shiplog/anchor.schema.json"
 )
 
 for schema in "${SCHEMAS[@]}"; do
@@ -40,6 +44,10 @@ declare -A EXAMPLES=(
   ["schemas/v1/governance/revocation.schema.json"]="examples/v1/governance/revocation_min.json"
   ["schemas/v1/governance/proof_of_consensus_envelope.schema.json"]="examples/v1/governance/poc_envelope_min.json"
   ["schemas/v1/privacy/opaque_pointer.schema.json"]="examples/v1/privacy/opaque_pointer_min.json"
+  ["schemas/v1/shiplog/event_envelope.schema.json"]="examples/v1/shiplog/event_min.json"
+  ["schemas/v1/shiplog/consumer_checkpoint.schema.json"]="examples/v1/shiplog/checkpoint_min.json"
+  ["schemas/v1/shiplog/deployment_trailer.schema.json"]="examples/v1/shiplog/trailer_min.json"
+  ["schemas/v1/shiplog/anchor.schema.json"]="examples/v1/shiplog/anchor_min.json"
 )
 
 for schema in "${!EXAMPLES[@]}"; do

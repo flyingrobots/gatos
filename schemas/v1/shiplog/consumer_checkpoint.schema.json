@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/shiplog/consumer_checkpoint.schema.json",
+  "title": "GATOS Shiplog Consumer Checkpoint (v1 Canonical JSON)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ulid"],
+  "properties": {
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "commit_oid": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+  }
+}
+
