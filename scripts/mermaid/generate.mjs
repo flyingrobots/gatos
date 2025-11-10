@@ -75,11 +75,13 @@ async function main() {
         .then(() => true)
         .catch(() => false)) {
         cmd = mmdc;
-        args = ['-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default'];
+        const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
+        args = ['-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
       } else {
         // Fallback to npx without requiring repo-local deps
         cmd = 'npx';
-        args = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default'];
+        const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
+        args = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
       }
       await run(cmd, args);
     }
