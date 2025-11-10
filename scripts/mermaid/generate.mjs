@@ -87,7 +87,8 @@ async function renderTask(task, mmdcPath) {
   await fs.writeFile(tmpIn, task.code, 'utf8');
   const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
   const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-  const argsNpx = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+  const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
+  const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
   if (await hasLocal(mmdcPath)) {
     await run(mmdcPath, argsLocal);
   } else {

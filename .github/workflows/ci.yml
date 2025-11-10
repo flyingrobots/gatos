@@ -179,8 +179,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Generate Mermaid diagrams
-        run: node scripts/mermaid/generate.mjs
+      - name: Generate Mermaid diagrams (full repo)
+        run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'npm run md:mermaid:gen' and commit updated diagrams" && exit 1)
       - name: Install ajv-cli and formats (pinned) for negative tests
