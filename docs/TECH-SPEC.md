@@ -101,10 +101,10 @@ graph TD
 | `gatos-ledger-git` | `std`-dependent storage backend using `libgit2`. |
 | `gatos-ledger` | Composes ledger components via feature flags. |
 | `gatos-mind` | Asynchronous, commit-backed message bus (pub/sub). |
-| `gatos-echo` | Deterministic state engine for processing events ("folds"). |
-| `gatos-policy` | Deterministic policy engine for executing compiled rules and managing the Consensus Governance lifecycle. |
+| `gatos-echo` | Deterministic state engine for processing events ("folds"). Privacy projection logic. |
+| `gatos-policy` | Deterministic policy engine for executing compiled rules, managing Consensus Governance, and privacy rule evaluation. |
 | `gatos-kv` | Git-backed key-value state cache. |
-| `gatosd` | Main binary for the CLI and the JSONL RPC daemon. |
+| `gatosd` | Main binary for the CLI, JSONL RPC daemon, and Opaque Pointer resolution endpoint. |
 | `gatos-compute` | Worker that discovers and executes jobs from the Job Plane. |
 | `gatos-wasm-bindings`| WASM bindings for browser and Node.js environments. |
 | `gatos-ffi-bindings` | C-compatible FFI for integration with other languages. |
@@ -160,21 +160,47 @@ sequenceDiagram
 
 ---
 
-## 6. Opaque Pointers
+## 6. Privacy Projection and Resolution
 
-The `rekey` command allows updating the encryption key for an opaque blob.
+See also: [ADR‑0004](./decisions/ADR-0004/DECISION.md).
+
+The implementation of the hybrid privacy model involves a coordinated effort between the state, policy, and daemon components.
+
+### 6.1 Projection Implementation
+
+The projection from a `UnifiedState` to a `PublicState` is handled by `gatos-echo` with rules supplied by `gatos-policy`.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant GATOS
+    participant gatos-echo
+    participant gatos-policy
+    participant gatos-ledger
+    participant PrivateStore
 
-    User->>GATOS: gatos blob rekey <ptr> --to <pubkey>
-    GATOS->>GATOS: Create new Opaque Pointer
-    GATOS->>GATOS: Encrypt data with new pubkey
-    GATOS->>GATOS: Store new ciphertext in CAS
-    GATOS->>GATOS: Atomically update references
+    Echo->>Echo: 1. Fold event history to produce UnifiedState
+    Echo->>Policy: 2. Request privacy rules for the current context
+    Policy-->>Echo: 3. Return `select` and `action` rules
+loop for each field path in the UnifiedState tree
+        gatos-echo->>gatos-echo: 4. Match field path against rules
+        alt rule matches (e.g., "pointerize")
+            Echo->>Echo: 5. Generate Opaque Pointer envelope
+            Echo->>PrivateStore: 6. Store original node value as private blob, keyed by its blake3 digest
+            Echo->>Echo: 7. Replace node in state tree with pointer
+        end
+    end
+    Echo->>Ledger: 8. Commit the final PublicState tree
 ```
+
+The `PrivateStore` is a pluggable trait, allowing for backends like a local filesystem, S3, or another GATOS node.
+
+### 6.2 Resolution Implementation
+
+The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.
+
+-   **Endpoint**: `gatosd` will listen for authenticated requests, for example at `/gatos/private/blobs/{digest}`.
+-   **Authentication**: The client SDK **MUST** send a `Authorization` header containing a JSON Web Signature (JWS) with a detached payload. The JWS payload **MUST** be the BLAKE3 hash of the request body. `gatosd` verifies the signature against the actor's public key.
+-   **Authorization**: Upon receiving a valid request, `gatosd` queries `gatos-policy` to determine if the requesting actor has the capability to access the blob identified by `{digest}`.
+-   **Response**: If authorized, `gatosd` fetches the (likely encrypted) blob from its configured `PrivateStore` and returns it to the client. The client is then responsible for decryption via the `capability` URI.
 
 ---
 
@@ -236,6 +262,7 @@ graph TD
     C --> C1(Golden Vectors);
     C --> C2(Torture Tests);
     C --> C3(Reconcile Harness);
+    C --> C4(Projection Determinism);
 ```
 
 ---

@@ -128,6 +128,7 @@ graph TD
         A1 --> B6(audit)
         A1 --> B7(cache)
         A1 --> B8(epoch)
+        A1 --> B9(private)
         C(notes) --> C1(gatos)
     end
     subgraph Workspace
@@ -148,6 +149,8 @@ The normative layout is as follows:
 │   └── gatos/
 │       ├── journal/
 │       ├── state/
+│       ├── private/
+│       │   └── <actor-id>/
 │       ├── mbus/
 │       ├── mbus-ack/
 │       ├── jobs/
@@ -282,28 +285,57 @@ On **DENY**, the gate **MUST** append an audit decision to `refs/gatos/audit/pol
 
 ---
 
-## 7. Blob Pointers & Opaque Storage
+## 7. Privacy and Opaque Pointers
 
-Large or sensitive data is stored out-of-band in a content-addressed store and referenced via pointers.
+See also: [ADR‑0004](./decisions/ADR-0004/DECISION.md).
+
+GATOS supports a hybrid privacy model where state can be separated into a verifiable public projection and a confidential private overlay. This is achieved by applying a deterministic **Projection Functor** during the state fold process, which replaces sensitive or large data with **Opaque Pointers**.
+
+### 7.1 Projection Model
+
+The State Engine (`gatos-echo`) can be configured with privacy rules. When folding history, it first computes a `UnifiedState` containing all data. It then applies the privacy rules to produce a `PublicState` and a set of `PrivateBlobs`.
+
+-   **`PublicState`**: Contains only public data and Opaque Pointers. This is committed to the public `refs/gatos/state/public/...` namespace and is globally verifiable.
+-   **`PrivateBlobs`**: The raw data that was redacted or pointerized. This data is stored in a separate, private store (e.g., a local directory, a private object store) and is addressed by its content hash.
+
+Any commit that is the result of a privacy projection **MUST** include trailers indicating the number of redactions and pointers created.
+
+```text
+Privacy-Redactions: 5
+Privacy-Pointers: 2
+```
+
+### 7.2 Opaque Pointers
+
+An Opaque Pointer is a canonical JSON object that acts as a verifiable, addressable link to a private blob. It replaces the sensitive data in the `PublicState`.
 
 ```mermaid
 classDiagram
-    class BlobPointer {
-        +String kind: "blobptr"
-        +String algo
-        +String hash
-        +Number size
-    }
     class OpaquePointer {
-        +String kind: "opaque"
-        +String algo
-        +String hash
-        +String ciphertext_hash
-        +Object cipher_meta
+        +string kind: "opaque_pointer"
+        +string algo: "blake3"
+        +string digest: "blake3:<hex>"
+        +number size
+        +string location
+        +string capability
     }
 ```
 
-Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git.
+-   `digest`: The **REQUIRED** `blake3` hash of the raw private data. This ensures the integrity of the private blob.
+-   `location`: A **REQUIRED** URI indicating where the blob can be fetched (e.g., `gatos-node://ed25519:<pubkey>`, `s3://...`).
+-   `capability`: A **REQUIRED** URI defining the auth/authz and decryption mechanism needed to access the blob (e.g., `gatos-key://...`, `kms://...`).
+
+The pointer itself is canonicalized and its `content_id` can be computed for verification purposes.
+
+### 7.3 Pointer Resolution
+
+A client resolving an Opaque Pointer **MUST** perform the following steps:
+1.  Fetch the private blob from the `location` URI, authenticating if required by the endpoint protocol.
+2.  Acquire the necessary authorization and/or decryption keys by interacting with the `capability` URI's system.
+3.  If the blob is encrypted, decrypt it.
+4.  Verify that the `blake3` hash of the resulting plaintext exactly matches the `digest` in the pointer. The resolution **MUST** fail if the hashes do not match.
+
+This process guarantees that even though the data is stored privately, its integrity is verifiable against the public ledger.
 
 ---
 
