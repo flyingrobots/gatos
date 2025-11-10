@@ -1,4 +1,4 @@
-.PHONY: diagrams lint-md fix-md link-check schemas
+.PHONY: diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit
 
 diagrams:
 	@bash -lc 'scripts/mermaid/generate_all.sh'
@@ -24,3 +24,81 @@ link-check:
 	  docker run --rm -v "$$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml **/*.md; \
 	else echo "Need lychee or Docker" >&2; exit 1; fi'
 
+schema-compile:
+	@bash -lc 'set -euo pipefail; \
+	 if ! command -v node >/dev/null 2>&1; then \
+	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json'
+
+schema-validate:
+	@bash -lc 'set -euo pipefail; \
+	 if ! command -v node >/dev/null 2>&1; then \
+	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json'
+
+schema-negative:
+	@bash -lc 'set -euo pipefail; \
+	 if ! command -v node >/dev/null 2>&1; then \
+	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
+	 echo "{\"governance\":{\"x\":{\"ttl\":\"P\"}}}" > /tmp/bad1.json; \
+	 echo "{\"governance\":{\"x\":{\"ttl\":\"PT\"}}}" > /tmp/bad2.json; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json && { echo "Should have rejected ttl=P" >&2; exit 1; } || echo "Rejected ttl=P as expected"; \
+	 npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json && { echo "Should have rejected ttl=PT" >&2; exit 1; } || echo "Rejected ttl=PT as expected"'
+
+schemas: schema-compile schema-validate schema-negative
+
+pre-commit:
+	@bash -lc 'set -euo pipefail; \
+	 STAGED_MD="$$(git diff --cached --name-only --diff-filter=ACM | grep -E "\\.md$$" || true)"; \
+	 STAGED_FMT="$$(git diff --cached --name-only --diff-filter=ACM | grep -E "\\.(json|ya?ml)$$" || true)"; \
+	 echo "[make pre-commit] markdownlint fix…"; \
+	 if [ -n "$$STAGED_MD" ]; then \
+	   if command -v node >/dev/null 2>&1; then \
+	     npx -y markdownlint-cli $$STAGED_MD --fix --config .markdownlint.json; \
+	   elif command -v docker >/dev/null 2>&1; then \
+	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli $$STAGED_MD --fix --config .markdownlint.json"; \
+	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
+	   echo "$$STAGED_MD" | xargs git add; \
+	 fi; \
+	 echo "[make pre-commit] Prettier JSON/YAML…"; \
+	 if [ -n "$$STAGED_FMT" ]; then \
+	   if command -v node >/dev/null 2>&1; then \
+	     npx -y prettier -w $$STAGED_FMT; \
+	   elif command -v docker >/dev/null 2>&1; then \
+	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y prettier -w $$STAGED_FMT"; \
+	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
+
+	   echo "$$STAGED_FMT" | xargs git add; \
+	 fi; \
+	 echo "[make pre-commit] Mermaid (staged MD only)…"; \
+	 if [ -n "$$STAGED_MD" ]; then \
+	   if command -v node >/dev/null 2>&1; then \
+	     node scripts/mermaid/generate.mjs $$STAGED_MD; \
+	   elif command -v docker >/dev/null 2>&1; then \
+	     docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs $$STAGED_MD"; \
+	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
+	   if [ -d docs/diagrams/generated ]; then git add docs/diagrams/generated; fi; \
+	 fi; \
+	 echo "[make pre-commit] Link check (staged MD)…"; \
+	 if [ -n "$$STAGED_MD" ]; then \
+	   if command -v lychee >/dev/null 2>&1; then \
+	     lychee --no-progress --config .lychee.toml $$STAGED_MD; \
+	   elif command -v docker >/dev/null 2>&1; then \
+	     docker run --rm -v "$$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml $$STAGED_MD; \
+	   else echo "lychee not found and Docker unavailable; skipping link check" >&2; fi; \
+	 fi; \
+	 echo "[make pre-commit] Done."'
