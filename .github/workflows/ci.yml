@@ -182,7 +182,7 @@ jobs:
       - name: Generate Mermaid diagrams (full repo)
         run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
       - name: Fail if generation produced diffs
-        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'npm run md:mermaid:gen' and commit updated diagrams" && exit 1)
+        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
       - name: Install ajv-cli and formats (pinned) for negative tests
         run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
       - name: Negative tests (invalid ISO8601 durations)
