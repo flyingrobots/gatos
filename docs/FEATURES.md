@@ -197,14 +197,6 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 **When** I define a piece of state as sensitive in my policy
 **Then** that state should be stored in a private store and replaced with an Opaque Pointer in the public state.
 
-#### Acceptance Criteria
-
-- [ ] Given a `policy.yaml` with a rule to `pointerize` the path `sensitive.field`, when the state is folded, the public state tree MUST NOT contain the original value of `sensitive.field`.
-- [ ] Given the same scenario, the public state tree MUST contain a canonical Opaque Pointer object at the `sensitive.field` path.
-- [ ] The generated Opaque Pointer's `digest` field MUST match the BLAKE3 hash of the original, private value.
-- [ ] The generated Opaque Pointer's `location` and `capability` fields MUST match the values specified in the `policy.yaml` rule.
-- [ ] When the Client SDK resolves the pointer with correct authorization, the returned data MUST be byte-for-byte identical to the original `sensitive.field` value.
-
 ### F9-US-SEC
 
 |   |   |
