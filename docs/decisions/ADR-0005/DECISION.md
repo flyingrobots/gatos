@@ -38,7 +38,7 @@ Many integrations require an append‑only stream rather than only snapshot stat
 classDiagram
   class EventEnvelope {
     +string ulid
-    +string topic                  // topic namespace (e.g., "governance")
+    +string ns                  // topic namespace (e.g., "governance")
     +string type                // logical event type
     +object payload             // canonical JSON (JCS)
     +map<string, blake3Digest> refs  // OPTIONAL cross-refs
@@ -64,7 +64,7 @@ graph TD
 ### 3) Event Envelope (Schema)
 
 - Canonical JSON envelope at `schemas/v1/shiplog/event_envelope.schema.json` (draft‑2020‑12).
-- Required fields: `ulid`, `topic`, `type`, `payload`.
+- Required fields: `ulid`, `ns`, `type`, `payload`.
 - Optional `refs` (map<string, blake3Digest>) to link related state or IDs.
 - Privacy (ADR‑0004): Payload MUST NOT embed private overlay data. Redacted values MUST be replaced by `OpaquePointer` envelopes per `schemas/v1/privacy/opaque_pointer.schema.json`.
 
@@ -97,6 +97,8 @@ Schema: https://gatos.dev/schemas/v1/shiplog/event_envelope.schema.json
 
 Trailer schema: `schemas/v1/shiplog/deployment_trailer.schema.json`.
 
+MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<topic>/<ULID>.json` (parse → JCS → hash → write → commit).
+
 ### 5) Append Semantics
 
 Append(`topic`, `envelope`): validate schema; compute `content_id = blake3(JCS(envelope))`; enforce monotone ULID per topic on this node; create commit with headers + trailer; CAS update `refs/gatos/shiplog/<topic>/head`; return `(commit_oid, ulid, content_id)`.
@@ -114,6 +116,10 @@ Errors (normative):
 - `refs/gatos/consumers/<group>/<topic>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`.
 
 ### 8) Privacy Interactions (ADR‑0004)
+
+Nonces: Nonces MUST be unique per key. Prefer deterministic nonces derived from the pointer digest via HKDF (domain-separated) or a monotonic per-key counter in KMS. Random nonces are permitted only with a documented collision budget and monitoring.
+
+AAD: When using AEAD, bind the pointer digest (not a separate content_id), the actor id, and the policy version in the AAD so verifiers can validate context.
 
 - Payloads MUST NOT embed private overlay data. Use Opaque Pointers per privacy schema. For low‑entropy classes, include `ciphertext_digest` and omit plaintext digest in public pointers.
 
@@ -134,14 +140,28 @@ $ gatosd shiplog append --topic governance --file event.json
 ok  commit=8b1c1e4 content_id=blake3:2a6c... ulid=01HF4Y9Q1SM8Q7K9DK2R3V4AWB
 
 $ gatosd shiplog read --topic governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
-01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c...  8b1c1e4  {"ulid":"01HF4Y9...","topic":"governance",...}
-01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2...  9f0aa21  {"ulid":"01HF4Y9...","topic":"governance",...}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c...  8b1c1e4  {"ulid":"01HF4Y9...","ns":"governance",...}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2...  9f0aa21  {"ulid":"01HF4Y9...","ns":"governance",...}
 
 $ gatosd shiplog checkpoint set --group analytics --topic governance --commit 8b1c1e4
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
 ```
 
 ## Consequences
+
+## Error Taxonomy
+
+| Code | HTTP | Meaning |
+|:-----|:----:|:--------|
+| AppendRejected | 409 | Not fast-forward (CAS failed) |
+| TemporalOrder | 409 | ULID/timestamp monotonicity failure |
+| PolicyFail | 403 | Policy decision denied |
+| SigInvalid | 422 | Signature/attestation failed |
+| DigestMismatch | 422 | Hash mismatch on body/envelope |
+| CapabilityUnavailable | 503 | Dependent capability/KMS/storage unavailable |
+
+Clients SHOULD return a problem+json response with a stable `code` plus HTTP status.
+
 
 Pros: clean integration surface; deterministic envelopes; replay + analytics; explicit privacy.
 Cons: additional refs to manage; potential duplication if mirroring ledger events.
