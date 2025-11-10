@@ -150,7 +150,7 @@ The normative layout is as follows:
 │       ├── journal/
 │       ├── state/
 │       ├── private/
-│       │   └── <actor-id>/
+│       │   └── <actor-id>/  # e.g., the actor's ed25519 public key
 │       ├── mbus/
 │       ├── mbus-ack/
 │       ├── jobs/
