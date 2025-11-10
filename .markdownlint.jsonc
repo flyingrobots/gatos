@@ -1,0 +1,7 @@
+{
+  // Disable long line rule; docs use wide tables, code blocks, and ASCII art
+  "MD013": false
+  // Add more disabled rules here as needed, e.g.:
+  // "MD033": false // allow inline HTML
+}
+

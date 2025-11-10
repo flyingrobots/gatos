@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[pre-commit] Running markdownlint (fix)…"
+if command -v npm >/dev/null 2>&1; then
+  npm run --silent md:lint:fix || {
+    echo "markdownlint fix failed; aborting commit" >&2
+    exit 1
+  }
+else
+  echo "npm not found; please install Node.js 20+ and run 'npm i'" >&2
+  exit 1
+fi
+
+# Restage modified Markdown files after fixes
+changed_md=$(git ls-files -m | grep -E '\\.md$' || true)
+if [ -n "$changed_md" ]; then
+  echo "$changed_md" | xargs git add
+fi
+
+echo "[pre-commit] Generating Mermaid diagrams…"
+npm run --silent md:mermaid:gen || {
+  echo "Mermaid generation failed; aborting commit" >&2
+  exit 1
+}
+
+# Stage generated diagrams
+if [ -d docs/diagrams/generated ]; then
+  git add docs/diagrams/generated
+fi
+
+echo "[pre-commit] Done."
+
