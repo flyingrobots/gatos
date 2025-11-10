@@ -12,7 +12,7 @@ let outDir;   // docs/diagrams/generated under repoRoot
 
 // Simple argv parser: flags first, then files
 const rawArgs = process.argv.slice(2);
-const allowedFlags = new Set(['--all', '-h', '--help']);
+const allowedFlags = new Set(['--all', '--verify', '-h', '--help']);
 const flags = new Set();
 const cliFiles = [];
 const unknownFlags = [];
@@ -25,14 +25,16 @@ for (const a of rawArgs) {
   }
 }
 const scanAll = flags.has('--all');
+const verifyOnly = flags.has('--verify');
 
 function usage() {
   const lines = [
     'Usage:',
-    '  node scripts/mermaid/generate.mjs [--all] [file1.md file2.md ...]',
+    '  node scripts/mermaid/generate.mjs [--verify] [--all] [file1.md file2.md ...]',
     '',
     'Options:',
     '  --all         Scan all tracked .md files via git ls-files',
+    '  --verify      Do not render; verify committed SVGs are up-to-date (metadata + tool pins)',
     '  -h, --help    Show this help and exit',
     '',
     'Environment:',
@@ -230,6 +232,7 @@ async function renderTask(task, mmdcPath) {
   if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
     await normalizeSvgIntrinsicSize(task.outFile);
   }
+  await embedMeta(task.outFile, task, process.env.MERMAID_CLI_VERSION || '10.9.0');
 }
 
 // Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
@@ -378,6 +381,16 @@ async function main() {
   }
 
   const mmdcPath = binPath('mmdc');
+  if (verifyOnly) {
+    const errors = await verifyTasks(tasks);
+    if (errors.length) {
+      console.error('Verification failed for the following diagrams:');
+      for (const e of errors) console.error(' - ' + e);
+      process.exit(2);
+    }
+    console.log(`Verified ${tasks.length} diagrams up-to-date.`);
+    return;
+  }
   const maxParallel = Math.max(1, Math.min(Number(process.env.MERMAID_MAX_PARALLEL || 0) || os.cpus().length, 8));
 
   let idx = 0;
@@ -413,6 +426,63 @@ async function main() {
     const summary = errors.map(e => ` - ${e.id}: ${e.error}`).join('\n');
     throw new Error(`Mermaid generation failed for ${failed}/${total} diagram(s):\n${summary}`);
   }
+}
+
+function sha256(s) {
+  return createHash('sha256').update(s).digest('hex');
+}
+
+async function embedMeta(svgPath, task, cliVer) {
+  const meta = {
+    src: path.relative(repoRoot, task.mdPath).split(path.sep).join('/'),
+    index: task.index,
+    code_sha256: sha256(task.code),
+    cli: cliVer,
+    gen: 'v1'
+  };
+  let text = await fs.readFile(svgPath, 'utf8');
+  const { tag, start, end } = findSvgOpenTag(text) || {};
+  const comment = `<!-- mermaid-meta: ${JSON.stringify(meta)} -->\n`;
+  if (tag) {
+    text = text.slice(0, end) + comment + text.slice(end);
+  } else {
+    text = comment + text;
+  }
+  await fs.writeFile(svgPath, text.endsWith('\n') ? text : text + '\n', 'utf8');
+}
+
+function extractMeta(svgText) {
+  const m = svgText.match(/<!--\s*mermaid-meta:\s*({[\s\S]*?})\s*-->/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+async function verifyTasks(tasks) {
+  const errs = [];
+  for (const t of tasks) {
+    const rel = path.relative(repoRoot, t.outFile).split(path.sep).join('/');
+    try {
+      const svg = await fs.readFile(t.outFile, 'utf8');
+      const meta = extractMeta(svg);
+      if (!meta) {
+        // Transitional: missing meta is a warning, not a failure. Add meta on next regen.
+        console.warn(`[verify] ${rel}: missing mermaid-meta; consider regenerating to embed metadata.`);
+        continue;
+      }
+      const codeHash = sha256(t.code);
+      if (meta.code_sha256 !== codeHash) {
+        errs.push(`${rel}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash})`);
+      }
+      const wantCli = process.env.MERMAID_CLI_VERSION || '10.9.0';
+      if (meta.cli !== wantCli) {
+        errs.push(`${rel}: cli version mismatch (have ${meta.cli}, want ${wantCli})`);
+      }
+    } catch (e) {
+      const msg = e && e.message ? e.message : String(e);
+      errs.push(`${rel}: ${msg}`);
+    }
+  }
+  return errs;
 }
 
 main().catch((err) => {

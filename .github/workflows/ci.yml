@@ -131,7 +131,7 @@ jobs:
 
   diagrams:
     runs-on: ubuntu-latest
-    name: Mermaid Diagrams Up-to-date
+    name: Mermaid Diagrams Verify
     steps:
       - uses: actions/checkout@v4
       - name: Cache npm (npx)
@@ -143,10 +143,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Generate Mermaid diagrams (full repo)
-        run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
-      - name: Fail if generation produced diffs
-        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
+      - name: Verify committed diagrams up-to-date (no render)
+        run: node scripts/mermaid/generate.mjs --verify --all
   linkcheck:
     runs-on: ubuntu-latest
     name: Link Check (lychee)
