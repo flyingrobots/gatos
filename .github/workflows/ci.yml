@@ -108,7 +108,7 @@ jobs:
         with:
           node-version: '20'
       - name: markdownlint (check only)
-        run: npx -y markdownlint-cli "**/*.md" --ignore "docs/ok-real-talk.md" --config .markdownlint.json
+        run: npx -y markdownlint-cli "**/*.md" --config .markdownlint.json
 
   schemas:
     runs-on: ubuntu-latest
