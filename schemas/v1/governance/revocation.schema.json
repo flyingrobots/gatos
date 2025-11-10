@@ -6,10 +6,15 @@
   "additionalProperties": false,
   "required": ["grant_id", "revocation_id"],
   "properties": {
-    "grant_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "revocation_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
+    "grant_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "revocation_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
     "reason": { "type": "string" },
-    "revoked_by": { "type": "string" }
+    "revoked_by": {
+      "oneOf": [
+        { "$ref": "../common/ids.schema.json#/$defs/actorId" },
+        { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" }
+      ],
+      "description": "Identity of the revoker (actor or key)"
+    }
   }
 }
-

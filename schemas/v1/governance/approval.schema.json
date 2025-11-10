@@ -6,10 +6,9 @@
   "additionalProperties": false,
   "required": ["proposal_id", "approval_id", "signer"],
   "properties": {
-    "proposal_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "approval_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "signer": { "$ref": "../../v1/common/ids.schema.json#/$defs/ed25519Key" },
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "approval_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "signer": { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" },
     "expires_at": { "type": "string", "format": "date-time" }
   }
 }
-

@@ -9,7 +9,14 @@
     "command": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "args": { "type": "array", "items": { "type": "string" }, "default": [] },
     "timeout": {
-      "oneOf": [ { "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^P[T\\dHMS]+$" } ]
+      "oneOf": [
+        { "type": "integer", "minimum": 0, "description": "Timeout in seconds" },
+        {
+          "type": "string",
+          "description": "Timeout as ISO 8601 duration (e.g., PT30S, PT5M, P1DT2H)",
+          "pattern": "^P(?:\\d+Y)?(?:\\d+M)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)?$"
+        }
+      ]
     },
     "env": { "type": "object", "additionalProperties": { "type": "string" }, "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" } },
     "cwd": { "type": "string" },
@@ -31,4 +38,3 @@
     "ulid": { "type": "string" }
   }
 }
-

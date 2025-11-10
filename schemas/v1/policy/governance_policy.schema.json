@@ -33,11 +33,17 @@
             ]
           },
           "ttl": {
-            "oneOf": [ { "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^P[T\\dHMS]+$" } ]
+            "oneOf": [
+              { "type": "integer", "minimum": 0, "description": "TTL in seconds" },
+              {
+                "type": "string",
+                "description": "TTL as ISO 8601 duration (e.g., PT1H, P2D)",
+                "pattern": "^P(?:\\d+Y)?(?:\\d+M)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)?$"
+              }
+            ]
           }
         }
       }
     }
   }
 }
-

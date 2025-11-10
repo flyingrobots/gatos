@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["proposal_id", "approvals", "policy_rule"],
   "properties": {
-    "proposal_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
     "approvals": {
       "type": "array",
       "minItems": 1,
@@ -15,8 +15,8 @@
         "additionalProperties": false,
         "required": ["approval_id", "signer"],
         "properties": {
-          "approval_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-          "signer": { "$ref": "../../v1/common/ids.schema.json#/$defs/ed25519Key" }
+          "approval_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+          "signer": { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" }
         }
       },
       "uniqueItems": true
@@ -24,4 +24,3 @@
     "policy_rule": { "type": "string" }
   }
 }
-

@@ -12,3 +12,9 @@ Canonical encodings
 
 - BLAKE3 digests: `blake3:<64-char lowercase hex string>`
 - Ed25519 keys/signatures: `ed25519:<hex|base64>`
+ - Actors (identities): `user:<name>`, `agent:<name>`, or `service:<name>`
+
+Time values
+
+- Integer `ttl` in governance policy is specified in seconds.
+- String `ttl` and `timeout` values use ISO 8601 duration syntax (e.g., `PT30S`, `PT5M`, `P1DT2H`).

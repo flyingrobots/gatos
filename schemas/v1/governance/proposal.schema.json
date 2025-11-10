@@ -4,14 +4,14 @@
   "title": "GATOS Governance Proposal (v1)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["action", "target", "proposal_id", "policy_rule", "created_by"],
+  "required": ["action", "target", "proposal_id", "policy_rule", "created_by", "required_quorum"],
   "properties": {
-    "action": { "type": "string" },
-    "target": { "$ref": "../../v1/common/ids.schema.json#/$defs/uri" },
-    "proposal_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "required_quorum": { "type": "string" },
+    "action": { "type": "string", "pattern": "^[a-z0-9_.-]+$", "description": "Action identifier (dot-notation)" },
+    "target": { "$ref": "../common/ids.schema.json#/$defs/uri" },
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "required_quorum": { "type": "string", "pattern": "^\\d+-of-\\d+@[A-Za-z0-9._-]+$", "description": "Quorum shorthand (e.g., 2-of-3@leads)" },
     "expire_at": { "type": "string", "format": "date-time" },
-    "policy_rule": { "type": "string" },
-    "created_by": { "type": "string" }
+    "policy_rule": { "type": "string", "pattern": "^[a-z0-9_.-]+$", "description": "Policy rule identifier (dot-notation)" },
+    "created_by": { "$ref": "../common/ids.schema.json#/$defs/actorId" }
   }
 }

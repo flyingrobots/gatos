@@ -20,5 +20,11 @@
       "description": "Ed25519 signature encoded as hex(64B) or base64/base64url(64B) with algorithm prefix."
     },
     "uri": { "type": "string", "format": "uri" }
+    ,
+    "actorId": {
+      "type": "string",
+      "pattern": "^(user|agent|service):[A-Za-z0-9._-]+$",
+      "description": "Actor identity string: user:<name>, agent:<name>, or service:<name>"
+    }
   }
 }

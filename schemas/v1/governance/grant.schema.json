@@ -6,9 +6,8 @@
   "additionalProperties": false,
   "required": ["proposal_id", "grant_id", "proof_of_consensus"],
   "properties": {
-    "proposal_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "grant_id": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" },
-    "proof_of_consensus": { "$ref": "../../v1/common/ids.schema.json#/$defs/blake3Digest" }
+    "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "grant_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
+    "proof_of_consensus": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" }
   }
 }
-
