@@ -12,17 +12,17 @@ diagrams:
 	@bash -lc 'scripts/mermaid/generate_all.sh'
 
 lint-md:
-	@bash -lc 'if command -v node >/dev/null 2>&1; then \
-	  npx -y markdownlint-cli "**/*.md" --config .markdownlint.json --ignore docs/ok-real-talk.md; \
+    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+      npx -y markdownlint-cli "**/*.md" --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
-	  docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --config .markdownlint.json --ignore docs/ok-real-talk.md"; \
+      docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --config .markdownlint.json"; \
 	else echo "Need Node.js or Docker" >&2; exit 1; fi'
 
 fix-md:
-	@bash -lc 'if command -v node >/dev/null 2>&1; then \
-	  npx -y markdownlint-cli "**/*.md" --fix --config .markdownlint.json --ignore docs/ok-real-talk.md; \
+    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+      npx -y markdownlint-cli "**/*.md" --fix --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
-	  docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --fix --config .markdownlint.json --ignore docs/ok-real-talk.md"; \
+      docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --fix --config .markdownlint.json"; \
 	else echo "Need Node.js or Docker" >&2; exit 1; fi'
 
 link-check:
