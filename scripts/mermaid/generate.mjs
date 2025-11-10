@@ -93,6 +93,42 @@ async function renderTask(task, mmdcPath) {
   } else {
     await run('npx', argsNpx);
   }
+  if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
+    await normalizeSvgIntrinsicSize(task.outFile);
+  }
+}
+
+// Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
+// - Remove width="100%" and style max-width:…
+// - Set width/height from viewBox numbers
+async function normalizeSvgIntrinsicSize(svgPath) {
+  let text = await fs.readFile(svgPath, 'utf8');
+  const openTagMatch = text.match(/<svg\b[^>]*>/i);
+  if (!openTagMatch) return; // Not an SVG? bail.
+  const openTag = openTagMatch[0];
+  const vb = openTag.match(/viewBox\s*=\s*"\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
+  if (!vb) return;
+  const w = vb[1];
+  const h = vb[2];
+  let newTag = openTag
+    // width="100%" -> remove
+    .replace(/\swidth\s*=\s*"[^"]*"/i, '')
+    // remove max-width: …px from style
+    .replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
+      const cleaned = style
+        .replace(/max-width\s*:\s*[^;]+;?/i, '')
+        .trim()
+        .replace(/^;|;$/g, '');
+      return cleaned ? ` style="${cleaned}"` : '';
+    });
+  // ensure preserveAspectRatio is present and center content nicely
+  if (!/preserveAspectRatio=/i.test(newTag)) {
+    newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
+  }
+  // add explicit width/height in px
+  newTag = newTag.replace(/<svg\b/i, `<svg width="${w}" height="${h}"`);
+  text = text.replace(openTag, newTag);
+  await fs.writeFile(svgPath, text, 'utf8');
 }
 
 async function main() {
