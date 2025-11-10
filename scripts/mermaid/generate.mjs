@@ -141,32 +141,43 @@ async function renderTask(task, mmdcPath) {
 async function normalizeSvgIntrinsicSize(svgPath) {
   let text = await fs.readFile(svgPath, 'utf8');
   let changed = false;
-  const openTagMatch = text.match(/<svg\b[^>]*>/i);
-  if (openTagMatch) {
-    const openTag = openTagMatch[0];
-    const vb = openTag.match(/viewBox\s*=\s*"\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
-    if (vb) {
-      const w = vb[1];
-      const h = vb[2];
-      let newTag = openTag
-        .replace(/\swidth\s*=\s*"[^"]*"/i, '')
-        .replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
-          const cleaned = style
-            .replace(/max-width\s*:\s*[^;]+;?/i, '')
-            .trim()
-            .replace(/^;|;$/g, '');
-          return cleaned ? ` style="${cleaned}"` : '';
-        });
-      if (!/preserveAspectRatio=/i.test(newTag)) {
-        newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
-      }
-      newTag = newTag.replace(/<svg\b/i, `<svg width="${w}" height="${h}"`);
-      if (newTag !== openTag) {
-        text = text.replace(openTag, newTag);
-        changed = true;
-      }
-    }
+  const openTagMatch = text.match(/<svg\b[^>]*>/i); // matches across newlines until first '>'
+  if (!openTagMatch) {
+    if (!text.endsWith('\n')) { await fs.writeFile(svgPath, text + '\n', 'utf8'); }
+    return;
   }
+
+  const openTag = openTagMatch[0];
+  const start = openTagMatch.index;
+  const end = start + openTag.length;
+
+  // Parse viewBox = "minx miny width height" (accept any origin)
+  const vb = openTag.match(/viewBox\s*=\s*"\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
+  if (!vb) {
+    if (!text.endsWith('\n')) { await fs.writeFile(svgPath, text + '\n', 'utf8'); }
+    return;
+  }
+  const width = vb[3];
+  const height = vb[4];
+
+  // Remove width attribute, clean style's max-width, add preserveAspectRatio if missing, and set width/height
+  let newTag = openTag.replace(/\swidth\s*=\s*"[^"]*"/i, '');
+  // clean style attribute safely (property list)
+  newTag = newTag.replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
+    const props = style.split(';').map(s => s.trim()).filter(Boolean);
+    const kept = props.filter(p => !/^max-width\s*:/i.test(p));
+    return kept.length ? ` style="${kept.join(';')}"` : '';
+  });
+  if (!/preserveAspectRatio=/i.test(newTag)) {
+    newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
+  }
+  newTag = newTag.replace(/<svg\b/i, `<svg width="${width}" height="${height}"`);
+
+  if (newTag !== openTag) {
+    text = text.slice(0, start) + newTag + text.slice(end);
+    changed = true;
+  }
+
   if (!text.endsWith('\n')) { text += '\n'; changed = true; }
   if (changed) await fs.writeFile(svgPath, text, 'utf8');
 }
@@ -188,24 +199,39 @@ async function main() {
   const mmdcPath = binPath('mmdc');
   const maxParallel = Math.max(1, Math.min(Number(process.env.MERMAID_MAX_PARALLEL || 0) || os.cpus().length, 8));
 
-  let inFlight = 0; let idx = 0; let completed = 0; const total = tasks.length;
-  const next = () => {
-    if (idx >= total) return Promise.resolve();
+  let idx = 0;
+  let completed = 0;
+  let failed = 0;
+  const errors = [];
+
+  const next = async () => {
+    if (idx >= tasks.length) return;
     const t = tasks[idx++];
-    inFlight++;
-    return renderTask(t, mmdcPath)
-      .then(() => { completed++; })
-      .finally(() => { inFlight--; });
+    try {
+      await renderTask(t, mmdcPath);
+      completed++;
+    } catch (err) {
+      failed++;
+      const id = `${t.mdPath}#${t.index}`;
+      const msg = (err && err.message) || String(err);
+      console.error(`Mermaid render failed: ${id}: ${msg}`);
+      errors.push({ id, error: msg });
+    }
   };
 
   const runners = Array.from({ length: maxParallel }, async () => {
-    while (idx < total) {
+    while (idx < tasks.length) {
       await next();
     }
   });
 
   await Promise.all(runners);
+  const total = tasks.length;
   console.log(`Generated ${completed}/${total} mermaid diagram(s) into ${path.relative(repoRoot, outDir)} (parallel=${maxParallel})`);
+  if (failed > 0) {
+    const summary = errors.map(e => ` - ${e.id}: ${e.error}`).join('\n');
+    throw new Error(`Mermaid generation failed for ${failed}/${total} diagram(s):\n${summary}`);
+  }
 }
 
 main().catch((err) => {
