@@ -333,7 +333,7 @@ A client resolving an Opaque Pointer **MUST** perform the following steps:
 1.  Fetch the private blob from the `location` URI, authenticating if required by the endpoint protocol.
 2.  Acquire the necessary authorization and/or decryption keys by interacting with the `capability` URI's system.
 3.  If the blob is encrypted, decrypt it.
-4.  Verify that the `blake3` hash of the resulting plaintext exactly matches the `digest` in the pointer. The resolution **MUST** fail if the hashes do not match.
+4.  Verify that the `blake3` hash of the resulting plaintext exactly matches the `digest` in the pointer. If the hashes do not match, the resolution **MUST** fail with a `DigestMismatch` error, and the client **SHOULD** log a security warning, as this may indicate data tampering.
 
 This process guarantees that even though the data is stored privately, its integrity is verifiable against the public ledger.
 
