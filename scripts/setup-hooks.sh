@@ -2,7 +2,18 @@
 set -euo pipefail
 
 top="$(git rev-parse --show-toplevel)"
-gitdir="$(git rev-parse --git-dir)"
+# Resolve absolute .git directory path (handle older Git without --absolute-git-dir)
+gitdir_raw="$(git rev-parse --git-dir)"
+if abs_gitdir="$(git rev-parse --absolute-git-dir 2>/dev/null)"; then
+  gitdir="$abs_gitdir"
+else
+  case "$gitdir_raw" in
+    /*) gitdir="$gitdir_raw" ;;
+    *) gitdir="$top/$gitdir_raw" ;;
+  esac
+  # Normalize to an absolute, symlink-resolved path without relying on realpath
+  gitdir="$(cd "$gitdir" && pwd -P)"
+fi
 hook_src="$top/scripts/hooks/pre-commit"
 local_hooks_dir="$gitdir/hooks"
 hook_dst="$local_hooks_dir/pre-commit"
