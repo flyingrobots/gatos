@@ -90,12 +90,12 @@ When private data is elided from the `PublicState`, a canonical JSON **Opaque Po
 ```mermaid
 classDiagram
     class OpaquePointer {
-        +String kind: "opaque_pointer"
-        +String algo: "blake3"
-        +String digest: "blake3:<hex>"
-        +Number size
-        +String location
-        +String capability
+        +string kind: "opaque_pointer"
+        +string algo: "blake3"
+        +string digest: "blake3:<hex>"
+        +number size
+        +string location
+        +string capability
     }
 ```
 
