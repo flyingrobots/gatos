@@ -103,7 +103,7 @@ graph TD
 | `gatos-mind` | Asynchronous, commit-backed message bus (pub/sub). |
 | `gatos-echo` | Deterministic state engine for processing events ("folds"). Privacy projection logic. |
 | `gatos-policy` | Deterministic policy engine for executing compiled rules, managing Consensus Governance, and privacy rule evaluation. |
-| `gatos-kv` | Git-backed key-value state cache. |
+| `gatos-kv` | Git-backed key-value state cache, used for materializing and indexing queryable views of folded state. |
 | `gatosd` | Main binary for the CLI, JSONL RPC daemon, and Opaque Pointer resolution endpoint. |
 | `gatos-compute` | Worker that discovers and executes jobs from the Job Plane. |
 | `gatos-wasm-bindings`| WASM bindings for browser and Node.js environments. |
