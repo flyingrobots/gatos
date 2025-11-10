@@ -119,6 +119,12 @@ async function renderTask(task, mmdcPath) {
   const tmpIn = path.join(tmpDir, 'in.mmd');
   await fs.writeFile(tmpIn, task.code, 'utf8');
   const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
+  // Validate puppeteer config exists to surface clear errors if missing
+  try {
+    await fs.access(puppetCfg);
+  } catch {
+    throw new Error(`Puppeteer config not found: ${puppetCfg}`);
+  }
   const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
   // Pin to 10.9.0 for stable Mermaid syntax support and reproducible CI output.
   // Override via MERMAID_CLI_VERSION env var; must match CI (.github/workflows/ci.yml)
