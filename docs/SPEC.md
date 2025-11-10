@@ -321,7 +321,7 @@ classDiagram
     }
 ```
 
--   `digest`: The **REQUIRED** `blake3` hash of the raw private data. This ensures the integrity of the private blob.
+-   `size`: The size of the private blob in bytes.
 -   `location`: A **REQUIRED** URI indicating where the blob can be fetched (e.g., `gatos-node://ed25519:<pubkey>`, `s3://...`).
 -   `capability`: A **REQUIRED** URI defining the auth/authz and decryption mechanism needed to access the blob (e.g., `gatos-key://...`, `kms://...`).
 
