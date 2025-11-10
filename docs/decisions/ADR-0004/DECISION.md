@@ -78,6 +78,13 @@ Private data overlays are fundamentally tied to an actor's identity, not an ephe
     ```
     refs/gatos/private/<actor-id>/<ns>/<channel>
     ```
+
+### 2. Encryption Algorithm & Nonce Discipline (Normative)
+
+- AEAD algorithm: Implementations MUST use XChaCha20-Poly1305 for encrypting private blobs referenced by Opaque Pointers.
+- Nonces: 24-byte (192-bit) nonces MUST be unique per key. Implementations SHOULD use deterministic nonces derived from the pointer digest via HKDF (domain-separated), or a crash-safe, monotonic per-key counter stored in KMS. Random nonces are permitted only with a documented collision budget and active monitoring.
+- Catastrophic reuse: Nonce reuse under the same key is catastrophic and MUST be proven impossible by construction (deterministic derivation) or by counter invariants.
+- AAD binding: AEAD AAD MUST bind the pointer digest, the requester actor id, and the effective policy version so that verifiers can validate context and detect misuse.
 -   **Public Refs:** The corresponding public projection lives in the main state namespace.
     ```
     refs/gatos/state/public/<ns>/<channel>

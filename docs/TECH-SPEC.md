@@ -193,6 +193,13 @@ loop for each field path in the UnifiedState tree
 
 The `PrivateStore` is a pluggable trait, allowing for backends like a local filesystem, S3, or another GATOS node.
 
+#### 6.1.1 Encryption Profile (Normative)
+
+- AEAD algorithm: XChaCha20-Poly1305.
+- Nonces: 24-byte (192-bit) nonces MUST be unique per key. Prefer deterministic nonces derived from the pointer digest via HKDF (domain-separated) or a crash-safe monotonic per-key counter stored in KMS. Random nonces are permitted only with a documented collision budget and monitoring.
+- AAD: MUST include the pointer digest, actor id, and effective policy version (or policy_root) to bind authorization context to bytes at rest.
+- Reuse is catastrophic and MUST be proven impossible by construction.
+
 ### 6.2 Resolution Implementation
 
 The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.

@@ -122,9 +122,7 @@ Errors (normative):
 
 ### 8) Privacy Interactions (ADR‑0004)
 
-Nonces: Nonces MUST be unique per key. Prefer deterministic nonces derived from the pointer digest via HKDF (domain-separated) or a monotonic per-key counter in KMS. Random nonces are permitted only with a documented collision budget and monitoring.
-
-AAD: When using AEAD, bind the pointer digest (not a separate content_id), the actor id, and the policy version in the AAD so verifiers can validate context.
+AEAD algorithm is pinned by ADR‑0004 to XChaCha20‑Poly1305. Nonces MUST be unique per key; prefer deterministic HKDF‑derived nonces (domain-separated) or crash‑safe per‑key counters in KMS. Random nonces are permitted only with a documented collision budget and monitoring. AAD MUST bind the pointer digest (not a separate content_id), the actor id, and the policy version so verifiers can validate context.
 
 - Payloads MUST NOT embed private overlay data. Use Opaque Pointers per privacy schema. For low‑entropy classes, include `ciphertext_digest` and omit plaintext digest in public pointers.
 
