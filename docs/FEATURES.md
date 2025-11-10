@@ -193,14 +193,6 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 
 ### F9-US-DEV
 
-#### Acceptance Criteria
-
-- [ ] **Given** a `policy.yaml` with a rule to `pointerize` the path `sensitive.field`, **when** the state is folded, **then** the resulting public state tree MUST NOT contain the original value of `sensitive.field`.
-- [ ] **Given** the same scenario, **when** the state is folded, **then** the public state tree MUST contain a canonical Opaque Pointer object at the `sensitive.field` path.
-- [ ] **Given** a `pointerized` field, **when** the Opaque Pointer is generated, **then** its `digest` field MUST match the BLAKE3 hash of the original, private value.
-- [ ] **Given** a `pointerized` field, **when** the Opaque Pointer is generated, **then** its `location` and `capability` fields MUST match the values specified in the `policy.yaml` rule.
-- [ ] **Given** a valid Opaque Pointer, **when** the Client SDK resolves it with correct authorization, **then** the returned data MUST be byte-for-byte identical to the original private data.
-
 ### F9-US-SEC
 
 |   |   |
