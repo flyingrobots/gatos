@@ -104,33 +104,35 @@ async function renderTask(task, mmdcPath) {
 // - Set width/height from viewBox numbers
 async function normalizeSvgIntrinsicSize(svgPath) {
   let text = await fs.readFile(svgPath, 'utf8');
+  let changed = false;
   const openTagMatch = text.match(/<svg\b[^>]*>/i);
-  if (!openTagMatch) return; // Not an SVG? bail.
-  const openTag = openTagMatch[0];
-  const vb = openTag.match(/viewBox\s*=\s*"\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
-  if (!vb) return;
-  const w = vb[1];
-  const h = vb[2];
-  let newTag = openTag
-    // width="100%" -> remove
-    .replace(/\swidth\s*=\s*"[^"]*"/i, '')
-    // remove max-width: …px from style
-    .replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
-      const cleaned = style
-        .replace(/max-width\s*:\s*[^;]+;?/i, '')
-        .trim()
-        .replace(/^;|;$/g, '');
-      return cleaned ? ` style="${cleaned}"` : '';
-    });
-  // ensure preserveAspectRatio is present and center content nicely
-  if (!/preserveAspectRatio=/i.test(newTag)) {
-    newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
+  if (openTagMatch) {
+    const openTag = openTagMatch[0];
+    const vb = openTag.match(/viewBox\s*=\s*"\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
+    if (vb) {
+      const w = vb[1];
+      const h = vb[2];
+      let newTag = openTag
+        .replace(/\swidth\s*=\s*"[^"]*"/i, '')
+        .replace(/style\s*=\s*"([^"]*)"/i, (m, style) => {
+          const cleaned = style
+            .replace(/max-width\s*:\s*[^;]+;?/i, '')
+            .trim()
+            .replace(/^;|;$/g, '');
+          return cleaned ? ` style="${cleaned}"` : '';
+        });
+      if (!/preserveAspectRatio=/i.test(newTag)) {
+        newTag = newTag.replace(/<svg\b/i, '<svg preserveAspectRatio="xMidYMid meet"');
+      }
+      newTag = newTag.replace(/<svg\b/i, `<svg width="${w}" height="${h}"`);
+      if (newTag !== openTag) {
+        text = text.replace(openTag, newTag);
+        changed = true;
+      }
+    }
   }
-  // add explicit width/height in px
-  newTag = newTag.replace(/<svg\b/i, `<svg width="${w}" height="${h}"`);
-  text = text.replace(openTag, newTag);
-  if (!text.endsWith('\n')) text += '\n';
-  await fs.writeFile(svgPath, text, 'utf8');
+  if (!text.endsWith('\n')) { text += '\n'; changed = true; }
+  if (changed) await fs.writeFile(svgPath, text, 'utf8');
 }
 
 async function main() {
