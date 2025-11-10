@@ -146,7 +146,7 @@ A client resolving an Opaque Pointer **MUST** follow this protocol:
 2.  **Fetch Blob**:
     -   If `gatos-node://<actor-id>`, resolve the actor's endpoint from the trust graph.
     -   The client **MUST** send an authenticated request to the node (e.g., with a JWT or a signed challenge).
-    -   The node's endpoint (e.g., `GET /.well-known/gatos/private/{digest}`) **MUST** verify the client's authorization against its policy before returning the blob.
+    -   The node's endpoint (e.g., `GET /gatos/private/blobs/{digest}`) **MUST** verify the client's authorization against its policy before returning the blob.
 3.  **Acquire Capability**:
     -   Parse the `capability` URI.
     -   Interact with the specified system (KMS, key server) to get the decryption key. This step will have its own auth/authz protocol.
