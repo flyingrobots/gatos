@@ -8,8 +8,17 @@ import { spawn } from 'child_process';
 const repoRoot = process.cwd();
 const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
 
-async function* iterMarkdownFiles() {
-  // Use only git-tracked files for reproducibility
+async function* iterMarkdownFiles(cliFiles) {
+  if (cliFiles && cliFiles.length > 0) {
+    for (const f of cliFiles) {
+      // Only yield files that end with .md and exist
+      if (f.toLowerCase().endsWith('.md')) {
+        try { await fs.access(f); yield f; } catch { /* skip */ }
+      }
+    }
+    return;
+  }
+  // Fallback: use git-tracked files for reproducibility
   const { execSync } = await import('child_process');
   const files = execSync("git ls-files -- '*.md'", { encoding: 'utf8' })
     .split(/\r?\n/)
@@ -47,7 +56,8 @@ async function main() {
   let mmdc = binPath('mmdc');
   await ensureDir(outDir);
   let countBlocks = 0;
-  for await (const mdPath of iterMarkdownFiles()) {
+  const cliFiles = process.argv.slice(2);
+  for await (const mdPath of iterMarkdownFiles(cliFiles)) {
     const text = await fs.readFile(mdPath, 'utf8');
     let match;
     let idx = 0;

@@ -34,13 +34,15 @@ if [ -n "$changed_md" ]; then
   echo "$changed_md" | xargs git add
 fi
 
-echo "[pre-commit] Generating Mermaid diagrams…"
-if command -v node >/dev/null 2>&1; then
-  node scripts/mermaid/generate.mjs || { echo "Mermaid generation failed" >&2; exit 1; }
-elif command -v docker >/dev/null 2>&1; then
-  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "node -e 'process.exit(0)' >/dev/null 2>&1 || (echo installing); npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs" || { echo "Mermaid generation failed (docker)" >&2; exit 1; }
-else
-  echo "Neither node nor docker found; skipping mermaid generation" >&2
+echo "[pre-commit] Generating Mermaid diagrams (staged files only)…"
+if [ -n "$staged_md" ]; then
+  if command -v node >/dev/null 2>&1; then
+    node scripts/mermaid/generate.mjs $staged_md || { echo "Mermaid generation failed" >&2; exit 1; }
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "node -e 'process.exit(0)' >/dev/null 2>&1 || (echo installing); npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs $staged_md" || { echo "Mermaid generation failed (docker)" >&2; exit 1; }
+  else
+    echo "Neither node nor docker found; skipping mermaid generation" >&2
+  fi
 fi
 
 # Stage generated diagrams
