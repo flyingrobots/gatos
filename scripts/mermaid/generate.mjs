@@ -38,6 +38,7 @@ function usage() {
     '  MERMAID_MAX_PARALLEL   Concurrency (default: min(cpu, 8))',
     '  MERMAID_CLI_VERSION    @mermaid-js/mermaid-cli version (default: 10.9.0)',
     '  MERMAID_SVG_INTRINSIC_DIM  Set to 0 to disable SVG intrinsic-size normalization',
+    '  MERMAID_CMD_TIMEOUT_MS Command timeout for mmdc/npx child processes (default: 120000)',
   ];
   return lines.join('\n');
 }
@@ -90,10 +91,22 @@ function binPath(name) {
   return path.join(repoRoot, 'node_modules', '.bin', name + ext);
 }
 
-function run(cmd, args, opts = {}) {
+function run(cmd, args, opts = {}, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
+    let done = false;
     const child = spawn(cmd, args, { stdio: ['ignore', 'inherit', 'inherit'], ...opts });
+    const timer = setTimeout(() => {
+      if (done) return;
+      // Try graceful then forceful termination
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), 5000);
+      done = true;
+      reject(new Error(`${cmd} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
     child.on('exit', (code) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
       if (code === 0) resolve();
       else reject(new Error(`${cmd} exited with code ${code}`));
     });
@@ -159,10 +172,11 @@ async function renderTask(task, mmdcPath) {
   // and docker-compose.yml (ci-diagrams service) for consistency.
   const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
   const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+  const timeoutMs = Math.max(10000, parseInt(process.env.MERMAID_CMD_TIMEOUT_MS || '', 10) || 120000);
   if (await hasLocal(mmdcPath)) {
-    await run(mmdcPath, argsLocal);
+    await run(mmdcPath, argsLocal, {}, timeoutMs);
   } else {
-    await run('npx', argsNpx);
+    await run('npx', argsNpx, {}, timeoutMs);
   }
   if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
     await normalizeSvgIntrinsicSize(task.outFile);
