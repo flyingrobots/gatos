@@ -124,6 +124,12 @@ function outNameFor(mdPath, index) {
   return `${safeStem}__${hash}__mermaid_${index}.svg`;
 }
 
+// Legacy filename scheme (pre-hash): replace path separators with "__"
+function outNameLegacy(mdPath, index) {
+  const rel = path.relative(repoRoot, mdPath).replace(/[\\/]/g, '__').replace(/\.md$/i, '');
+  return `${rel}__mermaid_${index}.svg`;
+}
+
 async function listMarkdownFiles() {
   if (!scanAll) {
     if (cliFiles.length === 0) {
@@ -460,26 +466,41 @@ function extractMeta(svgText) {
 async function verifyTasks(tasks) {
   const errs = [];
   for (const t of tasks) {
-    const rel = path.relative(repoRoot, t.outFile).split(path.sep).join('/');
+    const hashedPath = t.outFile;
+    const legacyPath = path.join(outDir, outNameLegacy(t.mdPath, t.index));
+    const relHashed = path.relative(repoRoot, hashedPath).split(path.sep).join('/');
+    const relLegacy = path.relative(repoRoot, legacyPath).split(path.sep).join('/');
     try {
-      const svg = await fs.readFile(t.outFile, 'utf8');
+      let svg, usedLegacy = false;
+      try {
+        svg = await fs.readFile(hashedPath, 'utf8');
+      } catch (e) {
+        // Fallback to legacy filename during transition
+        try {
+          svg = await fs.readFile(legacyPath, 'utf8');
+          usedLegacy = true;
+        } catch {
+          throw e; // rethrow original ENOENT
+        }
+      }
       const meta = extractMeta(svg);
       if (!meta) {
         // Transitional: missing meta is a warning, not a failure. Add meta on next regen.
-        console.warn(`[verify] ${rel}: missing mermaid-meta; consider regenerating to embed metadata.`);
+        console.warn(`[verify] ${usedLegacy ? relLegacy : relHashed}: missing mermaid-meta; consider regenerating to embed metadata.`);
         continue;
       }
       const codeHash = sha256(t.code);
       if (meta.code_sha256 !== codeHash) {
-        errs.push(`${rel}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash})`);
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash})`);
       }
       const wantCli = process.env.MERMAID_CLI_VERSION || '10.9.0';
       if (meta.cli !== wantCli) {
-        errs.push(`${rel}: cli version mismatch (have ${meta.cli}, want ${wantCli})`);
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: cli version mismatch (have ${meta.cli}, want ${wantCli})`);
       }
     } catch (e) {
       const msg = e && e.message ? e.message : String(e);
-      errs.push(`${rel}: ${msg}`);
+      // Provide both expected names to aid developer
+      errs.push(`${relHashed} (or ${relLegacy}): ${msg}`);
     }
   }
   return errs;
