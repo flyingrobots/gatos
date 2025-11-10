@@ -9,7 +9,38 @@
     "action": { "type": "string", "pattern": "^[a-z0-9_.-]+$", "description": "Action identifier (dot-notation)" },
     "target": { "$ref": "../common/ids.schema.json#/$defs/uri" },
     "proposal_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
-    "required_quorum": { "type": "string", "pattern": "^\\d+-of-\\d+@[A-Za-z0-9._-]+$", "description": "Quorum shorthand (e.g., 2-of-3@leads)" },
+    "required_quorum": {
+      "description": "Quorum requirement. Accepts either shorthand \"N-of-M@group\" or structured forms matching governance policy (at_least+group | all_of).",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d+-of-\\d+@[A-Za-z0-9._-]+$",
+          "description": "Shorthand quorum, e.g., 2-of-3@leads"
+        },
+        {
+          "type": "object",
+          "required": ["at_least", "group"],
+          "properties": {
+            "at_least": { "type": "integer", "minimum": 1 },
+            "group": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["all_of"],
+          "properties": {
+            "all_of": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "examples": [
+        "2-of-3@leads",
+        { "at_least": 2, "group": "leads" },
+        { "all_of": ["security_team"] }
+      ]
+    },
     "expire_at": { "type": "string", "format": "date-time" },
     "policy_rule": { "type": "string", "pattern": "^[a-z0-9_.-]+$", "description": "Policy rule identifier (dot-notation)" },
     "created_by": { "$ref": "../common/ids.schema.json#/$defs/actorId" }
