@@ -129,6 +129,7 @@ async function normalizeSvgIntrinsicSize(svgPath) {
   // add explicit width/height in px
   newTag = newTag.replace(/<svg\b/i, `<svg width="${w}" height="${h}"`);
   text = text.replace(openTag, newTag);
+  if (!text.endsWith('\n')) text += '\n';
   await fs.writeFile(svgPath, text, 'utf8');
 }
 

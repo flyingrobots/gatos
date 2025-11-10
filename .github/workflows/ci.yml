@@ -147,9 +147,9 @@ jobs:
       - name: Additional encoding tests (ed25519 base64url forms)
         run: |
           set -euo pipefail
-          # Root schemas that reference defs
-          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
-          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
+          # Root schemas that reference defs using the canonical $id for proper resolution
+          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
+          echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
           # Positive: base64url unpadded (32B -> 43 chars), (64B -> 86 chars)
           echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_unpadded.json
           echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_unpadded.json

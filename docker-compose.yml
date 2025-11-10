@@ -1,0 +1,57 @@
+services:
+  ci-diagrams:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    environment:
+      MERMAID_MAX_PARALLEL: ${MERMAID_MAX_PARALLEL:-6}
+      MERMAID_CLI_VERSION: ${MERMAID_CLI_VERSION:-10.9.0}
+      PUPPETEER_EXECUTABLE_PATH: ''
+    command: >-
+      bash -lc "npx -y @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION:-10.9.0} >/dev/null 2>&1;
+      node scripts/mermaid/generate.mjs --all"
+
+  ci-schemas:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: >-
+      bash -lc "npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1 &&
+      set -euo pipefail &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json &&
+      ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json &&
+      echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json &&
+      echo '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json &&
+      echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_unpadded.json &&
+      echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_unpadded.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_unpadded.json -r schemas/v1/common/ids.schema.json &&
+      ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_unpadded.json -r schemas/v1/common/ids.schema.json &&
+      echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/key_b64url_badlen.json &&
+      echo '"ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"' > /tmp/sig_b64url_badlen.json &&
+      if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then echo 'Unexpected key acceptance' >&2; exit 1; fi &&
+      if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then echo 'Unexpected sig acceptance' >&2; exit 1; fi"
+
+  ci-markdownlint:
+    image: node:20
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: >-
+      bash -lc "npx -y markdownlint-cli '**/*.md' --config .markdownlint.json"
