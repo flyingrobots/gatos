@@ -53,7 +53,10 @@ if (unknownFlags.length > 0) {
   process.exit(2);
 }
 
-const MERMAID_RE = /```mermaid\s*\n([\s\S]*?)```/g;
+// Match mermaid code fences in both multi-line and single-line forms:
+//   ```mermaid\n...``` and ```mermaid ...```
+// Accept one-or-more whitespace after the fence label rather than requiring a newline.
+const MERMAID_RE = /```mermaid\s+([\s\S]*?)```/g;
 
 async function ensureDir(p) {
   await fs.mkdir(p, { recursive: true });
