@@ -310,7 +310,7 @@ Tuning batch size is a trade-off between latency and commit churn.
 
 ```mermaid
 xychart-beta
-    title "Batch Size Trade-off"
+    title "Batch Size Trade-off (Illustrative)"
     x-axis "Batch Size"
     y-axis "Metric"
     line "Latency" [50, 40, 35, 32, 30]
