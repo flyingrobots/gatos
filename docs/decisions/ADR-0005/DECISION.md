@@ -68,6 +68,8 @@ graph TD
 - Optional `refs` (map<string, blake3Digest>) to link related state or IDs.
 - Privacy (ADR‑0004): Payload MUST NOT embed private overlay data. Redacted values MUST be replaced by `OpaquePointer` envelopes per `schemas/v1/privacy/opaque_pointer.schema.json`.
 
+Numeric discipline: JSON numbers can be cross‑language foot‑guns. Precision‑sensitive values (e.g., monetary/time) MUST be encoded as integers or strings.
+
 ### 4) Commit Message and Trailer
 
 Each Shiplog commit MUST include headers in the commit message (any order), followed by a single line containing three dashes `---` and then a JSON trailer object:
@@ -201,4 +203,3 @@ Anchors and Notes: Anchor commits MAY be written periodically to capture rollup 
 Error taxonomy (aligned with Ledger‑Kernel): `AppendRejected`, `TemporalOrder`, `PolicyFail`, `SigInvalid`, `DigestMismatch`.
 
 Importer (recommended): mirror from `refs/_shiplog/*` to `refs/gatos/shiplog/*`, re‑canonicalizing to JCS and preserving commit authorship/timestamps.
-
