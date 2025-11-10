@@ -83,7 +83,11 @@ fn schemas(which: SchemaSub) -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
     match which {
-        SchemaSub::All => run("bash", ["-lc", script.to_string_lossy().as_ref()], Some(&repo))?,
+        SchemaSub::All => run(
+            "bash",
+            ["-lc", script.to_string_lossy().as_ref()],
+            Some(&repo),
+        )?,
     }
     Ok(())
 }
@@ -101,7 +105,8 @@ fn links(files: Vec<String>) -> Result<()> {
         for g in &arglist {
             args.push(g);
         }
-        run("lychee", args, Some(&repo))?
+        run("lychee", args, Some(&repo))?;
+        return Ok(());
     } else if which::which("docker").is_ok() {
         let mut docker_args: Vec<String> = vec![
             "run".to_string(),
@@ -118,11 +123,11 @@ fn links(files: Vec<String>) -> Result<()> {
         for g in &arglist {
             docker_args.push(g.clone());
         }
-        run("docker", docker_args, Some(&repo))?
+        run("docker", docker_args, Some(&repo))?;
+        return Ok(());
     } else {
         bail!("lychee or docker required for link check")
     }
-    Ok(())
 }
 
 fn repo_root() -> Result<PathBuf> {
@@ -131,8 +136,14 @@ fn repo_root() -> Result<PathBuf> {
     // Walk up to find .git dir/file
     let mut dir = cwd.as_path();
     for _ in 0..15 {
-        if dir.join(".git").exists() { return Ok(dir.to_path_buf()); }
-        if let Some(p) = dir.parent() { dir = p; } else { break; }
+        if dir.join(".git").exists() {
+            return Ok(dir.to_path_buf());
+        }
+        if let Some(p) = dir.parent() {
+            dir = p;
+        } else {
+            break;
+        }
     }
     bail!("could not locate repo root from {:?}", cwd)
 }
@@ -141,11 +152,15 @@ fn which(bin: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
     for p in std::env::split_paths(&path) {
         let cand = p.join(bin);
-        if cand.is_file() { return Some(cand); }
+        if cand.is_file() {
+            return Some(cand);
+        }
         // Windows exe
         if cfg!(windows) {
             let ex = p.join(format!("{}.exe", bin));
-            if ex.is_file() { return Some(ex); }
+            if ex.is_file() {
+                return Some(ex);
+            }
         }
     }
     None
@@ -161,8 +176,12 @@ where
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-    if let Some(dir) = cwd { c.current_dir(dir); }
-    let status = c.status().with_context(|| format!("failed to spawn {}", cmd))?;
+    if let Some(dir) = cwd {
+        c.current_dir(dir);
+    }
+    let status = c
+        .status()
+        .with_context(|| format!("failed to spawn {}", cmd))?;
     if !status.success() {
         bail!("{} exited with status {}", cmd, status);
     }
