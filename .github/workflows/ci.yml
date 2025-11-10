@@ -168,6 +168,25 @@ jobs:
             echo "Unexpected success: 44-char base64url key without '=' should be rejected" >&2; exit 1; fi
           if ajv validate --spec=draft2020 --strict=true -c ajv-formats -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r schemas/v1/common/ids.schema.json; then
             echo "Unexpected success: 88-char base64url sig without '==' should be rejected" >&2; exit 1; fi
+      - name: Negative tests (invalid ISO8601 durations)
+        run: |
+          set -euo pipefail
+          echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
+          echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
+               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then
+            echo "Unexpected success: ttl=P should be rejected" >&2
+            exit 1
+          else
+            echo "Rejected bad ttl P as expected"
+          fi
+          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
+               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then
+            echo "Unexpected success: ttl=PT should be rejected" >&2
+            exit 1
+          else
+            echo "Rejected bad ttl PT as expected"
+          fi
 
   # (removed duplicate markdownlint job id)
 
@@ -189,27 +208,6 @@ jobs:
         run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
-      - name: Install ajv-cli and formats (pinned) for negative tests
-        run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
-      - name: Negative tests (invalid ISO8601 durations)
-        run: |
-          set -euo pipefail
-          echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
-          echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
-               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then
-            echo "Unexpected success: ttl=P should be rejected" >&2
-            exit 1
-          else
-            echo "Rejected bad ttl P as expected"
-          fi
-          if ajv validate --spec=draft2020 --strict=true -c ajv-formats \
-               -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then
-            echo "Unexpected success: ttl=PT should be rejected" >&2
-            exit 1
-          else
-            echo "Rejected bad ttl PT as expected"
-          fi
   linkcheck:
     runs-on: ubuntu-latest
     name: Link Check (lychee)
