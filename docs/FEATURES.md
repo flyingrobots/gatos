@@ -199,9 +199,11 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 
 #### Acceptance Criteria
 
-- [ ] Given a `policy.yaml` file with a rule to `pointerize` the path `sensitive.field`, when the state is folded, the resulting public state tree MUST replace the value of `sensitive.field` with a canonical Opaque Pointer.
-- [ ] Given a `policy.yaml` file with a rule to `pointerize` a field, the public state MUST contain a canonical Opaque Pointer at the specified path, with its `digest`, `location`, and `capability` fields correctly populated.
-- [ ] When the Client SDK attempts to resolve an Opaque Pointer using the specified `location` and `capability`, and the client possesses the necessary authorization, the SDK MUST successfully retrieve and decrypt the original private data.
+- [ ] Given a `policy.yaml` with a rule to `pointerize` the path `sensitive.field`, when the state is folded, the public state tree MUST NOT contain the original value of `sensitive.field`.
+- [ ] Given the same scenario, the public state tree MUST contain a canonical Opaque Pointer object at the `sensitive.field` path.
+- [ ] The generated Opaque Pointer's `digest` field MUST match the BLAKE3 hash of the original, private value.
+- [ ] The generated Opaque Pointer's `location` and `capability` fields MUST match the values specified in the `policy.yaml` rule.
+- [ ] When the Client SDK resolves the pointer with correct authorization, the returned data MUST be byte-for-byte identical to the original `sensitive.field` value.
 
 ### F9-US-SEC
 
