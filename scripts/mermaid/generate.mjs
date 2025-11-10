@@ -458,9 +458,27 @@ async function embedMeta(svgPath, task, cliVer) {
 }
 
 function extractMeta(svgText) {
-  const m = svgText.match(/<!--\s*mermaid-meta:\s*({[\s\S]*?})\s*-->/);
-  if (!m) return null;
-  try { return JSON.parse(m[1]); } catch { return null; }
+  // Robustly scan for HTML comments and extract the one starting with 'mermaid-meta:'
+  // Avoid a single fragile regex that can fail with multiple comments or line breaks.
+  const comments = [];
+  for (let i = 0; i < svgText.length; ) {
+    const start = svgText.indexOf('<!--', i);
+    if (start === -1) break;
+    const end = svgText.indexOf('-->', start + 4);
+    if (end === -1) break; // malformed; stop scanning
+    const body = svgText.slice(start + 4, end).trim();
+    comments.push(body);
+    i = end + 3;
+  }
+  const metaComment = comments.find(c => c.trim().startsWith('mermaid-meta:'));
+  if (!metaComment) return null;
+  const payload = metaComment.slice(metaComment.indexOf(':') + 1).trim();
+  // payload is expected to be a JSON object. Parse defensively.
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
 }
 
 async function verifyTasks(tasks) {
@@ -485,9 +503,16 @@ async function verifyTasks(tasks) {
       }
       const meta = extractMeta(svg);
       if (!meta) {
-        // Transitional: missing meta is a warning, not a failure. Add meta on next regen.
-        console.warn(`[verify] ${usedLegacy ? relLegacy : relHashed}: missing mermaid-meta; consider regenerating to embed metadata.`);
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: missing mermaid-meta comment`);
         continue;
+      }
+      // Validate source and index match expectations
+      const expectedSrc = path.relative(repoRoot, t.mdPath).split(path.sep).join('/');
+      if (meta.src !== expectedSrc) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: src mismatch (have ${meta.src}, want ${expectedSrc})`);
+      }
+      if (meta.index !== t.index) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: index mismatch (have ${meta.index}, want ${t.index})`);
       }
       const codeHash = sha256(t.code);
       if (meta.code_sha256 !== codeHash) {

@@ -131,7 +131,7 @@ jobs:
 
   diagrams:
     runs-on: ubuntu-latest
-    name: Mermaid Diagrams Verify
+    name: Mermaid Diagrams Generate + Verify
     steps:
       - uses: actions/checkout@v4
       - name: Cache npm (npx)
@@ -143,7 +143,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify committed diagrams up-to-date (no render)
+      - name: Generate diagrams (renders SVGs)
+        run: node scripts/mermaid/generate.mjs --all
+      - name: Ensure committed diagrams are up-to-date (no diffs)
+        run: |
+          git add -N docs/diagrams/generated || true
+          git diff --name-only --exit-code -- docs/diagrams/generated
+      - name: Verify committed diagrams metadata and tool pins
         run: node scripts/mermaid/generate.mjs --verify --all
   linkcheck:
     runs-on: ubuntu-latest

@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use clap::{ArgGroup, Parser, Subcommand};
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -33,7 +34,7 @@ enum Cmd {
         all: bool,
         /// Specific markdown files
         #[arg(value_name = "FILE", required = false)]
-        files: Vec<PathBuf>,
+        files: Option<Vec<PathBuf>>, // use Option so clap can tell presence vs empty
     },
     /// Validate JSON Schemas and examples (v1)
     Schemas,
@@ -51,7 +52,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::PreCommit => pre_commit(),
-        Cmd::Diagrams { all, files } => diagrams(all, &files),
+        Cmd::Diagrams { all, files } => diagrams(all, files),
         Cmd::Schemas => schemas(),
         Cmd::Links { files } => links(files),
     }
@@ -62,22 +63,21 @@ fn pre_commit() -> Result<()> {
     run("make", ["-s", "pre-commit"], None)
 }
 
-fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
+fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/mermaid/generate.mjs");
     if all {
-        run(
-            "node",
-            [script.to_string_lossy().as_ref(), "--all"],
-            Some(&repo),
-        )?
-    } else if !files.is_empty() {
-        let mut args = Vec::with_capacity(files.len() + 1);
-        args.push(script.to_string_lossy().to_string());
-        for f in files {
-            args.push(f.to_string_lossy().to_string());
+        run("node", [script.as_os_str(), OsStr::new("--all")], Some(&repo))?
+    } else if let Some(files) = files {
+        if files.is_empty() {
+            bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
         }
-        run("node", &args, Some(&repo))?
+        let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
+        args.push(script.as_os_str());
+        for f in &files {
+            args.push(f.as_os_str());
+        }
+        run("node", args, Some(&repo))?
     } else {
         bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
     }
@@ -87,9 +87,15 @@ fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
 fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    // Execute the script directly (it has a shebang and is executable)
-    let script_str = script.to_string_lossy().to_string();
-    run(&script_str, [] as [&str; 0], Some(&repo))?;
+    // Execute via a shell explicitly for cross-platform compatibility
+    let shell = if which::which("bash").is_ok() {
+        "bash"
+    } else if which::which("sh").is_ok() {
+        "sh"
+    } else {
+        bail!("No suitable shell found to execute {:?}. Install bash/sh or run in CI.", script);
+    };
+    run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
 }
 
@@ -155,10 +161,10 @@ fn repo_root() -> Result<PathBuf> {
 fn run<I, S>(cmd: &str, args: I, cwd: Option<&Path>) -> Result<()>
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: AsRef<OsStr>,
 {
     let mut c = Command::new(cmd);
-    c.args(args.into_iter().map(|s| s.as_ref().to_string()))
+    c.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
