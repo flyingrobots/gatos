@@ -38,7 +38,6 @@ declare -A EXAMPLES=(
   ["schemas/v1/governance/grant.schema.json"]="examples/v1/governance/grant_min.json"
   ["schemas/v1/governance/revocation.schema.json"]="examples/v1/governance/revocation_min.json"
   ["schemas/v1/governance/proof_of_consensus_envelope.schema.json"]="examples/v1/governance/poc_envelope_min.json"
-  ["schemas/v1/policy/governance_policy.schema.json"]="examples/v1/policy/governance_min.json"
 )
 
 for schema in "${!EXAMPLES[@]}"; do
@@ -46,6 +45,9 @@ for schema in "${!EXAMPLES[@]}"; do
   echo "  - ajv validate: $data against $schema"
   ajv validate "${AJV_BASE_ARGS[@]}" -s "$schema" -d "$data" -r "$AJV_COMMON_REF"
 done
+
+echo "  - ajv validate: examples/v1/policy/governance_min.json against schemas/v1/policy/governance_policy.schema.json"
+ajv validate "${AJV_BASE_ARGS[@]}" -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
 
 echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
 # Root schemas that reference defs using the canonical $id for proper resolution
