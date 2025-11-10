@@ -134,6 +134,13 @@ jobs:
     name: Mermaid Diagrams Generate + Verify
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Puppeteer Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: ${{ runner.os }}-puppeteer-chromium-1108766
+          restore-keys: |
+            ${{ runner.os }}-puppeteer-chromium-
       - name: Cache npm (npx)
         uses: actions/cache@v4
         with:
@@ -143,6 +150,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install Chromium for Puppeteer (exact revision)
+        run: npx -y @puppeteer/browsers@1.4.6 install chromium@1108766 --path "$HOME/.cache/puppeteer"
       - name: Generate diagrams (renders SVGs)
         run: node scripts/mermaid/generate.mjs --all
       - name: Ensure committed diagrams are up-to-date (no diffs)
