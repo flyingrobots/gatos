@@ -40,12 +40,6 @@ enum Cmd {
 enum SchemaSub {
     /// Compile + validate + negatives (full suite)
     All,
-    /// Compile only
-    Compile,
-    /// Validate examples only
-    Validate,
-    /// Negative tests only
-    Negative,
 }
 
 fn main() -> Result<()> {
@@ -90,23 +84,6 @@ fn schemas(which: SchemaSub) -> Result<()> {
     let script = repo.join("scripts/validate_schemas.sh");
     match which {
         SchemaSub::All => run("bash", ["-lc", script.to_string_lossy().as_ref()], Some(&repo))?,
-        SchemaSub::Compile => run("bash", ["-lc", "./scripts/validate_schemas.sh && echo done | true"], Some(&repo))?,
-        SchemaSub::Validate => run(
-            "bash",
-            [
-                "-lc",
-                "./scripts/validate_schemas.sh | sed -n '1,/Validating example/,$p' >/dev/null",
-            ],
-            Some(&repo),
-        )?,
-        SchemaSub::Negative => run(
-            "bash",
-            [
-                "-lc",
-                "./scripts/validate_schemas.sh | sed -n '/Additional encoding tests/,$p' >/dev/null",
-            ],
-            Some(&repo),
-        )?,
     }
     Ok(())
 }
@@ -119,25 +96,33 @@ fn links(files: Vec<String>) -> Result<()> {
         files
     };
     // Prefer local lychee if present; otherwise Docker fallback
-    if which("lychee").is_some() {
+    if which::which("lychee").is_ok() {
         let mut args = vec!["--no-progress", "--config", ".lychee.toml"];
         for g in &arglist {
             args.push(g);
         }
-        run("lychee", args, Some(&repo))
-    } else if which("docker").is_some() {
-        let mut cmd = format!(
-            "docker run --rm -v \"{}:/work\" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml",
-            repo.display()
-        );
+        run("lychee", args, Some(&repo))?
+    } else if which::which("docker").is_ok() {
+        let mut docker_args: Vec<String> = vec![
+            "run".to_string(),
+            "--rm".to_string(),
+            "-v".to_string(),
+            format!("{}:/work", repo.display()),
+            "-w".to_string(),
+            "/work".to_string(),
+            "ghcr.io/lycheeverse/lychee:latest".to_string(),
+            "--no-progress".to_string(),
+            "--config".to_string(),
+            ".lychee.toml".to_string(),
+        ];
         for g in &arglist {
-            cmd.push(' ');
-            cmd.push_str(g);
+            docker_args.push(g.clone());
         }
-        run("bash", ["-lc", &cmd], Some(&repo))
+        run("docker", docker_args, Some(&repo))?
     } else {
         bail!("lychee or docker required for link check")
     }
+    Ok(())
 }
 
 fn repo_root() -> Result<PathBuf> {
