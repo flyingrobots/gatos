@@ -115,6 +115,10 @@ jobs:
     name: Schema validation (v1)
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
       - name: Cache npm (global)
         uses: actions/cache@v4
         with:
@@ -124,8 +128,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Validate schemas and examples (v1)
-        run: ./scripts/validate_schemas.sh
+      - name: Validate schemas and examples (v1) via xtask
+        run: cargo run -p xtask -- schemas all
 
   # (removed duplicate markdownlint job id)
 
@@ -134,6 +138,10 @@ jobs:
     name: Mermaid Diagrams Up-to-date
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
       - name: Cache npm (npx)
         uses: actions/cache@v4
         with:
@@ -143,16 +151,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Generate Mermaid diagrams (full repo)
-        run: MERMAID_MAX_PARALLEL=6 node scripts/mermaid/generate.mjs --all
+      - name: Generate Mermaid diagrams (full repo) via xtask
+        run: MERMAID_MAX_PARALLEL=6 cargo run -p xtask -- diagrams --all
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
   linkcheck:
     runs-on: ubuntu-latest
-    name: Link Check (lychee)
+    name: Link Check (xtask links)
     steps:
       - uses: actions/checkout@v4
-      - uses: lycheeverse/lychee-action@v2
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          args: --no-progress --config ./.lychee.toml **/*.md
-          fail: true
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Link check via xtask (uses lychee or Docker fallback)
+        run: cargo run -p xtask -- links
