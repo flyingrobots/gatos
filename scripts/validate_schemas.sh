@@ -22,7 +22,7 @@ SCHEMAS=(
 
 for schema in "${SCHEMAS[@]}"; do
   echo "  - ajv compile: $schema"
-  if [[ "$schema" == "$AJV_COMMON_REF" ]]; then
+  if [[ "$schema" == "$AJV_COMMON_REF" || "$schema" == "schemas/v1/policy/governance_policy.schema.json" ]]; then
     ajv compile "${AJV_BASE_ARGS[@]}" -s "$schema"
   else
     ajv compile "${AJV_BASE_ARGS[@]}" -s "$schema" -r "$AJV_COMMON_REF"
