@@ -27,13 +27,23 @@ node scripts/mermaid/generate.mjs
 
 Outputs are written to `docs/diagrams/generated/`.
 
+Diagram generation modes
+
+- Pre-commit: generates SVGs only for the staged Markdown files you’re committing (fast).
+- CI: regenerates all diagrams across the repo and fails if there’s drift (ensures reproducibility).
+
+Manual full regeneration (all Markdown files):
+
+```bash
+scripts/mermaid/generate_all.sh
+```
+
 ### Git Hooks
 
-Install the pre-commit hook (runs markdownlint fix + mermaid generation and stages results; uses Node if available, otherwise Docker with a Node 20 image):
+Install the pre-commit hook (runs markdownlint fix + mermaid generation for staged files and stages results; uses Node if available, otherwise Docker with a Node 20 image):
 
 ```bash
 scripts/setup-hooks.sh
 ```
 
 If the hook fails, fix the reported issues and retry the commit.
-
