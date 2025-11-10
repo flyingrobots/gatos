@@ -3,9 +3,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { spawn, execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const repoRoot = process.cwd();
-const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
+// Resolved at runtime inside main(); declared here so helpers can reference them.
+let repoRoot; // absolute path to repository root
+let outDir;   // docs/diagrams/generated under repoRoot
 
 // Simple argv parser: flags first, then files
 const rawArgs = process.argv.slice(2);
@@ -57,6 +59,29 @@ async function ensureDir(p) {
   await fs.mkdir(p, { recursive: true });
 }
 
+async function isRepoRoot(dir) {
+  try {
+    const st = await fs.stat(path.join(dir, '.git')).catch(() => null);
+    if (st && (st.isDirectory() || st.isFile())) return true; // .git dir or file (worktree)
+  } catch {}
+  try {
+    await fs.access(path.join(dir, 'package.json'));
+    return true;
+  } catch {}
+  return false;
+}
+
+async function findRepoRoot(startDir) {
+  let dir = startDir;
+  for (let i = 0; i < 15; i++) {
+    if (await isRepoRoot(dir)) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
 function binPath(name) {
   const ext = process.platform === 'win32' ? '.cmd' : '';
   return path.join(repoRoot, 'node_modules', '.bin', name + ext);
@@ -91,7 +116,7 @@ async function listMarkdownFiles() {
     return files;
   }
   // --all: use git-tracked files for reproducibility
-  const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8' });
+  const out = execSync("git ls-files -- '*.md'", { encoding: 'utf8', cwd: repoRoot });
   return out.split(/\r?\n/).filter(Boolean);
 }
 
@@ -189,6 +214,16 @@ async function normalizeSvgIntrinsicSize(svgPath) {
 }
 
 async function main() {
+  // Resolve repoRoot anchored to this script's location (robust to cwd/symlinks)
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+  const located = await findRepoRoot(scriptDir);
+  if (!located) {
+    console.error('[mermaid] Error: could not locate repository root from script path:', scriptDir);
+    console.error('Run this script inside the repository, or adjust invocation so it can find .git.');
+    process.exit(1);
+  }
+  repoRoot = located;
+  outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
   await ensureDir(outDir);
   if (!scanAll && cliFiles.length === 0) {
     console.error('Error: no input files provided. Pass one or more .md files or use --all.');
