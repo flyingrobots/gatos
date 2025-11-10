@@ -1,0 +1,21 @@
+{
+  "privacy": {
+    "classes": {
+      "pii_low_entropy": {
+        "min_entropy_bits": 40,
+        "publish_plaintext_digest": false,
+        "require_ciphertext_digest": true
+      }
+    },
+    "rules": [
+      {
+        "select": "user.email",
+        "action": "pointerize",
+        "class": "pii_low_entropy",
+        "capability": "gatos-key://v1/aes-256-gcm/ops-key-01",
+        "location": "gatos-node://ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    ]
+  }
+}
+
