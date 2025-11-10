@@ -67,7 +67,11 @@ fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/mermaid/generate.mjs");
     if all {
-        run("node", [script.as_os_str(), OsStr::new("--all")], Some(&repo))?
+        run(
+            "node",
+            [script.as_os_str(), OsStr::new("--all")],
+            Some(&repo),
+        )?
     } else if let Some(files) = files {
         if files.is_empty() {
             bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
@@ -93,7 +97,10 @@ fn schemas() -> Result<()> {
     } else if which::which("sh").is_ok() {
         "sh"
     } else {
-        bail!("No suitable shell found to execute {:?}. Install bash/sh or run in CI.", script);
+        bail!(
+            "No suitable shell found to execute {:?}. Install bash/sh or run in CI.",
+            script
+        );
     };
     run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
