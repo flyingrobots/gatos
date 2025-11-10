@@ -14,12 +14,12 @@
         {
           "type": "string",
           "description": "Timeout as ISO 8601 duration (e.g., PT30S, PT5M, P1DT2H)",
-          "pattern": "^P(?:(?:\\d+Y|\\d+M|\\d+W|\\d+D)+(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)?|T(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)$"
+          "pattern": "^P(?:(?:\\d+[YMWD])+(?:T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)?|T(?:\\d+H|\\d+M|\\d+(?:\\.\\d+)?S)+)$"
         }
       ]
     },
     "env": { "type": "object", "additionalProperties": { "type": "string" }, "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" } },
-    "cwd": { "type": "string" },
+    "cwd": { "type": "string", "minLength": 1 },
     "inputs": {
       "type": "array",
       "items": {

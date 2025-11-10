@@ -41,7 +41,7 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
 6. Each `Result` commit **MUST** include trailers for discoverability:
    - `Job-Id: blake3:<hex>`
    - `Proof-Of-Execution: blake3:<hex>`
-   - `Worker-Id: <pubkey>`
+   - `Worker-Id: ed25519:<base64|hex>`
    - `Attest-Program: <hash-of-runner-binary>` (optional)
    - `Attest-Sig: <signature>` (optional)
 

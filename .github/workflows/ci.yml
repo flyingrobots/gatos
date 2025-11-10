@@ -3,6 +3,9 @@ name: CI
 on:
   pull_request:
     branches: ["**"]
+  push:
+    branches: ["**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -118,8 +121,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ajv-cli and formats
-        run: npm i -g ajv-cli@5 ajv-formats@3
+      - name: Install ajv-cli and formats (pinned)
+        run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
       - name: Compile schemas (v1)
         run: |
           set -euo pipefail
@@ -143,19 +146,7 @@ jobs:
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json
           ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json
 
-  markdownlint:
-    runs-on: ubuntu-latest
-    name: Markdownlint
-    steps:
-      - uses: actions/checkout@v4
-      - name: Lint Markdown with markdownlint-cli2
-        uses: DavidAnson/markdownlint-cli2-action@v15
-        with:
-          globs: |
-            **/*.md
-            !target/**
-            !.git/**
-            !.obsidian/**
+  # (removed duplicate markdownlint job id)
 
   diagrams:
     runs-on: ubuntu-latest
@@ -175,6 +166,8 @@ jobs:
         run: node scripts/mermaid/generate.mjs
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'npm run md:mermaid:gen' and commit updated diagrams" && exit 1)
+      - name: Install ajv-cli and formats (pinned) for negative tests
+        run: npm i -g ajv-cli@5.0.0 ajv-formats@3.0.1
       - name: Negative tests (invalid ISO8601 durations)
         run: |
           set +e

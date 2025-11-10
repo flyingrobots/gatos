@@ -10,8 +10,16 @@ Versioning policy
 
 Canonical encodings
 
-- BLAKE3 digests: `blake3:<64-char lowercase hex string>`
-- Ed25519 keys/signatures: `ed25519:<hex|base64>`
+- BLAKE3 digests: `blake3:<64-char lowercase hex>` (32 bytes; lowercase hex only; no padding)
+- Ed25519 keys/signatures: `ed25519:<lowercase-hex|base64|base64url>`
+  - Public key (32 bytes):
+    - Hex: 64 lowercase hex chars
+    - Base64 (RFC 2045): 44 chars with one '=' padding (ends with '=')
+    - Base64url (RFC 4648 §5): 43 chars unpadded, or 44 with one '=' padding
+  - Signature (64 bytes):
+    - Hex: 128 lowercase hex chars
+    - Base64 (RFC 2045): 88 chars with '==' padding (ends with '==')
+    - Base64url (RFC 4648 §5): 86 chars unpadded, or 88 with '==' padding
 - Actors (identities): `user:<name>`, `agent:<name>`, or `service:<name>`
 
 Time values
