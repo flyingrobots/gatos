@@ -1,0 +1,14 @@
+# Lychee configuration for link checking
+# Ignore common non-HTTP schemes and local anchors
+exclude_path = ["target/", ".git/", ".obsidian/", "docs/diagrams/generated/"]
+exclude = [
+  "^mailto:",
+  "^tel:",
+  "^#"
+]
+# Accept 429 with retry logic
+max_retries = 2
+retry_wait_time = 2
+timeout = 20
+user_agent = "gatos-lychee/0.1 (+https://github.com/flyingrobots/gatos)"
+

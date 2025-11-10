@@ -1,0 +1,6 @@
+target/
+.git/
+.obsidian/
+node_modules/
+docs/diagrams/generated/
+

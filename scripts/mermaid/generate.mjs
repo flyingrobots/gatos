@@ -9,31 +9,11 @@ const repoRoot = process.cwd();
 const outDir = path.join(repoRoot, 'docs', 'diagrams', 'generated');
 
 async function* iterMarkdownFiles() {
-  // Prefer git-tracked files for reproducibility
+  // Use only git-tracked files for reproducibility
   const { execSync } = await import('child_process');
-  let files = [];
-  try {
-    files = execSync("git ls-files -- '*.md'", { encoding: 'utf8' })
-      .split(/\r?\n/)
-      .filter(Boolean);
-  } catch {
-    // Fallback: recursive scan
-    async function walk(dir) {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      for (const e of entries) {
-        const p = path.join(dir, e.name);
-        if (e.isDirectory()) {
-          if (['.git', 'target', '.obsidian', 'node_modules'].includes(e.name)) continue;
-          yield* walk(p);
-        } else if (e.isFile() && p.endsWith('.md')) {
-          files.push(p);
-        }
-      }
-    }
-    for await (const _ of walk(repoRoot)) {
-      void _; // noop
-    }
-  }
+  const files = execSync("git ls-files -- '*.md'", { encoding: 'utf8' })
+    .split(/\r?\n/)
+    .filter(Boolean);
   for (const f of files) yield f;
 }
 

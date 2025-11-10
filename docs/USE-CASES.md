@@ -1,6 +1,6 @@
 # GATOS — USE CASES
 
-> _Have **you** tried GATOS yet?_
+> *Have **you** tried GATOS yet?*
 
 This document illustrates practical scenarios where GATOS provides unique value.
 

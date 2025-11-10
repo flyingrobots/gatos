@@ -1,8 +1,8 @@
 # GATOS — TECH-SPEC v0.3
 
-**Implementation Plan, Data Structures, and Algorithms**
+## Implementation Plan, Data Structures, and Algorithms
 
-> _This is how we GATOS._
+> *This is how we GATOS.*
 
 ---
 
@@ -28,9 +28,9 @@ graph TD
 
 ### Reuse & refactor recommendations
 
--   Reuse **Echo** crates for fold determinism (`rmg-core` as the fold engine).
--   Adopt **`git-kv`** “Stargate” concepts for optional `push-gate` profile.
--   Integrate **Wesley** as a compiler target to emit schemas and fold specs.
+- Reuse **Echo** crates for fold determinism (`rmg-core` as the fold engine).
+- Adopt **`git-kv`** “Stargate” concepts for optional `push-gate` profile.
+- Integrate **Wesley** as a compiler target to emit schemas and fold specs.
 
 ---
 
@@ -363,11 +363,11 @@ sequenceDiagram
 
 ### Implementation Plan
 
-1.  **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
-2.  **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a Git ref.
-3.  **Execution:** The worker will execute the job's `command` in a sandboxed environment.
-4.  **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
-5.  **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
+1. **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
+2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a Git ref.
+3. **Execution:** The worker will execute the job's `command` in a sandboxed environment.
+4. **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
+5. **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
 
 ---
 
@@ -396,6 +396,7 @@ Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads
 ### Revocation Propagation
 
 Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
+
 ### End‑to‑End Flow
 
 ```mermaid

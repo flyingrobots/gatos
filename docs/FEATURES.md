@@ -59,12 +59,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | byte-identical state from the same inputs |
 | **So that...** | bugs are reproducible across machines |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] Canonical serializer used; BLAKE3 hash stable across OS/arch
 - [ ] Fold spec validated before run
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden vectors across linux/macos/windows
 - [ ] Edge: empty input corpus
@@ -82,12 +82,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | a pure policy VM with deterministic results |
 | **So that...** | replay/audit is possible offline |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] Policy VM forbids I/O, clock, RNG
 - [ ] `policy_root` bound to every ALLOW
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: same intent twice → same verdict bytes
 - [ ] Edge: rule shadowing order deterministic
@@ -105,12 +105,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | N-of-M updates to trust data |
 | **So that...** | no single maintainer can subvert policy |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] Quorum thresholds enforced
 - [ ] Grant chains verify ancestry
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: 2-of-3 signers → apply
 - [ ] Edge: revoked signer → invalid
@@ -128,12 +128,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | exactly-once delivery for job dispatch |
 | **So that...** | batch jobs don’t double-run under retries |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] `gmb.msg` + `gmb.ack` + `gmb.commit` protocol
 - [ ] De-dup by (topic, ulid)
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: dup publishes + consumer crash → single effect
 - [ ] Edge: ack lag metrics emitted
@@ -151,12 +151,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | encrypted artifacts with verifiable pointers |
 | **So that...** | I can ship models across untrusted storage |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] Pointer includes plaintext hash, ciphertext hash, cipher meta
 - [ ] Rekey operation available
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: decrypt with correct key → match plaintext hash
 - [ ] Edge: wrong bytes → hash mismatch
@@ -174,13 +174,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | to bound clone size and keep continuity |
 | **So that...** | new nodes sync fast without losing history |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] `gatos epoch new` creates anchor
 - [ ] New clones fetch current epoch + anchors
 - [ ] Verification across epochs
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: verify continuity hashes
 - [ ] Edge: orphaned refs detected by doctor
@@ -198,12 +198,12 @@ Each feature includes user stories per relevant stakeholders (format requested),
 | **I want..** | health endpoints and a doctor tool |
 | **So that...** | I can detect drift, cache staleness, and pack bloat |
 
-#### Acceptance
+#### Acceptance Criteria
 
 - [ ] `/healthz`, `/readyz`, `/metrics` exposed
 - [ ] `gatos doctor` covers refs, packs, epochs, caches
 
-#### Tests
+#### Test Plan
 
 - [ ] Golden: metrics show non-zero counters post workload
 - [ ] Edge: cache stale → doctor recommends rebuild

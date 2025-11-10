@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[pre-commit] Running markdownlint (fix)…"
-if command -v node >/dev/null 2>&1; then
-  npx -y markdownlint-cli2-fix || { echo "markdownlint fix failed" >&2; exit 1; }
-elif command -v docker >/dev/null 2>&1; then
-  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli2-fix" || { echo "markdownlint fix failed (docker)" >&2; exit 1; }
-else
-  echo "Neither node nor docker found; skipping markdownlint fix" >&2
+echo "[pre-commit] Running markdownlint (fix) on staged files…"
+staged_md=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.md$' || true)
+if [ -n "$staged_md" ]; then
+  if command -v node >/dev/null 2>&1; then
+    npx -y markdownlint-cli $staged_md --fix --config .markdownlint.json || { echo "markdownlint fix failed" >&2; exit 1; }
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli $staged_md --fix --config .markdownlint.json" || { echo "markdownlint fix failed (docker)" >&2; exit 1; }
+  else
+    echo "Neither node nor docker found; skipping markdownlint fix" >&2
+  fi
+  echo "$staged_md" | xargs git add
+fi
+
+# Prettier: JSON/YAML formatting
+echo "[pre-commit] Running Prettier on JSON/YAML…"
+changed_fmt=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(json|ya?ml)$' || true)
+if [ -n "$changed_fmt" ]; then
+  if command -v node >/dev/null 2>&1; then
+    npx -y prettier -w $changed_fmt || { echo "Prettier failed" >&2; exit 1; }
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "npx -y prettier -w $changed_fmt" || { echo "Prettier failed (docker)" >&2; exit 1; }
+  else
+    echo "Neither node nor docker found; skipping Prettier" >&2
+  fi
+  echo "$changed_fmt" | xargs git add
 fi
 
 # Restage modified Markdown files after fixes
@@ -28,6 +46,19 @@ fi
 # Stage generated diagrams
 if [ -d docs/diagrams/generated ]; then
   git add docs/diagrams/generated
+fi
+
+# Link check: changed Markdown files
+echo "[pre-commit] Checking links…"
+changed_md=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.md$' || true)
+if [ -n "$changed_md" ]; then
+  if command -v lychee >/dev/null 2>&1; then
+    lychee --no-progress --config .lychee.toml $changed_md || { echo "Link check failed" >&2; exit 1; }
+  elif command -v docker >/dev/null 2>&1; then
+    docker run --rm -v "$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml $changed_md || { echo "Link check failed (docker)" >&2; exit 1; }
+  else
+    echo "lychee not found and docker unavailable; skipping link check" >&2
+  fi
 fi
 
 echo "[pre-commit] Done."

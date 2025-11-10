@@ -9,14 +9,16 @@ Requires: [ADR-0001]
 Related: [ADR-0002]
 Tags: [Governance, Consensus, Policy]
 Schemas:
-  - schemas/v1/governance/proposal.schema.json
-  - schemas/v1/governance/approval.schema.json
-  - schemas/v1/governance/grant.schema.json
-  - schemas/v1/governance/revocation.schema.json
-  - schemas/v1/governance/proof_of_consensus_envelope.schema.json
-  - schemas/v1/policy/governance_policy.schema.json
+
+- schemas/v1/governance/proposal.schema.json
+- schemas/v1/governance/approval.schema.json
+- schemas/v1/governance/grant.schema.json
+- schemas/v1/governance/revocation.schema.json
+- schemas/v1/governance/proof_of_consensus_envelope.schema.json
+- schemas/v1/policy/governance_policy.schema.json
 Supersedes: []
 Superseded-By: []
+
 ---
 
 ## Scope
@@ -44,6 +46,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 4. Proposal (normative)
    - A commit describing the requested action, scope/target, and required quorum. Schema: [`schemas/v1/governance/proposal.schema.json`](../../../schemas/v1/governance/proposal.schema.json)
    - Trailers MUST be present and canonically encoded:
+
      ```text
      Action: publish.artifact
      Target: gatos://assets/model.bin
@@ -53,6 +56,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      Policy-Rule: governance.publish.artifact
      Created-By: user:alice
      ```
+
    - `Proposal-Id` is the `content_id` (BLAKE3 of canonical proposal envelope).
 
 5. Approval (normative)
@@ -60,6 +64,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    - Approver identity MUST resolve in the trust graph (`gatos/trust/…`).
    - One approval per signer per proposal is valid; duplicates MUST be ignored.
    - Trailers MUST include:
+
      ```text
      Proposal-Id: blake3:<hex>
      Approval-Id: blake3:<hex>
@@ -71,6 +76,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    - Created when quorum is satisfied per policy rule. Creation MAY be automatic (daemon) or manual (operator tool). Schema: [`schemas/v1/governance/grant.schema.json`](../../../schemas/v1/governance/grant.schema.json)
    - Serves as the authoritative artifact enabling the gated action.
    - Trailers MUST include:
+
      ```text
      Proposal-Id: blake3:<hex>
      Grant-Id: blake3:<hex>
@@ -87,6 +93,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 
 8. Governance schema (policy integration)
    - Extend `.gatos/policy.yaml` to declare governance rules (JSON Schema: [`schemas/v1/policy/governance_policy.schema.json`](../../../schemas/v1/policy/governance_policy.schema.json)):
+
      ```yaml
      governance:
        publish.artifact:
@@ -98,6 +105,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
          quorum:
            all_of: security_team
      ```
+
    - Evaluation of approvals and grants MUST reuse the trust graph and signature verification defined by the Policy/Trust plane (ADR‑0001).
 
 9. Lifecycle states (normative)
@@ -112,12 +120,14 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 
 10. Revocation (normative)
     - A grant MAY be revoked by creating a `revocation` commit under `refs/gatos/revocations/` with trailers (structured schema: [`schemas/v1/governance/revocation.schema.json`](../../../schemas/v1/governance/revocation.schema.json)):
+
       ```text
       Grant-Id: blake3:<hex>
       Revocation-Id: blake3:<hex>
       Reason: <free-text>
       Revoked-By: user:bob
       ```
+
     - A new grant MAY also supersede an older one by including `Supersedes: blake3:<grant-id>`.
     - Policy MUST deny governed actions when a matching grant is revoked or superseded.
 

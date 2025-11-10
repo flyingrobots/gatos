@@ -69,12 +69,14 @@ This approach provides maximum portability and a lower attack surface for the co
 ### Usage Example
 
 A `std`-aware crate would depend on `gatos-ledger` like this:
+
 ```toml
 [dependencies]
 gatos-ledger = { version = "0.1", features = ["git2-backend"] }
 ```
 
 A `no_std` crate would disable default features to use only the core logic:
+
 ```toml
 [dependencies]
 gatos-ledger = { version = "0.1", default-features = false, features = ["core-only"] }

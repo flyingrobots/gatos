@@ -12,7 +12,7 @@ Canonical encodings
 
 - BLAKE3 digests: `blake3:<64-char lowercase hex string>`
 - Ed25519 keys/signatures: `ed25519:<hex|base64>`
- - Actors (identities): `user:<name>`, `agent:<name>`, or `service:<name>`
+- Actors (identities): `user:<name>`, `agent:<name>`, or `service:<name>`
 
 Time values
 

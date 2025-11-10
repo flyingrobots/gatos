@@ -1,13 +1,13 @@
 # GATOS — SPEC v0.3 (Draft)
 
-> _The key to understanding GATOS is understanding that it's just Git._
+> *The key to understanding GATOS is understanding that it's just Git.*
 
 ## Git As The Operating Surface
 
 > You use Git for source control.  
-> _I use Git for reality control._  
-> _We are not the same._  
-> **GATOS: Git Different.** 
+> *I use Git for reality control.*  
+> *We are not the same.*  
+> **GATOS: Git Different.**
 
 |  |  |
 |--|--|
@@ -561,9 +561,9 @@ stateDiagram-v2
 
 The lifecycle is represented entirely through Git objects:
 
--   **Job:** A commit whose tree contains a `job.yaml` manifest.
--   **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
--   **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
+- **Job:** A commit whose tree contains a `job.yaml` manifest.
+- **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
+- **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
 
@@ -606,6 +606,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
 ### 20.2 Commit Structures (Trailers)
 
 - Proposal (at `refs/gatos/proposals/…`):
+
   ```text
   Action: <string>
   Target: <uri>
@@ -615,15 +616,19 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
   Policy-Rule: <policy id>
   Created-By: <actor>
   ```
+
   (Note: `gatos://` is the canonical URI scheme for addressing resources managed within the GATOS operating surface.)
 - Approval (at `refs/gatos/approvals/…`):
+
   ```text
   Proposal-Id: blake3:<hex>
   Approval-Id: blake3:<hex>
   Signer: ed25519:<pubkey>
   Expires-At: <ISO8601>   # OPTIONAL
   ```
+
 - Grant (at `refs/gatos/grants/…`):
+
   ```text
   Proposal-Id: blake3:<hex>
   Grant-Id: blake3:<hex>
