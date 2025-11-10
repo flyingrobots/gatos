@@ -1,4 +1,3 @@
-
 ---
 Status: Accepted
 Date: 2025-11-08
@@ -18,19 +17,19 @@ Supersedes: []
 Superseded-By: []
 ---
 
-## ADR-0003: Consensus Governance for Gated Actions
+# ADR-0003: Consensus Governance for Gated Actions
 
-### Scope
+## Scope
 
 Define a system for gating specific GATOS actions (e.g., locking a file, publishing an artifact, merging a policy) behind a programmable, multi‑party approval process ("Consensus Governance").
 
-### Rationale
+## Rationale
 
 **Problem:** As GATOS manages critical state, some actions must be authorized by multiple trusted parties.
 
 **Context:** This generalizes the original "Perforce‑style locks" concept into a flexible governance framework capable of rules like "two leads must approve this asset change." It complements ADR‑0002 (Job Plane) so actions can be executed after reaching consensus.
 
-### Decision
+## Decision
 
 1. A **Consensus Governance** layer is integrated into the Policy Plane (`gatos-policy`).
 2. Introduce Git ref namespaces:
@@ -130,15 +129,15 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
       - `gatos.policy.grant.created`
       - `gatos.policy.grant.revoked`
 
-### Security Considerations
+## Security Considerations
 
 - Grants are immutable once committed; changes require revocation or supersedure.
 - Signer private keys SHOULD be protected (offline or delegated to a signing service).
 - Expired proposals MUST NOT be revived post‑TTL; new proposals are required.
 
-### Diagrams
+## Diagrams
 
-#### Proposal Lifecycle (State)
+### Proposal Lifecycle (State)
 
 ```mermaid
 stateDiagram-v2
@@ -153,7 +152,7 @@ stateDiagram-v2
     revoked --> [*]
 ```
 
-#### Standard Workflow (Sequence)
+### Standard Workflow (Sequence)
 
 ```mermaid
 sequenceDiagram
@@ -182,31 +181,31 @@ sequenceDiagram
     end
 ```
 
-### Consequences
+## Consequences
 
-#### Pros
+### Pros
 
 - Enables auditable, multi‑party governance for any action.
 - Suitable for regulated or collaborative environments.
 - Every step (proposal, approval, grant) is a signed Git object—immutable and traceable.
 
-#### Cons
+### Cons
 
 - Adds workflow complexity for gated actions.
 - Requires signature verification and key‑management tooling.
 
-### Alternatives Considered
+## Alternatives Considered
 
 1. External Platform Approvals (e.g., GitHub PR reviews) — Rejected; ties governance to specific vendors.
 2. Single‑Admin Model — Rejected; lacks flexibility for N‑of‑M or group‑based approvals.
 
-### Future Work
+## Future Work
 
 - `gatos grant verify` CLI for checking consensus proofs.
 - TTL enforcement and automatic cleanup of expired proposals.
 - Integrate with the Job Plane (ADR‑0002) to allow "run job after grant" automation.
 
-### Why This ADR Matters
+## Why This ADR Matters
 
 - Completes the Policy Plane: turns static rules into living agreements.
 - Pairs with the Job Plane: e.g., "run this job once 3 of 5 reviewers approve."
@@ -214,7 +213,7 @@ sequenceDiagram
 
 Together, ADR‑0002 (Job Plane) and ADR‑0003 (Consensus Governance) transform GATOS from a deterministic datastore into a self‑governing distributed runtime.
 
-### Terminology and References
+## Terminology and References
 
 - `content_id`: BLAKE3 hash of canonical serialization of an unsigned core (see ADR‑0001).
 - Canonical encodings: lowercase hex for BLAKE3 digests; `ed25519:<base64|hex>` for keys/signatures.
