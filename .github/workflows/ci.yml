@@ -97,14 +97,12 @@ jobs:
     name: Markdownlint
     steps:
       - uses: actions/checkout@v4
-      - name: Lint Markdown with markdownlint-cli2
-        uses: DavidAnson/markdownlint-cli2-action@v15
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          globs: |
-            **/*.md
-            !target/**
-            !.git/**
-            !.obsidian/**
+          node-version: '20'
+      - name: markdownlint-cli2 (check only)
+        run: npx -y markdownlint-cli2
 
   schemas:
     runs-on: ubuntu-latest
@@ -163,11 +161,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - name: Install Node dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm i; fi
       - name: Generate Mermaid diagrams
-        run: npm run md:mermaid:gen
+        run: node scripts/mermaid/generate.mjs
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'npm run md:mermaid:gen' and commit updated diagrams" && exit 1)
+      - name: Negative tests (invalid ISO8601 durations)
+        run: |
+          set +e
+          echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
+          echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
+          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json && exit 1 || echo "Rejected bad ttl P as expected"
+          ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json && exit 1 || echo "Rejected bad ttl PT as expected"

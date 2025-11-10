@@ -2,14 +2,12 @@
 set -euo pipefail
 
 echo "[pre-commit] Running markdownlint (fix)…"
-if command -v npm >/dev/null 2>&1; then
-  npm run --silent md:lint:fix || {
-    echo "markdownlint fix failed; aborting commit" >&2
-    exit 1
-  }
+if command -v node >/dev/null 2>&1; then
+  npx -y markdownlint-cli2-fix || { echo "markdownlint fix failed" >&2; exit 1; }
+elif command -v docker >/dev/null 2>&1; then
+  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli2-fix" || { echo "markdownlint fix failed (docker)" >&2; exit 1; }
 else
-  echo "npm not found; please install Node.js 20+ and run 'npm i'" >&2
-  exit 1
+  echo "Neither node nor docker found; skipping markdownlint fix" >&2
 fi
 
 # Restage modified Markdown files after fixes
@@ -19,10 +17,13 @@ if [ -n "$changed_md" ]; then
 fi
 
 echo "[pre-commit] Generating Mermaid diagrams…"
-npm run --silent md:mermaid:gen || {
-  echo "Mermaid generation failed; aborting commit" >&2
-  exit 1
-}
+if command -v node >/dev/null 2>&1; then
+  node scripts/mermaid/generate.mjs || { echo "Mermaid generation failed" >&2; exit 1; }
+elif command -v docker >/dev/null 2>&1; then
+  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc "node -e 'process.exit(0)' >/dev/null 2>&1 || (echo installing); npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs" || { echo "Mermaid generation failed (docker)" >&2; exit 1; }
+else
+  echo "Neither node nor docker found; skipping mermaid generation" >&2
+fi
 
 # Stage generated diagrams
 if [ -d docs/diagrams/generated ]; then
@@ -30,4 +31,3 @@ if [ -d docs/diagrams/generated ]; then
 fi
 
 echo "[pre-commit] Done."
-

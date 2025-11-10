@@ -64,7 +64,7 @@ function outNameFor(mdPath, index) {
 }
 
 async function main() {
-  const mmdc = binPath('mmdc');
+  let mmdc = binPath('mmdc');
   await ensureDir(outDir);
   let countBlocks = 0;
   for await (const mdPath of iterMarkdownFiles()) {
@@ -79,8 +79,19 @@ async function main() {
       const tmpIn = path.join(tmpDir, 'in.mmd');
       await fs.writeFile(tmpIn, code, 'utf8');
       const outFile = path.join(outDir, outNameFor(mdPath, idx));
-      const args = ['-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default'];
-      await run(mmdc, args);
+      let cmd, args;
+      if (await fs
+        .access(mmdc)
+        .then(() => true)
+        .catch(() => false)) {
+        cmd = mmdc;
+        args = ['-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default'];
+      } else {
+        // Fallback to npx without requiring repo-local deps
+        cmd = 'npx';
+        args = ['-y', '@mermaid-js/mermaid-cli', '-i', tmpIn, '-o', outFile, '-e', 'svg', '-t', 'default'];
+      }
+      await run(cmd, args);
     }
   }
   console.log(`Generated ${countBlocks} mermaid diagram(s) into ${path.relative(repoRoot, outDir)}`);
@@ -90,4 +101,3 @@ main().catch((err) => {
   console.error(err.message || err);
   process.exit(1);
 });
-
