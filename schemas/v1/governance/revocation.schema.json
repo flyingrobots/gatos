@@ -8,13 +8,15 @@
   "properties": {
     "grant_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
     "revocation_id": { "$ref": "../common/ids.schema.json#/$defs/blake3Digest" },
-    "reason": { "type": "string" },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Human-readable reason for revocation (non-empty; max 256 chars)."
+    },
     "revoked_by": {
-      "oneOf": [
-        { "$ref": "../common/ids.schema.json#/$defs/actorId" },
-        { "$ref": "../common/ids.schema.json#/$defs/ed25519Key" }
-      ],
-      "description": "Identity of the revoker (actor or key)"
+      "$ref": "../common/ids.schema.json#/$defs/actorId",
+      "description": "Identity of the revoker using canonical actor encoding (e.g., user:alice, agent:bot, service:policy)."
     }
   }
 }

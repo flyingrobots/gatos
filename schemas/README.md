@@ -21,6 +21,12 @@ Canonical encodings
     - Base64 (RFC 2045): 88 chars with '==' padding (ends with '==')
     - Base64url (RFC 4648 §5): 86 chars unpadded, or 88 with '==' padding
 - Actors (identities): `user:<name>`, `agent:<name>`, or `service:<name>`
+  - Canonical actor encoding used in governance envelopes (e.g., `revoked_by`):
+    - `user:<name>` — human principals
+    - `agent:<name>` — automated clients/bots
+    - `service:<name>` — system services
+    - Names use `[A-Za-z0-9._-]+` and are case-sensitive
+  - Example: `revoked_by: "user:alice"`
 
 Time values
 
