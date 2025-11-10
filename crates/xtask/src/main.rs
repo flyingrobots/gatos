@@ -1,8 +1,10 @@
 use anyhow::{bail, Context, Result};
 use clap::{ArgGroup, Parser, Subcommand};
+use git2::Repository;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use which::which;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -92,9 +94,9 @@ fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
     // Execute via a shell explicitly for cross-platform compatibility
-    let shell = if which::which("bash").is_ok() {
+    let shell = if which("bash").is_ok() {
         "bash"
-    } else if which::which("sh").is_ok() {
+    } else if which("sh").is_ok() {
         "sh"
     } else {
         bail!(
@@ -114,28 +116,31 @@ fn links(files: Vec<String>) -> Result<()> {
         files
     };
     // Prefer local lychee if present; otherwise Docker fallback
-    if which::which("lychee").is_ok() {
+    if which("lychee").is_ok() {
         let mut args = vec!["--no-progress", "--config", ".lychee.toml"];
         for g in &arglist {
             args.push(g);
         }
         run("lychee", args, Some(&repo))?;
         Ok(())
-    } else if which::which("docker").is_ok() {
-        let mut docker_args: Vec<String> = vec![
-            "run".to_string(),
-            "--rm".to_string(),
-            "-v".to_string(),
-            format!("{}:/work", repo.display()),
-            "-w".to_string(),
-            "/work".to_string(),
-            "ghcr.io/lycheeverse/lychee:latest".to_string(),
-            "--no-progress".to_string(),
-            "--config".to_string(),
-            ".lychee.toml".to_string(),
-        ];
+    } else if which("docker").is_ok() {
+        // Build docker args with borrowed strings to avoid unnecessary cloning
+        let mount = format!("{}:/work", repo.display());
+        let mut docker_args: Vec<&OsStr> = Vec::with_capacity(11 + arglist.len());
+        docker_args.extend([
+            OsStr::new("run"),
+            OsStr::new("--rm"),
+            OsStr::new("-v"),
+            OsStr::new(mount.as_str()),
+            OsStr::new("-w"),
+            OsStr::new("/work"),
+            OsStr::new("ghcr.io/lycheeverse/lychee:latest"),
+            OsStr::new("--no-progress"),
+            OsStr::new("--config"),
+            OsStr::new(".lychee.toml"),
+        ]);
         for g in &arglist {
-            docker_args.push(g.clone());
+            docker_args.push(OsStr::new(g.as_str()));
         }
         run("docker", docker_args, Some(&repo))?;
         Ok(())
@@ -145,9 +150,19 @@ fn links(files: Vec<String>) -> Result<()> {
 }
 
 fn repo_root() -> Result<PathBuf> {
-    // Assume xtask is run from repo; use current dir
+    // Prefer libgit2 discovery to handle worktrees, submodules, and .git files
     let cwd = std::env::current_dir()?;
-    // Walk up to find .git dir/file
+    if let Ok(repo) = Repository::discover(&cwd) {
+        if let Some(wd) = repo.workdir() {
+            return Ok(wd.to_path_buf());
+        }
+        // Bare repo: use parent of the .git directory
+        let git_dir = repo.path();
+        if let Some(parent) = git_dir.parent() {
+            return Ok(parent.to_path_buf());
+        }
+    }
+    // Fallback to manual traversal
     let mut dir = cwd.as_path();
     for _ in 0..15 {
         if dir.join(".git").exists() {
