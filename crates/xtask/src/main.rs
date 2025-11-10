@@ -1,5 +1,5 @@
 use anyhow::{bail, Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -15,6 +15,12 @@ enum Cmd {
     /// Run pre-commit pipeline (staged-only)
     PreCommit,
     /// Generate mermaid diagrams
+    #[command(group(
+        ArgGroup::new("input")
+            .args(["all", "files"]) // exactly one must be present
+            .required(true)
+            .multiple(false)
+    ))]
     Diagrams {
         /// Process all git-tracked .md files
         #[arg(long)]
