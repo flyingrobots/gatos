@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { spawn, execSync } from 'child_process';
+import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 
 // Resolved at runtime inside main(); declared here so helpers can reference them.
@@ -114,8 +115,11 @@ function run(cmd, args, opts = {}, timeoutMs = 120000) {
 }
 
 function outNameFor(mdPath, index) {
-  const rel = path.relative(repoRoot, mdPath).replace(/[\\/]/g, '__').replace(/\.md$/i, '');
-  return `${rel}__mermaid_${index}.svg`;
+  // Use repo-relative POSIX-style path to compute a deterministic short hash
+  const relPosix = path.relative(repoRoot, mdPath).split(path.sep).join('/');
+  const safeStem = relPosix.replace(/\.md$/i, '').replace(/[^A-Za-z0-9._-]/g, '_');
+  const hash = createHash('sha256').update(relPosix).digest('hex').slice(0, 10);
+  return `${safeStem}__${hash}__mermaid_${index}.svg`;
 }
 
 async function listMarkdownFiles() {
@@ -138,6 +142,7 @@ async function listMarkdownFiles() {
 
 async function collectRenderTasks(mdFiles) {
   const tasks = [];
+  const seen = new Set();
   for (const mdPath of mdFiles) {
     const text = await fs.readFile(mdPath, 'utf8');
     let match; let idx = 0;
@@ -145,6 +150,10 @@ async function collectRenderTasks(mdFiles) {
       idx += 1;
       const code = match[1].trim() + '\n';
       const outFile = path.join(outDir, outNameFor(mdPath, idx));
+      if (seen.has(outFile)) {
+        throw new Error(`Output name collision detected for ${mdPath} block #${idx}: ${outFile}`);
+      }
+      seen.add(outFile);
       tasks.push({ mdPath, index: idx, code, outFile });
     }
   }
