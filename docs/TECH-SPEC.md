@@ -265,6 +265,8 @@ graph TD
     C --> C4(Projection Determinism);
 ```
 
+- **Projection Determinism**: Verifies that applying the same privacy policy to the same `UnifiedState` on different platforms (Linux, macOS, Windows) produces a byte-for-byte identical `PublicState` and the same set of private blobs.
+
 ---
 
 ## 10. Security
