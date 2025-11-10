@@ -9,7 +9,7 @@ services:
       MERMAID_CLI_VERSION: ${MERMAID_CLI_VERSION:-10.9.0}
       PUPPETEER_EXECUTABLE_PATH: ''
     command: >-
-      bash -lc "npx -y @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION:-10.9.0} >/dev/null 2>&1;
+      bash -lc "npx -y @mermaid-js/mermaid-cli@${MERMAID_CLI_VERSION:-10.9.0} &&
       node scripts/mermaid/generate.mjs --all"
 
   ci-schemas:
