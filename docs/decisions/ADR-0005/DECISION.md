@@ -118,7 +118,7 @@ ULID generation (normative): Implementations MUST use a monotonic ULID algorithm
 
 Errors (normative):
 
-- 400 `InvalidEnvelope`; 409 `UlidOutOfOrder`; 409 `NotFastForward`; 422 `DigestMismatch`.
+- 400 `InvalidEnvelope`; 409 `TemporalOrder`; 409 `AppendRejected`; 422 `DigestMismatch`.
 
 ### 6) Query Semantics
 
