@@ -69,7 +69,7 @@ graph TD
 - Optional `refs` (map<string, blake3Digest>) to link related state or IDs.
 - Privacy (ADR‑0004): Payload MUST NOT embed private overlay data. Redacted values MUST be replaced by `OpaquePointer` envelopes per `schemas/v1/privacy/opaque_pointer.schema.json`.
 
-Numeric discipline: JSON numbers can be cross‑language foot‑guns. Precision‑sensitive values (e.g., monetary/time) MUST be encoded as integers or strings.
+Numeric discipline: See §1 Canonicalization & Identifiers — precision‑sensitive values (e.g., monetary/time) MUST be encoded as integers or strings.
 
 ### 4) Commit Message and Trailer
 
