@@ -88,3 +88,15 @@ By structuring the system into these five planes and building them on top of Git
 *   **Programmability:** The system's behavior is defined by schemas, policies, and fold specifications that are themselves version-controlled code.
 
 The following chapters will explore each of these planes in greater detail, showing how each contributes to shaping the GATOS operating surface.
+
+
+---
+
+Next: [Chapter 2: Chapter 2: The Ledger Plane: An Immutable History](./CHAPTER-002.md)
+
+Prev: [README](./README.md)
+
+---
+
+**GATOS – _Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
