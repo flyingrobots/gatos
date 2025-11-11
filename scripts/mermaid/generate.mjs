@@ -12,7 +12,7 @@ let outDir;   // docs/diagrams/generated under repoRoot
 
 // Simple argv parser: flags first, then files
 const rawArgs = process.argv.slice(2);
-const allowedFlags = new Set(['--all', '-h', '--help']);
+const allowedFlags = new Set(['--all', '--verify', '-h', '--help']);
 const flags = new Set();
 const cliFiles = [];
 const unknownFlags = [];
@@ -25,14 +25,16 @@ for (const a of rawArgs) {
   }
 }
 const scanAll = flags.has('--all');
+const verifyOnly = flags.has('--verify');
 
 function usage() {
   const lines = [
     'Usage:',
-    '  node scripts/mermaid/generate.mjs [--all] [file1.md file2.md ...]',
+    '  node scripts/mermaid/generate.mjs [--verify] [--all] [file1.md file2.md ...]',
     '',
     'Options:',
     '  --all         Scan all tracked .md files via git ls-files',
+    '  --verify      Do not render; verify committed SVGs are up-to-date (metadata + tool pins)',
     '  -h, --help    Show this help and exit',
     '',
     'Environment:',
@@ -120,6 +122,12 @@ function outNameFor(mdPath, index) {
   const safeStem = relPosix.replace(/\.md$/i, '').replace(/[^A-Za-z0-9._-]/g, '_');
   const hash = createHash('sha256').update(relPosix).digest('hex').slice(0, 10);
   return `${safeStem}__${hash}__mermaid_${index}.svg`;
+}
+
+// Legacy filename scheme (pre-hash): replace path separators with "__"
+function outNameLegacy(mdPath, index) {
+  const rel = path.relative(repoRoot, mdPath).replace(/[\\/]/g, '__').replace(/\.md$/i, '');
+  return `${rel}__mermaid_${index}.svg`;
 }
 
 async function listMarkdownFiles() {
@@ -230,6 +238,7 @@ async function renderTask(task, mmdcPath) {
   if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
     await normalizeSvgIntrinsicSize(task.outFile);
   }
+  await embedMeta(task.outFile, task, process.env.MERMAID_CLI_VERSION || '10.9.0');
 }
 
 // Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
@@ -378,6 +387,16 @@ async function main() {
   }
 
   const mmdcPath = binPath('mmdc');
+  if (verifyOnly) {
+    const errors = await verifyTasks(tasks);
+    if (errors.length) {
+      console.error('Verification failed for the following diagrams:');
+      for (const e of errors) console.error(' - ' + e);
+      process.exit(2);
+    }
+    console.log(`Verified ${tasks.length} diagrams up-to-date.`);
+    return;
+  }
   const maxParallel = Math.max(1, Math.min(Number(process.env.MERMAID_MAX_PARALLEL || 0) || os.cpus().length, 8));
 
   let idx = 0;
@@ -413,6 +432,122 @@ async function main() {
     const summary = errors.map(e => ` - ${e.id}: ${e.error}`).join('\n');
     throw new Error(`Mermaid generation failed for ${failed}/${total} diagram(s):\n${summary}`);
   }
+}
+
+function sha256(s) {
+  return createHash('sha256').update(s).digest('hex');
+}
+
+async function embedMeta(svgPath, task, cliVer) {
+  // Check for existing metadata and warn if inconsistent before writing
+  try {
+    const existing = await fs.readFile(svgPath, 'utf8');
+    const existingMeta = extractMeta(existing);
+    if (existingMeta) {
+      const expectedSrc = path.relative(repoRoot, task.mdPath).split(path.sep).join('/');
+      if (existingMeta.src !== expectedSrc || existingMeta.index !== task.index) {
+        console.warn(
+          `[meta] ${path.relative(repoRoot, svgPath)}: replacing inconsistent metadata ` +
+          `(had src=${existingMeta.src} index=${existingMeta.index}, want src=${expectedSrc} index=${task.index})`
+        );
+      }
+    }
+  } catch {
+    // File may not exist yet; proceed
+  }
+  const meta = {
+    src: path.relative(repoRoot, task.mdPath).split(path.sep).join('/'),
+    index: task.index,
+    code_sha256: sha256(task.code),
+    cli: cliVer,
+    gen: 'v1'
+  };
+  let text = await fs.readFile(svgPath, 'utf8');
+  const { tag, start, end } = findSvgOpenTag(text) || {};
+  const comment = `<!-- mermaid-meta: ${JSON.stringify(meta)} -->\n`;
+  if (tag) {
+    text = text.slice(0, end) + comment + text.slice(end);
+  } else {
+    text = comment + text;
+  }
+  await fs.writeFile(svgPath, text.endsWith('\n') ? text : text + '\n', 'utf8');
+}
+
+function extractMeta(svgText) {
+  // Robustly scan for HTML comments and extract the one starting with 'mermaid-meta:'
+  // Avoid a single fragile regex that can fail with multiple comments or line breaks.
+  const comments = [];
+  for (let i = 0; i < svgText.length; ) {
+    const start = svgText.indexOf('<!--', i);
+    if (start === -1) break;
+    const end = svgText.indexOf('-->', start + 4);
+    if (end === -1) break; // malformed; stop scanning
+    const body = svgText.slice(start + 4, end).trim();
+    comments.push(body);
+    i = end + 3;
+  }
+  const metaComment = comments.find(c => c.trim().startsWith('mermaid-meta:'));
+  if (!metaComment) return null;
+  const payload = metaComment.slice(metaComment.indexOf(':') + 1).trim();
+  // payload is expected to be a JSON object. Parse defensively.
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+async function verifyTasks(tasks) {
+  const errs = [];
+  for (const t of tasks) {
+    const hashedPath = t.outFile;
+    const legacyPath = path.join(outDir, outNameLegacy(t.mdPath, t.index));
+    const relHashed = path.relative(repoRoot, hashedPath).split(path.sep).join('/');
+    const relLegacy = path.relative(repoRoot, legacyPath).split(path.sep).join('/');
+    try {
+      let svg, usedLegacy = false;
+      try {
+        svg = await fs.readFile(hashedPath, 'utf8');
+      } catch (e) {
+        // Fallback to legacy filename during transition
+        try {
+          svg = await fs.readFile(legacyPath, 'utf8');
+          usedLegacy = true;
+        } catch {
+          throw e; // rethrow original ENOENT
+        }
+      }
+      const meta = extractMeta(svg);
+      if (!meta) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: missing mermaid-meta comment`);
+        continue;
+      }
+      // Validate source and index match expectations
+      const expectedSrc = path.relative(repoRoot, t.mdPath).split(path.sep).join('/');
+      if (meta.src !== expectedSrc) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: src mismatch (have ${meta.src}, want ${expectedSrc})`);
+      }
+      if (meta.index !== t.index) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: index mismatch (have ${meta.index}, want ${t.index})`);
+      }
+      const codeHash = sha256(t.code);
+      if (meta.code_sha256 !== codeHash) {
+        // Include a short snippet (first few lines, truncated) to aid debugging
+        const firstLines = t.code.split('\n').slice(0, 8).join('\n');
+        const truncated = (firstLines.length > 400 ? firstLines.slice(0, 400) + '…' : firstLines).replace(/\n/g, '\\n');
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash}) — snippet: ‹${truncated}›`);
+      }
+      const wantCli = process.env.MERMAID_CLI_VERSION || '10.9.0';
+      if (meta.cli !== wantCli) {
+        errs.push(`${usedLegacy ? relLegacy : relHashed}: cli version mismatch (have ${meta.cli}, want ${wantCli})`);
+      }
+    } catch (e) {
+      const msg = e && e.message ? e.message : String(e);
+      // Provide both expected names to aid developer
+      errs.push(`${relHashed} (or ${relLegacy}): ${msg}`);
+    }
+  }
+  return errs;
 }
 
 main().catch((err) => {

@@ -129,19 +129,26 @@ jobs:
         with:
           node-version: '20'
       - name: Validate schemas and examples (v1) via xtask
-        run: cargo run -p xtask -- schemas all
+        run: cargo run -p xtask -- schemas
 
   # (removed duplicate markdownlint job id)
 
   diagrams:
     runs-on: ubuntu-latest
-    name: Mermaid Diagrams Up-to-date
+    name: Mermaid Diagrams Generate + Verify
+    env:
+      CHROMIUM_REVISION: '1108766'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: 1.81.0
       - uses: Swatinem/rust-cache@v2
+      - name: Cache Puppeteer Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: ${{ runner.os }}-puppeteer-chromium-${{ env.CHROMIUM_REVISION }}
       - name: Cache npm (npx)
         uses: actions/cache@v4
         with:
@@ -151,18 +158,50 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install Chromium for Puppeteer (exact revision)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cache/puppeteer"
+          OUT=$(npx -y @puppeteer/browsers@1.4.6 install chromium@${{ env.CHROMIUM_REVISION }} --path "$HOME/.cache/puppeteer" | tail -n1)
+          echo "browsers install output: $OUT"
+          BIN_PATH=$(printf "%s" "$OUT" | sed -E 's/^[^ ]+ +//')
+          echo "Using Chromium at: $BIN_PATH"
+          echo "PUPPETEER_EXECUTABLE_PATH=$BIN_PATH" >> "$GITHUB_ENV"
+          echo "PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer" >> "$GITHUB_ENV"
       - name: Generate Mermaid diagrams (full repo) via xtask
         run: MERMAID_MAX_PARALLEL=6 cargo run -p xtask -- diagrams --all
       - name: Fail if generation produced diffs
         run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
+      - name: Verify committed diagrams metadata and tool pins
+        run: node scripts/mermaid/generate.mjs --verify --all
   linkcheck:
     runs-on: ubuntu-latest
     name: Link Check (xtask links)
+    env:
+      LYCHEE_VERSION: '0.21.0'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: 1.81.0
       - uses: Swatinem/rust-cache@v2
+      - name: Cache lychee binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/lychee
+          key: ${{ runner.os }}-lychee-bin-${{ env.LYCHEE_VERSION }}
+      - name: Install lychee CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v lychee >/dev/null 2>&1; then
+            cargo install lychee --locked --version "$LYCHEE_VERSION"
+          fi
+          lychee --version
       - name: Link check via xtask (uses lychee or Docker fallback)
+        env:
+          # Preserve authenticated GitHub rate limits for lychee CLI
+          LYCHEE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cargo run -p xtask -- links
