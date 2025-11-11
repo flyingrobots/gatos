@@ -184,6 +184,8 @@ jobs:
         with:
           toolchain: 1.81.0
       - uses: Swatinem/rust-cache@v2
+      - name: Install lychee CLI
+        run: cargo install lychee --locked
       - name: Link check via xtask (uses lychee or Docker fallback)
         env:
           # Preserve authenticated GitHub rate limits for lychee CLI
