@@ -82,7 +82,7 @@ Private data overlays are fundamentally tied to an actor's identity, not an ephe
 
 ### 2. Encryption Algorithm & Nonce Discipline (Normative)
 
-* AEAD algorithm: Implementations MUST use XChaCha20-Poly1305 for encrypting private blobs referenced by Opaque Pointers. This is the only normative algorithm for the privacy overlay.
+* AEAD algorithm: Implementations MUST use XChaCha20-Poly1305 for encrypting private blobs referenced by Opaque Pointers. This is the only normative algorithm for the privacy overlay. It supersedes any prior mentions of AES‑256‑GCM as a default.
 * Nonces: 24-byte (192-bit) nonces MUST be unique per key. Implementations SHOULD use deterministic, domain‑separated nonces derived via HKDF from the pointer digest and context, or a crash‑safe, monotonic per‑key counter stored in KMS. Random nonces are permitted only with a documented collision budget and active monitoring.
 * Catastrophic reuse: Nonce reuse under the same key is catastrophic and MUST be proven impossible by construction (deterministic derivation) or by counter invariants.
 * AAD binding: AEAD AAD MUST bind the pointer digest (not a separate content_id), the requester actor id, and the effective policy version so that verifiers can validate context and detect misuse.
