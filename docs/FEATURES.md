@@ -212,3 +212,8 @@ See also: [ADR-0004](./decisions/ADR-0004/DECISION.md).
 - [ ] Golden: project a unified state, resolve pointer, and verify content matches original.
 - [ ] Edge: attempt to resolve a pointer with an invalid capability URI → DENY.
 - [ ] Failure: tamper with a private blob → digest mismatch on resolution.
+
+## F6 — Privacy Opaque Pointers (ADR‑0004)
+
+- See ADR‑0004 for the normative pointer envelope and privacy projection rules.
+- Acceptance: pointers validate against schema; low‑entropy public pointers hide plaintext `digest` and include `ciphertext_digest`.
