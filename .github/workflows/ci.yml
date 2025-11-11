@@ -115,6 +115,10 @@ jobs:
     name: Schema validation (v1)
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
       - name: Cache npm (global)
         uses: actions/cache@v4
         with:
@@ -124,8 +128,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Validate schemas and examples (v1)
-        run: ./scripts/validate_schemas.sh
+      - name: Validate schemas and examples (v1) via xtask
+        run: cargo run -p xtask -- schemas
 
   # (removed duplicate markdownlint job id)
 
@@ -136,6 +140,10 @@ jobs:
       CHROMIUM_REVISION: '1108766'
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
       - name: Cache Puppeteer Chromium
         uses: actions/cache@v4
         with:
@@ -161,18 +169,39 @@ jobs:
           echo "Using Chromium at: $BIN_PATH"
           echo "PUPPETEER_EXECUTABLE_PATH=$BIN_PATH" >> "$GITHUB_ENV"
           echo "PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer" >> "$GITHUB_ENV"
-      - name: Generate diagrams (renders SVGs)
-        run: node scripts/mermaid/generate.mjs --all
-      - name: Ensure committed diagrams are up-to-date (no diffs)
-        run: git diff --exit-code -- docs/diagrams/generated
+      - name: Generate Mermaid diagrams (full repo) via xtask
+        run: MERMAID_MAX_PARALLEL=6 cargo run -p xtask -- diagrams --all
+      - name: Fail if generation produced diffs
+        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
       - name: Verify committed diagrams metadata and tool pins
         run: node scripts/mermaid/generate.mjs --verify --all
   linkcheck:
     runs-on: ubuntu-latest
-    name: Link Check (lychee)
+    name: Link Check (xtask links)
+    env:
+      LYCHEE_VERSION: '0.21.0'
     steps:
       - uses: actions/checkout@v4
-      - uses: lycheeverse/lychee-action@v2
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          args: --no-progress --config ./.lychee.toml **/*.md
-          fail: true
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache lychee binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/lychee
+          key: ${{ runner.os }}-lychee-bin-${{ env.LYCHEE_VERSION }}
+      - name: Install lychee CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v lychee >/dev/null 2>&1; then
+            cargo install lychee --locked --version "$LYCHEE_VERSION"
+          fi
+          lychee --version
+      - name: Link check via xtask (uses lychee or Docker fallback)
+        env:
+          # Preserve authenticated GitHub rate limits for lychee CLI
+          LYCHEE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo run -p xtask -- links
