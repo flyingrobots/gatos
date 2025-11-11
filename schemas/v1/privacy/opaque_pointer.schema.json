@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GATOS Opaque Pointer",
+  "description": "Canonical pointer to a private blob used in public projections.",
+  "type": "object",
+  "properties": {
+    "kind": { "type": "string", "const": "opaque_pointer" },
+    "algo": { "type": "string", "const": "blake3" },
+    "digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" },
+    "ciphertext_digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" },
+    "size": { "type": "integer", "minimum": 0 },
+    "location": { "type": "string", "format": "uri" },
+    "capability": { "type": "string", "format": "uri" },
+    "extensions": { "type": "object" }
+  },
+  "required": ["kind","algo","location","capability"],
+  "anyOf": [
+    {
+      "required": ["digest"],
+      "properties": {
+        "digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" }
+      }
+    },
+    {
+      "required": ["ciphertext_digest"],
+      "properties": {
+        "ciphertext_digest": { "type": "string", "pattern": "^blake3:[a-f0-9]{64}$" }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

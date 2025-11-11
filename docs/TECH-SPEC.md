@@ -101,10 +101,10 @@ graph TD
 | `gatos-ledger-git` | `std`-dependent storage backend using `libgit2`. |
 | `gatos-ledger` | Composes ledger components via feature flags. |
 | `gatos-mind` | Asynchronous, commit-backed message bus (pub/sub). |
-| `gatos-echo` | Deterministic state engine for processing events ("folds"). |
-| `gatos-policy` | Deterministic policy engine for executing compiled rules and managing the Consensus Governance lifecycle. |
-| `gatos-kv` | Git-backed key-value state cache. |
-| `gatosd` | Main binary for the CLI and the JSONL RPC daemon. |
+| `gatos-echo` | Deterministic state engine for processing events ("folds"). Privacy projection logic. |
+| `gatos-policy` | Deterministic policy engine for executing compiled rules, managing Consensus Governance, and privacy rule evaluation. |
+| `gatos-kv` | Git-backed key-value state cache, used for materializing and indexing queryable views of folded state. |
+| `gatosd` | Main binary for the CLI, JSONL RPC daemon, and Opaque Pointer resolution endpoint. |
 | `gatos-compute` | Worker that discovers and executes jobs from the Job Plane. |
 | `gatos-wasm-bindings`| WASM bindings for browser and Node.js environments. |
 | `gatos-ffi-bindings` | C-compatible FFI for integration with other languages. |
@@ -160,21 +160,66 @@ sequenceDiagram
 
 ---
 
-## 6. Opaque Pointers
+## 6. Privacy Projection and Resolution
 
-The `rekey` command allows updating the encryption key for an opaque blob.
+See also: [ADR‑0004](./decisions/ADR-0004/DECISION.md).
+
+The implementation of the hybrid privacy model involves a coordinated effort between the state, policy, and daemon components.
+
+### 6.1 Projection Implementation
+
+The projection from a `UnifiedState` to a `PublicState` is handled by `gatos-echo` with rules supplied by `gatos-policy`.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant GATOS
+    participant gatos-echo
+    participant gatos-policy
+    participant gatos-ledger
+    participant "StorageBackend (Interface)"
 
-    User->>GATOS: gatos blob rekey <ptr> --to <pubkey>
-    GATOS->>GATOS: Create new Opaque Pointer
-    GATOS->>GATOS: Encrypt data with new pubkey
-    GATOS->>GATOS: Store new ciphertext in CAS
-    GATOS->>GATOS: Atomically update references
+    Echo->>Echo: 1. Fold event history to produce UnifiedState
+    Echo->>Policy: 2. Request privacy rules for the current context
+    Policy-->>Echo: 3. Return `select` and `action` rules
+loop for each field path in the UnifiedState tree
+        gatos-echo->>gatos-echo: 4. Match field path against rules
+        alt rule matches (e.g., "pointerize")
+            Echo->>Echo: 5. Generate Opaque Pointer envelope
+            Echo->>PrivateStore: 6. Store original node value as private blob, keyed by its blake3 digest
+            Echo->>Echo: 7. Replace node in state tree with pointer
+        end
+    end
+    Echo->>Ledger: 8. Commit the final PublicState tree
 ```
+
+The `PrivateStore` is a pluggable trait, allowing for backends like a local filesystem, S3, or another GATOS node.
+
+### 6.2 Resolution Implementation
+
+The `gatosd` daemon exposes a secure endpoint for resolving Opaque Pointers.
+
+-   Endpoint: `POST /gatos/private/blobs/resolve`
+-   Content-Type: `application/json`
+-   Request body (JCS canonical JSON):
+    ```json
+    { "digest": "blake3:<hex>", "want": "plaintext" }
+    ```
+    - `want` OPTIONAL: `"plaintext" | "ciphertext"` (default `"plaintext"`).
+-   Authentication: `Authorization: Bearer <JWT>`
+    - Claims (example): `iss`, `sub` (ed25519:<pubkey>), `aud` ("gatos-node:<node-id>"), `exp`, `nbf`, `jti`, `method` ("POST"), `path` ("/gatos/private/blobs/resolve"), `digest` (MUST match body.digest).
+    - Clock skew tolerance: ±300 seconds.
+-   Authorization: Node evaluates policy for `<sub>` on `<digest>`.
+-   Response (200 OK):
+    - Headers: `Digest: sha-256=<base64-of-body>`, `X-BLAKE3-Digest: blake3:<hex-of-returned-bytes>`
+    - Body: requested bytes (ciphertext or plaintext).
+
+Errors: 401 Unauthorized, 403 Forbidden, 404 Not Found, 422 DigestMismatch, 503 CapabilityUnavailable.
+
+Optional profile (HTTP Message Signatures, RFC 9421):
+- Clients MAY authenticate by signing components: `@method`, `@target-uri`, `date`, `host`, `content-digest` (SHA-256 over request body) and sending `Signature-Input: sig1=...` and `Signature: sig1=:<base64(signature)>:`.
+- Servers STILL apply policy and SHOULD return `Digest` and `X-BLAKE3-Digest` headers.
+
+Pointer Rotation (Rekey):
+- Implement a rotation that: (1) fetches; (2) decrypts; (3) re‑encrypts; (4) stores; (5) emits an audit event updating pointer fields while keeping plaintext `digest` stable. Add trailer `Privacy-Pointer-Rotations: <n>` when a projection commit includes rotations.
 
 ---
 
@@ -236,7 +281,10 @@ graph TD
     C --> C1(Golden Vectors);
     C --> C2(Torture Tests);
     C --> C3(Reconcile Harness);
+    C --> C4(Projection Determinism);
 ```
+
+- **Projection Determinism**: Verifies that applying the same privacy policy to the same `UnifiedState` on different platforms (Linux, macOS, Windows) produces a byte-for-byte identical `PublicState` and the same set of private blobs.
 
 ---
 
@@ -281,7 +329,7 @@ Tuning batch size is a trade-off between latency and commit churn.
 
 ```mermaid
 xychart-beta
-    title "Batch Size Trade-off"
+    title "Batch Size Trade-off (Illustrative)"
     x-axis "Batch Size"
     y-axis "Metric"
     line "Latency" [50, 40, 35, 32, 30]
