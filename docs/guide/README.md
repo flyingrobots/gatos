@@ -222,3 +222,12 @@ graph TD
         - Confluence
     *   **Read this if:**
         - You are interested in the future direction of GATOS and its potential to change how we build distributed and AI-integrated systems.
+     
+---
+
+Next: [Chapter 1: The GATOS System Model](./CHAPTER-001.md)
+
+---
+
+**GATOS – _Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
