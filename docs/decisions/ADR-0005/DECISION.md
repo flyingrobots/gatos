@@ -125,6 +125,8 @@ Errors (normative):
 - `shiplog.read(ns, since_ulid, limit) -> [ (ulid, content_id, commit_oid, envelope) ]` (increasing ULID order).
 - `shiplog.tail(namespaces[], limit_per_ns)` MAY multiplex without cross‑namespace causality guarantees.
 
+Tail fairness (normative): When multiplexing multiple namespaces, implementations MUST use fair scheduling (e.g., per‑namespace round‑robin) so that no namespace is starved under sustained load. Implementations SHOULD emit a per‑namespace watermark (last ULID included) to help consumers resume without duplication. Consumers restore by resuming from each namespace’s last watermark or their checkpoint, whichever is newer; duplicates MUST be tolerated by idempotent processing keyed by `(ns, ulid)`.
+
 ### 7) Consumer Checkpoints
 
 - `refs/gatos/consumers/<group>/<ns>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`. The `commit_oid` value MUST be lowercase hex.
