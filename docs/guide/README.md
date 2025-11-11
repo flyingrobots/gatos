@@ -2,6 +2,8 @@
 
 ## Git As The Operating Surface™
 
+![gato-02](https://github.com/user-attachments/assets/a84674f7-96e6-4987-b601-c1c87d1566cf)
+
 Welcome to the official guide to GATOS. This book will introduce you to a new architectural paradigm where a standard Git repository is leveraged as a complete, programmable, and distributed backend.
 
 GATOS is not a single application, but a unified system built from a suite of interoperable components. It provides a "Git-native operating surface" where state, policy, and computation converge into a single, auditable, and deterministic history.
@@ -225,9 +227,9 @@ graph TD
      
 ---
 
-Next: [Chapter 1: The GATOS System Model](./CHAPTER-001.md)
+**Next**: [Chapter 1–The GATOS System Model](./CHAPTER-001.md)
 
 ---
 
-**GATOS – _Git As The Operating Surface™_**  
+**GATOS–_Git As The Operating Surface™_**  
 James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
