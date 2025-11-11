@@ -47,3 +47,15 @@ scripts/setup-hooks.sh
 ```
 
 If the hook fails, fix the reported issues and retry the commit.
+## xtask quickstart (CI parity)
+
+This repo uses a small Rust utility (`cargo xtask`) to run common tasks in a cross‑platform, reproducible way.
+
+- Build/tests: `cargo test --workspace --locked`
+- Diagrams (Mermaid): `cargo run -p xtask -- diagrams --all`
+  - Concurrency: set `MERMAID_MAX_PARALLEL=6` (defaults to `min(cpu, 8)`).
+- Schemas (AJV compile/validate/negative): `cargo run -p xtask -- schemas`
+- Link check (lychee): `cargo run -p xtask -- links`
+  - To avoid GitHub rate limiting locally, export `LYCHEE_GITHUB_TOKEN` (use a PAT or `${GITHUB_TOKEN}` in CI).
+
+Tip: `make help` lists handy shims (`ci-diagrams`, `ci-schemas`, `ci-linkcheck`) that mirror CI. For ad‑hoc invocations, use `make xtask ARGS="<subcommand> [opts]"`.
