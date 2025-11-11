@@ -185,6 +185,7 @@ Each feature includes user stories per relevant stakeholders (format requested),
 - [ ] Golden: metrics show non-zero counters post workload
 - [ ] Edge: cache stale → doctor recommends rebuild
 - [ ] Failure: FF-only violation → doctor flags critical
+
 ---
 
 ## F9 — Hybrid Privacy Model

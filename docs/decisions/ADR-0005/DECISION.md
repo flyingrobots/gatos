@@ -44,7 +44,7 @@ classDiagram
     +object payload             // canonical JSON (JCS)
     +map<string, blake3Digest> refs  // OPTIONAL cross-refs
   }
-```
+```text
 
 ### 2) Namespaces and Ordering
 
@@ -75,7 +75,7 @@ Numeric discipline: JSON numbers can be cross‑language foot‑guns. Precision�
 
 Each Shiplog commit MUST include headers in the commit message (any order), followed by a single line containing three dashes `---` and then a JSON trailer object:
 
-```
+```text
 Event-Id: ulid:<ULID>
 Content-Id: blake3:<64-hex>
 Topic: <topic>
@@ -112,6 +112,7 @@ Invariant: envelope.ns MUST equal the commit header `Topic:` value and the per-t
 Append(`topic`, `envelope`): validate schema; compute `content_id = blake3(JCS(envelope))`; enforce monotone ULID per topic on this node; create commit with headers + trailer; CAS update `refs/gatos/shiplog/<topic>/head`; return `(commit_oid, ulid, content_id)`.
 
 Errors (normative):
+
 - 400 `InvalidEnvelope`; 409 `UlidOutOfOrder`; 409 `NotFastForward`; 422 `DigestMismatch`.
 
 ### 6) Query Semantics
@@ -179,7 +180,6 @@ Clients SHOULD return a problem+json response with a stable `code` plus HTTP sta
   "instance": "urn:commit:8b1c1e4"
 }
 ```
-
 
 Pros: clean integration surface; deterministic envelopes; replay + analytics; explicit privacy.
 Cons: additional refs to manage; potential duplication if mirroring ledger events.

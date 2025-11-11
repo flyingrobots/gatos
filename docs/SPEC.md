@@ -295,8 +295,8 @@ GATOS supports a hybrid privacy model where state can be separated into a verifi
 
 The State Engine (`gatos-echo`) can be configured with privacy rules. When folding history, it first computes a `UnifiedState` containing all data. It then applies the privacy rules to produce a `PublicState` and a set of `PrivateBlobs`.
 
--   **`PublicState`**: Contains only public data and Opaque Pointers. This is committed to the public `refs/gatos/state/public/...` namespace and is globally verifiable.
--   **`PrivateBlobs`**: The raw data that was redacted or pointerized. This data is stored in a separate, private store (e.g., a local directory, a private object store) and is addressed by its content hash.
+- **`PublicState`**: Contains only public data and Opaque Pointers. This is committed to the public `refs/gatos/state/public/...` namespace and is globally verifiable.
+- **`PrivateBlobs`**: The raw data that was redacted or pointerized. This data is stored in a separate, private store (e.g., a local directory, a private object store) and is addressed by its content hash.
 
 Any commit that is the result of a privacy projection **MUST** include trailers indicating the number of redactions and pointers created.
 
@@ -323,39 +323,46 @@ classDiagram
     }
 ```
 
--   `digest`: The **REQUIRED** `blake3` hash of the plaintext. For low‑entropy privacy classes, the public pointer MUST NOT expose this value.
--   `ciphertext_digest`: The `blake3` hash of the stored ciphertext. For low‑entropy privacy classes, this field MUST be present in the public pointer.
--   `size`: The size of the private blob in bytes (RECOMMENDED).
--   `location`: A **REQUIRED** stable URI indicating where the blob can be fetched (e.g., `gatos-node://ed25519:<pubkey>`, `s3://bucket/key`). Do not embed pre‑signed tokens.
--   `capability`: A **REQUIRED** reference to the authn/z + decryption mechanism (e.g., `gatos-key://...`, `kms://...`). It MUST NOT embed secrets; resolution occurs at the policy layer.
+- `digest`: The **REQUIRED** `blake3` hash of the plaintext. For low‑entropy privacy classes, the public pointer MUST NOT expose this value.
+- `ciphertext_digest`: The `blake3` hash of the stored ciphertext. For low‑entropy privacy classes, this field MUST be present in the public pointer.
+- `size`: The size of the private blob in bytes (RECOMMENDED).
+- `location`: A **REQUIRED** stable URI indicating where the blob can be fetched (e.g., `gatos-node://ed25519:<pubkey>`, `s3://bucket/key`). Do not embed pre‑signed tokens.
+- `capability`: A **REQUIRED** reference to the authn/z + decryption mechanism (e.g., `gatos-key://...`, `kms://...`). It MUST NOT embed secrets; resolution occurs at the policy layer.
 
 The pointer itself is canonicalized via RFC 8785 JCS and its `content_id` is `blake3(JCS(pointer_json))`.
 
 ### 7.3 Pointer Resolution
 
 Endpoint and AuthN:
+
 - Clients MUST resolve via `POST /gatos/private/blobs/resolve` with body `{ "digest": "blake3:<hex>", "want": "plaintext"|"ciphertext" }` and `Authorization: Bearer <JWT>`.
 - Tokens MUST include standard claims (`sub`, `aud`, `method`, `path`, `exp`, `nbf`); skew tolerance ±300s. 401 for authn failures; 403 for policy denials.
 
 Verification Steps:
+
 1. Fetch the ciphertext blob from `location` via the node’s resolver endpoint.
 2. Acquire the necessary keys via the `capability` reference (policy-driven; no secrets in the pointer).
 3. Decrypt. Compute `blake3(ciphertext)` and compare with `ciphertext_digest` when present; compute `blake3(plaintext)` and compare with `digest` when exposed. Any mismatch MUST yield `DigestMismatch`.
 4. Servers SHOULD return `X-BLAKE3-Digest` and `Digest: sha-256=…` headers for response integrity.
 
 Error Taxonomy:
+
 - `Unauthorized` (401), `Forbidden` (403), `NotFound` (404), `DigestMismatch` (422), `CapabilityUnavailable` (503), `PolicyDenied` (403).
- 
+
 Optional HTTP Message Signatures profile (RFC 9421):
+
 - As an alternative to JWT, clients MAY sign `@method`, `@target-uri`, `date`, `host`, `content-digest` and send `Signature-Input`/`Signature` headers. Servers SHOULD still emit `Digest` and `X-BLAKE3-Digest` response headers.
 
 Pointer Rotation (Rekey):
+
 1) fetch ciphertext; 2) decrypt; 3) re‑encrypt per new capability; 4) store new ciphertext; 5) emit rotation event updating pointer fields (capability/location). `digest` (plaintext) MUST remain stable. Add trailer `Privacy-Pointer-Rotations: <n>`.
 
 Namespacing:
+
 - `refs/gatos/private/<actor-id>/…` holds private overlay indices/metadata only; workspace mirror is `gatos/private/<actor-id>/…`. Blobs live in external stores keyed by digest.
 
 Canonicalization:
+
 - All JSON labeled as canonical MUST use RFC 8785 JCS; non‑JSON maps MUST be ordered lexicographically by lowercase UTF‑8 keys.
 
 This process guarantees that even though the data is stored privately, its integrity is verifiable against the public ledger.
