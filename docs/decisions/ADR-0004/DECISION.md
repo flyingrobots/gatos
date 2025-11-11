@@ -135,6 +135,8 @@ When encrypting a private blob referenced by an Opaque Pointer, the AEAD AAD MUS
 
 Implementations MAY structure these as concatenated bytes with clear domain separation (e.g., length‑prefixing) prior to supplying them as AAD to the AEAD algorithm.
 
+> Implementation note (non‑normative): When ingesting Opaque Pointers from untrusted JSON, implementations SHOULD validate the invariants at parse time (e.g., verify that low‑entropy pointers include `ciphertext_digest` and omit `digest`). In this repository, the `gatos-privacy` crate exposes `VerifiedOpaquePointer` which enforces these rules during deserialization; alternatively, callers can deserialize `OpaquePointer` and invoke `validate()` explicitly.
+
 ### 3. The Projection Function (Normative)
 
 The State Engine (`gatos-echo`) is responsible for executing the projection.
