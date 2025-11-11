@@ -9,9 +9,15 @@ clean:
 test:
 	@cargo test --workspace --locked
 
-# Generate Mermaid diagrams for the entire repo via xtask
+# Generate Mermaid diagrams for the entire repo.
+# Prefer xtask (Node required). Fallback to Dockerized Node if Node is absent.
 diagrams:
-	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all
+	@bash -lc 'if command -v node >/dev/null 2>&1; then \
+	  MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all; \
+	elif command -v docker >/dev/null 2>&1; then \
+	  docker run --rm -e MERMAID_MAX_PARALLEL -v "$$PWD:/work" -w /work node:20 bash -lc \
+	    "npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs --all"; \
+	else echo "Need Node.js or Docker" >&2; exit 1; fi'
 
 lint-md:
     @bash -lc 'if command -v node >/dev/null 2>&1; then \
