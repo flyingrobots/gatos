@@ -44,7 +44,7 @@ classDiagram
     +object payload             // canonical JSON (JCS)
     +map<string, blake3Digest> refs  // OPTIONAL cross-refs
   }
-```text
+```
 
 ### 2) Namespaces and Ordering
 
@@ -75,7 +75,7 @@ Numeric discipline: JSON numbers can be cross‑language foot‑guns. Precision�
 
 Each Shiplog commit MUST include headers in the commit message (any order), followed by a single line containing three dashes `---` and then a JSON trailer object:
 
-```text
+```
 Event-Id: ulid:<ULID>
 Content-Id: blake3:<64-hex>
 Namespace: <ns>
