@@ -1,8 +1,17 @@
 # The GATOS Book
 
-## Git As The Operating Surface™
+```rust
+8""""8 8""""8 ""8"" 8"""88 8""""8 
+8    " 8    8   8   8    8 8      
+8e     8eeee8   8e  8    8 8eeeee 
+88  ee 88   8   88  8    8     88 
+88   8 88   8   88  8    8 e   88 
+88eee8 88   8   88  8eeee8 8eee88 
+ 
+  Git As The Operating Surface™  
+```
 
-![gato-02](https://github.com/user-attachments/assets/a84674f7-96e6-4987-b601-c1c87d1566cf)
+## Git As The Operating Surface™
 
 Welcome to the official guide to GATOS. This book will introduce you to a new architectural paradigm where a standard Git repository is leveraged as a complete, programmable, and distributed backend.
 
