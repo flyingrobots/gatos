@@ -24,7 +24,7 @@ The key property of a fold is its determinism. Given the exact same sequence of 
 
 ## The Echo Engine: `gatos-echo`
 
-For complex, relational state, GATOS uses the powerful **Echo** engine, provided by the **`gatos-echo`** crate. As we'll see in the chapter on the GATOS Morphology Calculus, Echo is a deterministic simulation engine built on the concept of a **Recursive Metagraph (RMG)** and **Double Push-Out (DPO) graph rewriting**.
+For complex, relational state, GATOS uses the powerful [**Echo** engine](http://github.com/flyingrobots/echo), provided by the **`gatos-echo`** crate. As we'll see in the chapter on the [GATOS Morphology Calculus](./CHAPTER-009.md), Echo is a **deterministic simulation engine** built on the concept of a **Recursive Metagraph (RMG)** and **Double Push-Out (DPO) graph rewriting**.
 
 In the context of the GATOS State Plane, Echo works as follows:
 
