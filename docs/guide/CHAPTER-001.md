@@ -92,11 +92,11 @@ The following chapters will explore each of these planes in greater detail, show
 
 ---
 
-Next: [Chapter 2: Chapter 2: The Ledger Plane: An Immutable History](./CHAPTER-002.md)
+Next: [Chapter 2–The State Plane: Deterministic Folds](./CHAPTER-002.md)
 
 Prev: [README](./README.md)
 
 ---
 
-**GATOS – _Git As The Operating Surface™_**  
+**GATOS–_Git As The Operating Surface™_**  
 James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
