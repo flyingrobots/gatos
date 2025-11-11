@@ -1,5 +1,7 @@
 # 🐈‍⬛ **GATOS**
 
+![Git As The Operating Surface](./assets/brand/gatos-paper.webp)
+
 > [!WARNING]
 > **GATOS** is the evolution of my earlier work ([`git-mind`](https://github.com/neuroglyph/git-mind), [Echo](https://github.com/flyingrobots/echo), [Ledger Kernel](https://github.com/flyingrobots/ledger-kernel), etc.) into a single, unified system.
 >
