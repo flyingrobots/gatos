@@ -79,7 +79,8 @@ Each Shiplog commit MUST include headers in the commit message (any order), foll
 Event-Id: ulid:<ULID>
 Content-Id: blake3:<64-hex>
 Namespace: <ns>
-Schema: https://gatos.dev/schemas/v1/shiplog/event_envelope.schema.json
+Envelope-Schema: https://gatos.dev/schemas/v1/shiplog/event_envelope.schema.json
+Trailer-Schema:  https://gatos.dev/schemas/v1/shiplog/deployment_trailer.schema.json
 ---
 { "version": 1,
   "env": "prod",
