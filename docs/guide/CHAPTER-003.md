@@ -17,7 +17,7 @@ It processes these events in order and produces a single output: a **state root*
 graph TD
     A[Event Stream] --> B{Fold Function};
     C[Policy] --> B;
-    B --> D[State Root (Hash of the new Shape)];
+    B --> D["State Root (Hash of the new Shape)"];
 ```
 
 The key property of a fold is its determinism. Given the exact same sequence of events and the same policy, the fold function **must** always produce the exact same state root, bit for bit. This is the guarantee that allows GATOS to be a distributed system without requiring a central coordinator. Any node can independently and verifiably compute the state of the system by simply replaying the public ledger.
