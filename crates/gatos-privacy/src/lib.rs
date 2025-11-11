@@ -81,3 +81,30 @@ pub enum PointerError {
     #[error("low-entropy class forbids plaintext digest")]
     LowEntropyForbidsPlainDigest,
 }
+
+/// A validated wrapper that enforces `OpaquePointer::validate()` during
+/// deserialization. Prefer this type when accepting pointers from untrusted
+/// inputs; it guarantees schema-level invariants at the boundary.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
+pub struct VerifiedOpaquePointer(pub OpaquePointer);
+
+impl<'de> Deserialize<'de> for VerifiedOpaquePointer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let inner = OpaquePointer::deserialize(deserializer)?;
+        inner
+            .validate()
+            .map_err(serde::de::Error::custom)?;
+        Ok(Self(inner))
+    }
+}
+
+impl core::ops::Deref for VerifiedOpaquePointer {
+    type Target = OpaquePointer;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
