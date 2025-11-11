@@ -6,7 +6,7 @@ AJV_RUNNER=()
 if command -v node >/dev/null 2>&1; then
   AJV_RUNNER=(npx -y ajv-cli@5)
 elif command -v docker >/dev/null 2>&1; then
-  AJV_RUNNER=(docker run --rm -v "$PWD:/work" -w /work node:20 npx -y ajv-cli@5)
+  AJV_RUNNER=(docker run --rm -v "$PWD:/work" -w /work node:20 npx -y ajv-cli@5 ajv)
 else
   echo "Need Node.js or Docker to run AJV validation" >&2
   exit 1
