@@ -4,7 +4,9 @@ exclude_path = ["target/", ".git/", ".obsidian/", "node_modules/", ".cargo/", "d
 exclude = [
   "^mailto:",
   "^tel:",
-  "^#"
+  "^#",
+  # Intentional placeholder link in README; exclude from validation to avoid 404 failure
+  "^https://github.com/flyingrobots/daft-punks$",
 ]
 # Accept 429 with retry logic
 max_retries = 2

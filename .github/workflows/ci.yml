@@ -129,7 +129,7 @@ jobs:
         with:
           node-version: '20'
       - name: Validate schemas and examples (v1) via xtask
-        run: cargo run -p xtask -- schemas all
+        run: cargo run -p xtask -- schemas
 
   # (removed duplicate markdownlint job id)
 
