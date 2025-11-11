@@ -32,7 +32,7 @@ The GATOS architecture is divided into five conceptual planes, each with a disti
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
@@ -85,6 +85,27 @@ graph TD
 ```
 
 ## Map of Contents
+
+> Who this is for
+>
+> - Operators and SREs who need auditability and safe automation.
+> - Platform and infra engineers building deterministic backends.
+> - Researchers exploring reproducible state, proofs, and governance.
+
+> What you'll build
+>
+> A “Hello, GATOS” mini-journey: initialize a repo, enable Stargate, append a governed event, fold to state, enqueue a job and observe its attested result. A second path demonstrates privacy: create an Opaque Pointer, fold with a private blob, rekey, and verify determinism of the public state.
+
+### Hello, GATOS — Two Paths
+
+- Ops Path
+  - `git gatos init` → enable Stargate
+  - `git gatos event add` (policy‑gated) → `git gatos fold`
+  - Inspect state → `git gatos jobs enqueue` → observe PoE
+
+- Data Privacy Path
+  - Create Opaque Pointer → fold with private blob
+  - Rekey the blob → verify determinism of public state
 
 ### Part 1: The Foundations
 
@@ -233,7 +254,18 @@ graph TD
         - Confluence
     *   **Read this if:**
         - You are interested in the future direction of GATOS and its potential to change how we build distributed and AI-integrated systems.
-     
+ 
+## Glossary (Quick Reference)
+
+- Fold: Pure, deterministic computation from ledger (+ policy) → state.
+- Shape: Canonical serialized snapshot of state; hashed to a State-Root.
+- Meld: Deterministic, policy-governed fold-merge of divergent shapes.
+- Policy-Root: Commit/digest that identifies the effective policy bundle.
+- State-Root: blake3 digest of the canonical state shape.
+- Proof-of-Execution (PoE): Signed attestation linking job, environment, inputs, and outputs to a worker.
+- Proof-of-Meld (PoM): Digest that commits to two input shapes and a schema manifest.
+- JSONL: JSON Lines, one JSON object per line over a stream.
+- ULID: Lexicographically sortable 128-bit unique identifier (26-char Crockford base32).
 ---
 
 **Next**: [Chapter 1–The GATOS System Model](./CHAPTER-001.md)

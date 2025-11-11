@@ -35,7 +35,8 @@ classDiagram
         +String[] caps
         +Object payload
         +String policy_root
-        +String sig
+        +String sig_alg
+        +String ts
     }
 ```
 
@@ -44,8 +45,19 @@ classDiagram
 *   **`actor`**: The identity of the user, agent, or service that initiated the event.
 *   **`caps`**: A list of capability tokens held by the actor, used by the Policy Plane to authorize the action.
 *   **`payload`**: The domain-specific data for the event.
-*   **`policy_root`**: The hash of the policy state that was used to approve this event.
-*   **`sig`**: A cryptographic signature (e.g., Ed25519) of the canonicalized event content, proving its authenticity and integrity.
+*   **`policy_root`**: The hash/commit of the policy state that was used to approve this event.
+*   **`sig_alg`**: The signature algorithm used (e.g., `ed25519`).
+*   **`ts`**: Timestamp of authorship (monotonic per ref).
+
+### Canonicalization and Signing (DAG‑CBOR)
+
+- Canonical form: Events are encoded as **DAG‑CBOR**. The canonical bytes are used for hashing and signing.
+- Content addressing: `Event-CID = cidv1(dag-cbor, blake3(canonical_bytes))`.
+- Signing: The signature is computed over the canonical DAG‑CBOR bytes with the `sig` field omitted and recorded in commit trailers.
+- Recommended commit trailers:
+  - `Event-CID: cidv1:...`
+  - `Sig-Alg: ed25519`
+  - `Sig: ed25519:<hex|base64>`
 
 ## The `gatos-ledger` Crate
 
@@ -64,7 +76,7 @@ When a client sends a command to `gatosd`, the following happens in the Ledger P
 2.  **Policy Check:** The event is passed to the Policy Plane. If the action is denied, the process stops, and an audit entry is created. If allowed, the Policy Plane returns a `policy_root` hash.
 3.  **Signing:** The canonicalized event (with the `policy_root`) is signed by the actor's key.
 4.  **Commit:** `gatos-ledger` creates a new Git commit with the signed event as its message.
-5.  **Atomic Ref Update:** `gatos-ledger` performs an atomic compare-and-swap operation to update the appropriate journal ref to point to the new commit, ensuring the fast-forward-only guarantee.
+5.  **Atomic Ref Update:** `gatos-ledger` performs an atomic compare-and-swap operation (`git update-ref <old> <new>`) to update the appropriate journal ref to point to the new commit, ensuring the fast-forward-only guarantee.
 
 ## Summary
 
@@ -80,4 +92,3 @@ The Ledger Plane is the immutable foundation of GATOS. By using Git's own robust
 
 **GATOS–_Git As The Operating Surface™_**  
 James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
-

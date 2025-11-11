@@ -45,14 +45,14 @@ sequenceDiagram
 By intercepting all writes, the Stargate can run powerful server-side **`pre-receive` hooks** to enforce the GATOS guarantees *before* a commit is accepted.
 
 1.  **Policy Enforcement:** The hook can run the `gatos-policy` engine to ensure the actor has the right capabilities and that the proposed action meets all governance rules.
-2.  **Attestation & Validation:** For performance, GATOS clients can attach **attestation trailers** to their commits. These trailers contain pre-computed hashes of the proposed changes. The Stargate's `pre-receive` hook can validate these trailers in **`O(1)` time**, verifying the integrity of a complex transaction without having to inspect every file.
+2.  **Attestation & Validation:** For performance, GATOS clients can attach **attestation trailers** to their commits. These trailers contain pre-computed hashes of the proposed changes. The Stargate's `pre-receive` hook validates these trailers in constant time per push with respect to file count, given attestation trailers and object pinning—verifying integrity without walking every file.
 3.  **Linear History:** The hook enforces that all journals are fast-forward only, preventing history rewrites and preserving the immutability of the ledger.
 
 This local-first enforcement provides low-latency, high-security writes that would be impossible on a public SaaS platform.
 
 ## The Magic Mirror
 
-After the Stargate accepts and processes a push, a **`post-receive` hook** triggers a mirroring process. The Stargate daemon pushes the newly accepted refs up to the public remote (GitHub).
+After the Stargate accepts and processes a push, a **`post-receive` hook** triggers a mirroring process. The Stargate daemon pushes the newly accepted refs up to the public remote (GitHub) with `--prune`.
 
 This turns GitHub into a **Magic Mirror**: a read-only, eventually-consistent replica of the authoritative state held by the local Stargate.
 
@@ -60,6 +60,31 @@ This model provides significant benefits:
 *   **Scalable Reads:** The global developer community can fetch data from GitHub's highly-available CDN without ever hitting your local server.
 *   **Rich UI & Tooling:** You retain the full benefit of GitHub's ecosystem for code browsing, pull requests, issue tracking, and Actions.
 *   **Read-After-Write Consistency:** While the mirror is eventually consistent, GATOS provides mechanisms for clients that need immediate consistency. A client can either read directly from the Stargate (`--read-from=stargate`) or use a `wait` command that polls until a specific commit is visible on the mirror.
+
+### Mirroring Failure Handling
+
+- Retries with exponential backoff and jitter.
+- Health signals (metrics and logs) surface sustained failures.
+- Administrators can temporarily disable mirroring while keeping local enforcement active.
+
+### Three-Layer Enforcement Model
+
+1. **Local** — Watcher/Hooks (ADR‑0006) deliver fast UX and fail‑closed guards.
+2. **Server** — Stargate runs authoritative pre‑receive (policy/trust) checks.
+3. **Ledger** — `policy_root` on accepted commits provides the ultimate cryptographic proof.
+
+### Dual Remote Configuration
+
+Use a local write remote and a public read remote for clear separation:
+
+```ini
+[remote "origin"]
+  url = git@github.com:org/repo.git           # Reads
+[remote "stargate"]
+  url = ssh://git@stargate.local/org/repo.git # Writes
+```
+
+Operators can keep `origin` as the default fetch and explicitly `git push stargate` or configure `push.default` per repository.
 
 ## Summary
 

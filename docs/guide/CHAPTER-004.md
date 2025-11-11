@@ -45,6 +45,15 @@ How do actors get capabilities? Through **Grants**. A Grant is a signed, verifia
 
 This model makes permissions explicit, portable, and auditable.
 
+## Key Management
+
+GATOS relies on strong, explicit key hygiene.
+
+- **Issuance and Trust Roots:** Actor keys (e.g., `ed25519:<pubkey>`) are introduced via the trust graph (`gatos/trust/graph.json`). Groups (e.g., `@leads`) resolve against this graph.
+- **Rotation Cadence:** Keys SHOULD be rotated on a regular cadence (e.g., quarterly). Rotations are committed as updates to the trust graph and distributed like any other state.
+- **Revocation:** Revoked or compromised keys MUST be recorded under `refs/gatos/trust/revocations/` and propagated. The Policy Gate denies any action attested by a revoked key.
+- **Grant Staleness:** Grants bind to a policy and trust snapshot. When the trust graph or policy changes (e.g., signer revoked), stale grants MUST be rejected by the Gate until re-authorized.
+
 ## Consensus Governance
 
 For particularly sensitive actions, a policy might require more than just a single actor's approval. GATOS supports **N-of-M consensus**, where a certain number of approvals from a defined group of actors is required.
@@ -72,6 +81,30 @@ stateDiagram-v2
 ```
 
 This entire process is orchestrated by the Policy Plane and recorded in Git, providing a fully transparent and verifiable governance workflow.
+
+### Quorum Example (Deploy requires 2/3 of @leads)
+
+Refs touched:
+
+- Proposal → `refs/gatos/proposals/<ulid>`
+- Approvals → `refs/gatos/approvals/<proposal-id>/<signer>` (one per signer)
+- Grant → `refs/gatos/grants/<proposal-id>`
+
+Proof‑of‑Consensus (PoC) envelope (canonical JSON):
+
+```json
+{
+  "proposal": { "id": "blake3:<hex>", "action": "deploy.production", "target": "gatos://service/api" },
+  "approvals": [
+    { "signer": "ed25519:<pubkey-1>", "approval_id": "blake3:<hex>" },
+    { "signer": "ed25519:<pubkey-2>", "approval_id": "blake3:<hex>" }
+  ],
+  "rule": "governance.deploy.production",
+  "quorum": "2-of-3@leads"
+}
+```
+
+Grant trailers include: `Proposal-Id`, `Grant-Id`, `Proof-Of-Consensus: blake3(envelope_bytes)`.
 
 ## Summary
 

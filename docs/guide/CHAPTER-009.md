@@ -21,7 +21,7 @@ The Morphology Calculus is defined by a series of theorems that translate direct
 
 ### Theorem 1: Deterministic Shape
 
-> For a fixed policy, any two equivalent event sequences (i.e., containing the same events in the same causal order) will always fold to the exact same shape.
+> For a fixed policy, any two equivalent event sequences (i.e., containing the same events in the same causal order) will always fold to the exact same shape. Note the dependency on the effective `policy_version`/`policy_root`.
 
 **Feature Payoff:** This is the foundation of all determinism in GATOS. It guarantees **reproducible state**. If you have the same journal and the same policy, you are guaranteed to compute the same state root hash. This enables verifiable caching, state synchronization, and perfect replay.
 
@@ -72,7 +72,7 @@ The calculus extends to other planes, modeling the **Job Plane** as a **symmetri
 The operational semantics of GATOS's concurrent rewriting are critical for maintaining determinism.
 
 *   **Footprints:** Each rewrite rule precisely defines its read/write sets on nodes, edges, and **Ports** (boundary interfaces).
-*   **Independence Predicate:** Two rewrites are independent if their footprints are disjoint (no read/write overlap) and their `factor_mask`s do not overlap.
+*   **Independence Predicate:** Two rewrites are independent if their read/write sets over nodes and ports are disjoint (no overlap) and their `factor_mask`s do not overlap.
 *   **Concurrency Theorems:** If rewrites are independent, they commute up to isomorphism. This means they can be executed in any order, or in parallel, yielding the same result.
 *   **Conflict Resolution Policies:** When conflicts are detected (independence violation), GATOS rules define how to resolve them: `ABORT`, `RETRY`, `JOIN` (applying a precomputed join), or `USER_RESOLVE` (invoking a domain callback).
 
@@ -97,6 +97,12 @@ Each theorem corresponds directly to a feature that provides a concrete benefit:
 *   **Pushouts** give you deterministic cross-repo merges.
 
 This is how GATOS delivers on its promise of a system that is not just powerful, but also trustworthy, auditable, and correct by construction.
+
+### Calculus Quick‑Ref
+
+- Fold functor `F_P`: Maps histories to shapes under policy `P`.
+- Natural transformation `η: F_P ⇒ F_Q`: Safe migration from policy `P` to `Q`.
+- Pushout: Canonical construction to merge two shapes along a schema of correspondences.
 
 ---
 

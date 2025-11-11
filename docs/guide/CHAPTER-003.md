@@ -23,11 +23,11 @@ graph TD
     B --> D["State Root (Hash of the new Shape)"];
 ```
 
-The key property of a fold is its determinism. Given the exact same sequence of events and the same policy, the fold function **must** always produce the exact same state root, bit for bit. This is the guarantee that allows GATOS to be a distributed system without requiring a central coordinator. Any node can independently and verifiably compute the state of the system by simply replaying the public ledger.
+The key property of a fold is its determinism. Given the exact same sequence of events and the same policy, the fold function **must** always produce the exact same state root, bit for bit. Same ledger and same `policy_root` ⇒ same `state_root`. This is the guarantee that allows GATOS to be a distributed system without requiring a central coordinator. Any node can independently and verifiably compute the state of the system by simply replaying the public ledger.
 
 ## The Echo Engine: `gatos-echo`
 
-For complex, relational state, GATOS uses the powerful [**Echo** engine](http://github.com/flyingrobots/echo), provided by the **`gatos-echo`** crate. As we'll see in the chapter on the [GATOS Morphology Calculus](./CHAPTER-009.md), Echo is a **deterministic simulation engine** built on the concept of a **Recursive Metagraph (RMG)** and **Double Push-Out (DPO) graph rewriting**.
+For complex, relational state, GATOS uses the powerful [**Echo** engine](https://github.com/flyingrobots/echo), provided by the **`gatos-echo`** crate. As we'll see in the chapter on the [GATOS Morphology Calculus](./CHAPTER-009.md), Echo is a **deterministic simulation engine** built on the concept of a **Recursive Metagraph (RMG)** and **Double Push-Out (DPO) graph rewriting**.
 
 In the context of the GATOS State Plane, Echo works as follows:
 
@@ -82,6 +82,35 @@ The output of a fold is a **State Checkpoint**. This is a Git commit on a state 
 *   The materialized state artifacts (e.g., the graph data for Echo, or the tree of key-value pairs for `gatos-kv`).
 *   A reference to the commit in the Ledger Plane that this state was folded from.
 *   The final, canonical `state_root` hash in its commit message or trailers.
+
+### Checkpoint Trailers (Recommended)
+
+- `State-Root: blake3:<hex>`
+- `Ledger-Head: <commit-oid>`
+- `Policy-Root: <commit-oid>`
+- `Fold-Engine: echo@<semver>`
+- `Fold-Version: <schema-version>`
+
+You can verify a checkpoint with `git gatos fold verify` (see ADR‑0014: Proof‑of‑Fold).
+
+### Tiny DPO Example
+
+Before (subgraph):
+
+```text
+User(id=42)
+Email(user=42, value="a@example.org")
+```
+
+Rule: `approve_user` — matches `User(id)` without `Approved(id)` and emits `Approved(id)`.
+
+After (subgraph):
+
+```text
+User(id=42)
+Email(user=42, value="a@example.org")
+Approved(id=42)
+```
 
 These checkpoints provide an optimized way to access the current state without having to replay the entire event history every time. However, they are just a cache; the authoritative state can always be re-derived from the ledger.
 

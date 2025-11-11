@@ -57,6 +57,35 @@ This capability unlocks powerful workflows for decentralized collaboration:
 
 Federation and Mind-Melds are what make GATOS a truly distributed operating surface. They provide a mathematically sound and verifiable way to compose and merge state across independent systems, moving beyond the limitations of a single repository. This enables a new class of decentralized applications where trust is established not by a central authority, but by shared, deterministic mathematics.
 
+## Worked Mind‑Meld Example
+
+Repo A (users):
+
+```json
+{ "user": { "id": 1, "email": "a@example.org" } }
+```
+
+Repo B (accounts):
+
+```json
+{ "account": { "id": 1, "primaryEmail": "a@example.org" } }
+```
+
+Schema Manifest (correspondences):
+
+```json
+{
+  "map": [
+    { "from": "user.id", "to": "account.id" },
+    { "from": "user.email", "to": "account.primaryEmail" }
+  ]
+}
+```
+
+Resulting AB shape merges the two into a single entity with a consistent id/email. `Proof‑of‑Meld = blake3(root(Shape A) || root(Shape B) || root(Schema))`.
+
+Schemas are versioned and signed under `refs/gatos/schemas/<ns>` and distributed like other state. See ADR‑0012 (Federation/Mounts) and ADR‑0011 (Exporter) for normative storage and export rules.
+
 ---
 
 **Next**: [Chapter 8–Interfaces & Integration](./CHAPTER-008.md)

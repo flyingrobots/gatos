@@ -17,6 +17,27 @@ The primary interface to `gatosd` is a **JSONL RPC protocol**. **JSONL**, or JSO
 
 This protocol is simple, robust, and easy to debug.
 
+### Normative APIs and Error Framing
+
+- Reads: GraphQL (ADR‑0007) for queryable, typed reads.
+- Writes: REST‑style resources (ADR‑0008) mapped to JSONL intents for mutation.
+- Streams: WebSocket streams (ADR‑0009) for subscription semantics.
+
+Error frames use a consistent envelope:
+
+```json
+{ "ok": false, "id": "01C", "code": "ERR_INVALID_NS", "reason": "namespace not found" }
+```
+
+### Keepalives
+
+Long‑lived streams send periodic keepalives:
+
+```json
+{"kind":"ping"}
+{"kind":"pong"}
+```
+
 ### Example: Appending an Event
 
 1.  The client sends a request to the daemon:
@@ -84,13 +105,35 @@ While not part of the core GATOS system, the JSONL RPC protocol makes it straigh
 
 A simple Node.js or Go service could listen for HTTP requests, translate them into JSONL RPC commands to `gatosd`, and then format the JSONL responses back into HTTP responses. This allows web frontends and other standard web clients to interact with a GATOS node without needing a dedicated GATOS SDK.
 
+### End‑to‑End Example (JSONL)
+
+1) Enqueue a job:
+
+```json
+{"type":"jobs.enqueue","id":"J1","ns":"ci","job":{ "command":["/bin/echo","ok"],"timeout":30 }}
+```
+
+2) Observe bus (subscription):
+
+```json
+{"type":"bus.subscribe","id":"S1","topic":"gatos.jobs.pending"}
+{"ack":true,"id":"S1"}
+{"type":"bus.message","id":"S1","topic":"gatos.jobs.pending","payload":{ "job_id":"blake3:…" }}
+```
+
+3) See result (PoE recorded under `refs/gatos/jobs/<id>/result`):
+
+```json
+{"type":"jobs.result","id":"R1","job_id":"blake3:…","ok":true}
+```
+
 ## GitHub Integration
 
 Because GATOS is Git-native, it integrates seamlessly with platforms like **GitHub**.
 
 *   **Pull Requests:** Governance proposals can be represented as Pull Requests. The discussion happens in the PR, and the final "merge" is the creation of the `Approval` commits.
 *   **GitHub Actions:** The `gatosd` CLI can be run directly within GitHub Actions to automate workflows. For example, an Action could trigger a `jobs.enqueue` event on every push to the `main` branch.
-*   **Required Checks:** A GitHub Action can run `gatos policy verify` or `gatos grant verify` and report its status back to GitHub. This can be used as a required status check to block a PR from being merged until a GATOS governance policy is satisfied.
+*   **Required Checks:** A GitHub Action can run `gatos policy verify` or `gatos grant verify` and report its status back to GitHub. This can be used as a required status check to block a PR from being merged until a GATOS governance policy is satisfied. See ADR‑0010 (GitHub App) for the integration surface.
 
 ## Summary
 

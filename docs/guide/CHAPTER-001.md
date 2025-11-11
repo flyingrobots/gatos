@@ -12,20 +12,24 @@ The architecture is best understood as **five planes**—distinct but interconne
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
-            Policy("gatos-policy");
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
         end
 
         subgraph "State Plane"
             Echo("gatos-echo");
             KV("gatos-kv");
+        end
+
+        subgraph "Policy Plane"
+            Policy("gatos-policy");
         end
 
         subgraph "Message Plane"
@@ -34,10 +38,6 @@ graph TD
 
         subgraph "Job Plane"
             Compute("gatos-compute");
-        end
-
-        subgraph "Ledger Plane"
-            Ledger("gatos-ledger");
         end
 
         Daemon --> Policy;
@@ -92,10 +92,21 @@ By structuring the system into these five planes and building them on top of Git
 
 The following chapters will explore each of these planes in greater detail, showing how each contributes to shaping the GATOS operating surface.
 
+### Ref Namespace Legend
+
+- `refs/gatos/journal/<ns>/<actor>` — append-only event journals (FF-only).
+- `refs/gatos/state/<ns>` — deterministic state checkpoints.
+- `refs/gatos/mbus/<topic>/<shard>` — message topics (pub/sub).
+- `refs/gatos/jobs/<job-id>` — job artifacts (claim/result).
+- `refs/gatos/proposals|approvals|grants|revocations` — governance.
+- `refs/gatos/audit/**` — audit decisions and proofs.
+- `refs/gatos/cache/**` — rebuildable indexes and caches.
+- `refs/gatos/epoch/**` — epoch anchors for compaction.
+
 
 ---
 
-**Next**: [Chapter 2–The State Plane: Deterministic Folds](./CHAPTER-002.md)
+**Next**: [Chapter 2–The Ledger Plane: An Immutable History](./CHAPTER-002.md)
 
 **Prev**: [README](./README.md)
 

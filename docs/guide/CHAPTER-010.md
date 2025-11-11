@@ -7,10 +7,13 @@ A core tenet of GATOS is "don't trust, verify." The system is designed not just 
 In a distributed system, how do you trust that a worker node actually performed the job it claimed to? GATOS solves this with **Proof-of-Execution (PoE)**.
 
 As described in the Job Plane chapter, when a `gatos-compute` worker finishes a job, it creates a `jobs.result` event. Embedded in this event is a **PoE**, which is a signed **attestation** containing:
-*   The hash of the job that was executed.
+*   The canonical hash of the job that was executed.
 *   The hash of the resulting output artifacts.
-*   The public key of the worker.
+*   The public key of the worker and the execution environment (`worker_env`: container digest, TEE quote, etc.).
+*   The input references (`input_refs`) the job consumed.
 *   A signature over all of the above.
+
+PoE proves provenance/authenticity, not correctness. Correctness requires deterministic re‑execution, TEEs, or Zero‑Knowledge proofs.
 
 This PoE is recorded in the ledger, creating an unbreakable and verifiable link between a job and its outcome. Any other node can validate the signature on the PoE to confirm that a specific, trusted worker vouches for the result. This is fundamental to the GATOS **Zero Trust** model—you don't need to trust the network or the environment, only the cryptographic signatures.
 
@@ -27,6 +30,20 @@ For example, a GATOS node could process a financial transaction and generate a Z
 
 ...all without revealing the sender, receiver, or transaction amount to the public ledger. This capability will allow GATOS to be used for applications that require both strong verifiability and strong privacy.
 
+ZK Proof Envelope (stub):
+
+```json
+{
+  "program_id": "blake3:<hex>",
+  "vk_id": "blake3:<hex>",
+  "inputs_commitment": "blake3:<hex>",
+  "proof_bytes": "base64:",
+  "poe_link": "blake3:<hex>"
+}
+```
+
+`program_id` and `vk_id` are governed by the Policy Plane and versioned in‑repo.
+
 ## Opaque Pointers and Private Data
 
 Not all data belongs in a public, replicated Git repository. GATOS handles sensitive or large data using a mechanism called **Opaque Pointers**.
@@ -37,9 +54,8 @@ Instead of storing the data directly in a Git blob, the system stores a small po
 graph TD
     subgraph "GATOS Repository (On-Chain)"
         A[Opaque Pointer in Git]
-        A -- Contains --> B(Plaintext Hash);
         A -- Contains --> C(Ciphertext Hash);
-        A -- Contains --> D(Cipher Metadata);
+        A -- Contains --> D(Encrypted Meta);
     end
 
     subgraph "Blob Store (Off-Chain)"
@@ -51,14 +67,23 @@ graph TD
 
 *   The actual data is encrypted and stored in a separate, **content-addressed blob store** (which could be anything from a local directory to a cloud storage bucket).
 *   The **`ciphertext_hash`** is the hash of the encrypted data, allowing for integrity checks.
-*   The **`cipher_meta`** object contains the necessary information for an authorized user to decrypt the data (e.g., a reference to a key stored in a KMS, the encryption algorithm used, etc.).
-*   The **`hash`** of the *plaintext* data is also stored in the pointer. This is a crucial feature.
+*   The **encrypted meta** contains the information an authorized user needs to decrypt the data (e.g., a reference to a key stored in a KMS, the encryption algorithm used, and the plaintext hash/commitment). The public pointer MUST NOT reveal a raw plaintext hash to avoid dictionary attacks. Use a hiding commitment in the public pointer if needed.
 
 ### Verifiable Folds on Private Data
 
-Storing the plaintext hash allows GATOS to perform deterministic folds even on private data. An authorized worker can fetch the encrypted blob, decrypt it, verify that its hash matches the plaintext `hash` in the pointer, perform a computation, and then produce a new encrypted blob and a new Opaque Pointer.
+Authorized workers can fetch the encrypted blob, decrypt it, verify that the recovered plaintext hash (from encrypted meta) matches expectations, perform a computation, and then produce a new encrypted blob and a new Opaque Pointer.
 
 If the computation is deterministic, the new plaintext hash will be the same for any authorized worker who performs the same operation. This allows the `state_root` of the system to be updated deterministically, even though the actual data remains private and off-chain.
+
+### Blob Availability Attestation (BAA)
+
+To prevent dangling pointers, storage backends SHOULD sign a BAA:
+
+```json
+{ "blob": "blake3:<hex>", "store": "s3://bucket/path", "retain_until": "2026-01-01T00:00:00Z", "sig": "ed25519:<base64>" }
+```
+
+Policies can require a valid BAA before pointers are accepted into public state.
 
 ### Rekeying
 

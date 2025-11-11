@@ -6,7 +6,7 @@ GATOS is designed from the ground up to be performant at scale. It achieves this
 
 ## Partial and Lazy Folds
 
-The key to GATOS's performance is that it rarely needs to re-fold the entire history of the universe. The **GATOS Morphology Calculus** (as described in [Chapter 9](./CHAPTER-009.md) provides the theoretical foundation for this with **Theorem 2 (Localization & Incrementality)**.
+The key to GATOS's performance is that it rarely needs to re-fold the entire history of the universe. The **GATOS Morphology Calculus** (as described in [Chapter 9](./CHAPTER-009.md)) provides the theoretical foundation for this with **Theorem 2 (Localization & Incrementality)**.
 
 This theorem states that if the system's history can be broken down into independent regions (i.e., sets of events that don't have overlapping read/write sets), then the state of the whole is simply the composition of the states of the parts.
 
@@ -52,6 +52,19 @@ graph TD
 
 Because the cache is just a result of a deterministic fold, it can be safely deleted and rebuilt at any time. It is a pure optimization and not part of the authoritative state of the system.
 
+#### Cache Keys and Correctness
+
+Top‑level cache keys MUST include:
+
+- `ledger_head`
+- `policy_root`
+- `fold_engine_id` (e.g., `echo@0.7.3`)
+- `fold_version` (e.g., `gatos-echo-fold@1`)
+
+Partial/unit caches (ADR‑0013) SHOULD derive keys such as:
+
+- `Unit-Key = blake3(code_hash || policy_root || …)`
+
 ### GATOS-to-SQL/Parquet Explorer
 
 While the Git-native storage of GATOS is perfect for auditability and distribution, it is not always the most efficient format for large-scale analytical queries. For this, GATOS provides an **explorer** or **"off-ramp"** mechanism.
@@ -62,6 +75,30 @@ A dedicated process can be configured to follow the GATOS ledger and determinist
 *   A set of **Parquet files** in a data lake.
 
 This allows standard business intelligence (BI) tools, dashboards, and data science notebooks to run complex analytical queries over the GATOS data without having to understand the underlying Git-based storage model.
+
+Explorer views are read‑only. Provide a canonical checksum:
+
+```
+Explorer-Root = blake3(ledger_head || policy_root || extractor_version)
+```
+
+#### Recommended Git config for big repos
+
+```
+git config --global fetch.writeCommitGraph true
+git config --global repack.writeBitmaps true
+git config --global repack.packKeptObjects false
+```
+
+Consider partial clone and promisor remotes for `refs/gatos/mbus/*`.
+
+#### Cache Invalidation (One‑liner)
+
+Build a footprint map; on new events, compute impacted regions; drop those cache segments; re‑fold only the impacted units.
+
+#### Roaring Indexing
+
+Index by ULID time, entity id, and event type. Define integer encodings for each dimension to ensure stable hashing and fast intersections.
 
 The key is that this transformation is itself a **deterministic fold**. The analytical database is a secondary, verifiable view of the primary data in the ledger. You can always rebuild it from scratch and get the exact same result.
 

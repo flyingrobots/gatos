@@ -40,6 +40,23 @@ This multi-dimensional view of time enables powerful new workflows:
 *   **AI Co-Pilots:** An AI agent can explore thousands of possible future timelines in parallel. It can run experiments, learn strategies, and then propose a change back to the main timeline. The **Aion** axis can be used to score the "significance" of the AI's findings.
 *   **Collaborative Simulation:** Multiple users can work on the same system simultaneously, each in their own branch. When they are done, their changes can be merged. Because all operations are deterministic, conflicts can be detected and resolved with mathematical precision.
 
+### Operationalizing TimeCube
+
+**Aion (Significance):**
+
+- Where: `refs/gatos/aion/<branch>/<ulid>`
+- Record: `{ score, basis, ts, actor, sig }` — a signed record of narrative gravity.
+
+**Kairos (Possibility):**
+
+- Branch hygiene: `refs/kairos/<agent>/<ulid>` with a default 7‑day TTL.
+- Promotion: Requires a governance grant; promotion merges into a durable ref.
+
+**Confluence (Admission & Addressing):**
+
+- Admission requires capability grants and, where applicable, a valid Proof‑of‑Meld for mounted state.
+- Global addressing: `confluence://<repo-did>/<ref>@<oid>`.
+
 ## Confluence: A Shared Reality
 
 The ultimate vision for GATOS is **Confluence**: a global, distributed, content-addressed DAG (Directed Acyclic Graph) of all GATOS graphs.
