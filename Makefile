@@ -80,6 +80,12 @@ schema-negative:
 	# Negative: low-entropy pointer must not allow plaintext digest
 	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/pointer_low_entropy_invalid.json'
 
+.PHONY: kill-check
+kill-check:
+	@bash -lc 'scripts/killcheck/schema_headers.sh'
+	@bash -lc 'scripts/killcheck/ulid_reference.sh'
+	@bash -lc 'scripts/killcheck/error_casing.sh'
+
 schema-negative:
 	@bash -lc 'set -euo pipefail; \
 	 if ! command -v node >/dev/null 2>&1; then \
