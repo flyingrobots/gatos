@@ -102,6 +102,8 @@ Trailer schema: `schemas/v1/shiplog/deployment_trailer.schema.json`.
 
 MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit).
 
+Note: The trailer places `repo_head` as a top‑level field only. It MUST NOT appear inside nested objects such as `what`.
+
 > [!IMPORTANT]
 > Hashing Law — parse → JCS → hash → write → commit. The bytes you hash MUST be the exact JCS bytes you write and commit.
 
