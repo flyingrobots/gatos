@@ -101,7 +101,7 @@ Trailer-Schema:  https://gatos.dev/schemas/v1/shiplog/deployment_trailer.schema.
 
 Trailer schema: `schemas/v1/shiplog/deployment_trailer.schema.json`.
 
-MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit).
+MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit). The path is a logical path inside the Git commit tree: `/gatos/shiplog/...` is a blob stored in the tree referenced by the Shiplog commit, not a working‑directory file.
 
 Note: The trailer places `repo_head` as a top‑level field only. It MUST NOT appear inside nested objects such as `what`.
 
