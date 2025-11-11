@@ -1,5 +1,8 @@
 # Chapter 1: The GATOS System Model
 
+![gatos-5-planes-2](https://github.com/user-attachments/assets/fa0aa8f1-43a5-4a77-afad-ed560df46186)
+_The Five Planes of GATOS_
+
 **GATOS**, or **Git As The Operating Surface**, is an architectural system that transforms a Git repository into a complete, distributed backend. It provides a programmable environment where data, business logic, and operational history all converge into a single, unified fabric.
 
 Think of this fabric as the **operating surface**. It's a malleable, version-controlled reality where every change is a deliberate **fold**, creating a new, verifiable **shape**. At its core, GATOS is defined by a disciplined layout of Git refs and a set of rules for interacting with them. The system is orchestrated by a central daemon, **`gatosd`**, which exposes a simple JSONL RPC protocol. This allows various clients, from human-operated CLIs to automated AI agents, to "converse" with the repository in a structured and auditable manner.
@@ -92,9 +95,9 @@ The following chapters will explore each of these planes in greater detail, show
 
 ---
 
-Next: [Chapter 2–The State Plane: Deterministic Folds](./CHAPTER-002.md)
+**Next**: [Chapter 2–The State Plane: Deterministic Folds](./CHAPTER-002.md)
 
-Prev: [README](./README.md)
+**Prev**: [README](./README.md)
 
 ---
 
