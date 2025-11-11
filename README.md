@@ -245,6 +245,8 @@ The architecture is conceptually divided into five distinct planes:
 Interaction with the system is handled by the `gatosd` daemon, which exposes a simple JSONL RPC protocol. This allows both human-driven CLIs and automated agents (like LLMs) to "converse" with the repository in a structured, deterministic way.
 
 This design provides several powerful benefits:
+
+<img alt="gatos-planes" src="https://github.com/user-attachments/assets/ffd26404-850b-41f9-ba1f-39a5bb3cd8c7" width="420" align="right" />
   
 - **Complete Auditability**: Every state change is a signed commit in the Git history.
 - **Time-Travel**: Any previous state can be checked out, inspected, and branched from.
@@ -253,16 +255,6 @@ This design provides several powerful benefits:
 - **Active Orchestration**: Natively schedule, execute, and record the results of distributed, asynchronous jobs.
 
 ## The *GATOS* Engine in Action
-
-### Data Schemas
-
-Canonical JSON Schemas for GATOS envelopes live under `schemas/v1/`, with versioned examples under `examples/v1/`.
-
-- Governance ([ADR-0003](docs/decisions/ADR-0003/DECISION.md)): `schemas/v1/governance/*.schema.json`
-- Job Plane ([ADR-0002](docs/decisions/ADR-0002/DECISION.md)): `schemas/v1/job/*.schema.json`
-- Common encodings: `schemas/v1/common/ids.schema.json`
-
-Consumers SHOULD pin to a specific major (e.g., `v1`). CI validates example documents against these schemas.
 
 Here's some examples, to help show off how each of the five planes of the GATOS operating surface, how each one works, and why it lets you do cool stuff.
 
