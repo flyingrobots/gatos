@@ -17,8 +17,7 @@ fn ciphertext_only_pointer_should_deserialize() {
 fn both_digests_allowed_when_not_low_entropy() {
     let json = read_example("privacy/opaque_pointer_min.json");
     let ptr: OpaquePointer = serde_json::from_str(&json).unwrap();
-    let has_digest = !ptr.digest.is_empty();
+    let has_digest = ptr.digest.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
     assert!(has_digest);
     assert!(ptr.ciphertext_digest.is_some());
 }
-

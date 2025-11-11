@@ -17,7 +17,8 @@ use serde_json::Value;
 pub struct OpaquePointer {
     pub kind: Kind,
     pub algo: Algo,
-    pub digest: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub digest: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ciphertext_digest: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,4 +39,45 @@ pub enum Kind {
 #[serde(rename_all = "lowercase")]
 pub enum Algo {
     Blake3,
+}
+
+impl OpaquePointer {
+    /// Validate invariants beyond serde schema mapping.
+    pub fn validate(&self) -> Result<(), PointerError> {
+        let has_plain = self.digest.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
+        let has_cipher = self
+            .ciphertext_digest
+            .as_ref()
+            .map(|s| !s.is_empty())
+            .unwrap_or(false);
+        if !(has_plain || has_cipher) {
+            return Err(PointerError::MissingDigest);
+        }
+        let low_entropy = self
+            .extensions
+            .as_ref()
+            .and_then(|v| v.get("class"))
+            .and_then(|c| c.as_str())
+            .map(|s| s == "low-entropy")
+            .unwrap_or(false);
+        if low_entropy {
+            if !has_cipher {
+                return Err(PointerError::LowEntropyNeedsCiphertextDigest);
+            }
+            if has_plain {
+                return Err(PointerError::LowEntropyForbidsPlainDigest);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum PointerError {
+    #[error("at least one of digest or ciphertext_digest is required")]
+    MissingDigest,
+    #[error("low-entropy class requires ciphertext_digest")]
+    LowEntropyNeedsCiphertextDigest,
+    #[error("low-entropy class forbids plaintext digest")]
+    LowEntropyForbidsPlainDigest,
 }

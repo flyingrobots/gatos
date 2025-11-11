@@ -9,4 +9,4 @@ serde_json = { workspace = true }
 blake3 = { workspace = true }
 hex = { workspace = true }
 anyhow = { workspace = true }
-
+thiserror = "1"
