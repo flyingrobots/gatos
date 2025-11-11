@@ -8,6 +8,7 @@ members = [
     "crates/gatos-mind",
     "crates/gatos-echo",
     "crates/gatos-policy",
+    "crates/gatos-privacy",
     "crates/gatos-kv",
     "crates/gatosd",
     "bindings/wasm",

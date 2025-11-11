@@ -46,5 +46,39 @@
         }
       }
     }
+    ,
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min_entropy_bits": { "type": "integer", "minimum": 0 },
+              "publish_plaintext_digest": { "type": "boolean" },
+              "require_ciphertext_digest": { "type": "boolean" }
+            }
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "select": { "type": "string" },
+              "action": { "type": "string", "enum": ["redact", "pointerize"] },
+              "class": { "type": "string" },
+              "capability": { "type": "string", "format": "uri" },
+              "location": { "type": "string", "format": "uri" }
+            },
+            "required": ["select", "action"]
+          }
+        }
+      }
+    }
   }
 }

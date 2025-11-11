@@ -1,0 +1,12 @@
+{
+  "ulid": "01HF4Y9Q1SM8Q7K9DK2R3V4AWB",
+  "type": "proposal.created",
+  "payload": {
+    "title": "Q4 Budget",
+    "amount": 100000
+  },
+  "refs": {
+    "state": "blake3:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "ns": "governance"
+}

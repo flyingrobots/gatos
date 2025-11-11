@@ -1,0 +1,8 @@
+{
+  "kind": "opaque_pointer",
+  "algo": "blake3",
+  "ciphertext_digest": "blake3:0000000000000000000000000000000000000000000000000000000000000000",
+  "location": "gatos://private/blob/abc",
+  "capability": "gatos://cap/abc",
+  "extensions": { "class": "low-entropy" }
+}

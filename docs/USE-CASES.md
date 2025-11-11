@@ -83,3 +83,13 @@ This document illustrates practical scenarios where GATOS provides unique value.
 |**Goal** | Signed toggles with audit and rollbacks. |
 | **How** | KV‑style events + index refs; push‑gate for enforcement. |
 | **Why GATOS** | Auditable configuration without a new database. |
+
+---
+
+## 9) Verifiable, Compliant PII Management
+
+| | |
+|---|---|
+|**Goal** | Manage customer data (PII) in a way that is both auditable and privacy-preserving. |
+| **How** | A privacy policy projects the unified state into a public state with PII replaced by Opaque Pointers. The private data lives in an actor-anchored, encrypted blob store. |
+| **Why GATOS** | Provides a verifiable public audit trail ("a user's data was accessed") without ever exposing the private data ("the user's address is...") to the public ledger. Access is gated by cryptographic capabilities. |

@@ -13,14 +13,14 @@ diagrams:
 	@bash -lc 'scripts/mermaid/generate_all.sh'
 
 lint-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+	@bash -lc 'if command -v node >/dev/null 2>&1; then \
       npx -y markdownlint-cli "**/*.md" --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
       docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --config .markdownlint.json"; \
 	else echo "Need Node.js or Docker" >&2; exit 1; fi'
 
 fix-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
+	@bash -lc 'if command -v node >/dev/null 2>&1; then \
       npx -y markdownlint-cli "**/*.md" --fix --config .markdownlint.json; \
 	elif command -v docker >/dev/null 2>&1; then \
       docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --fix --config .markdownlint.json"; \
@@ -37,28 +37,55 @@ schema-compile:
 	@bash -lc 'set -euo pipefail; \
 	 if ! command -v node >/dev/null 2>&1; then \
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json'
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/event_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/deployment_trailer.schema.json && \
+	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json'
 
 schema-validate:
 	@bash -lc 'set -euo pipefail; \
 	 if ! command -v node >/dev/null 2>&1; then \
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json'
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/opaque_pointer_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/event_envelope.schema.json -d examples/v1/shiplog/event_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_min.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/deployment_trailer.schema.json -d examples/v1/shiplog/trailer_min.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json -d examples/v1/shiplog/anchor_min.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/pointer_low_entropy_min.json'
+
+schema-negative:
+	@bash -lc 'set -euo pipefail; \
+	 if ! command -v node >/dev/null 2>&1; then \
+	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
+	# Negative: checkpoint requires both fields
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_ulid_only_invalid.json; \
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_commit_only_invalid.json; \
+	# Negative: low-entropy pointer must not allow plaintext digest
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/pointer_low_entropy_invalid.json'
+
+.PHONY: kill-check
+kill-check:
+	@bash -lc 'scripts/killcheck/schema_headers.sh'
+	@bash -lc 'scripts/killcheck/ulid_reference.sh'
+	@bash -lc 'scripts/killcheck/error_casing.sh'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \
@@ -66,9 +93,9 @@ schema-negative:
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
 	 echo "{\"governance\":{\"x\":{\"ttl\":\"P\"}}}" > /tmp/bad1.json; \
 	 echo "{\"governance\":{\"x\":{\"ttl\":\"PT\"}}}" > /tmp/bad2.json; \
-	 if npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then \
+	 if npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then \
 	   echo "Should have rejected ttl=P" >&2; exit 1; else echo "Rejected ttl=P as expected"; fi; \
-	 if npx -y ajv-cli@5 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then \
+	 if npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then \
 	   echo "Should have rejected ttl=PT" >&2; exit 1; else echo "Rejected ttl=PT as expected"; fi'
 
 schemas: schema-compile schema-validate schema-negative

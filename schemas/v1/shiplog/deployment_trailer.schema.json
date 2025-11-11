@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/v1/shiplog/deployment_trailer.schema.json",
+  "title": "GATOS Shiplog Deployment Trailer (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "status",
+    "when"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "env": {
+      "type": "string",
+      "minLength": 1
+    },
+    "who": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "what": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "service": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        }
+      }
+    },
+    "where": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "region": {
+          "type": "string"
+        },
+        "cluster": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "why": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "ticket": {
+          "type": "string"
+        }
+      }
+    },
+    "how": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "pipeline": {
+          "type": "string"
+        },
+        "run_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "in_progress",
+        "skipped",
+        "override",
+        "revert",
+        "finalize"
+      ]
+    },
+    "when": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_ts",
+        "end_ts",
+        "dur_s"
+      ],
+      "properties": {
+        "start_ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end_ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dur_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "journal_parent": {
+      "type": "string"
+    },
+    "trust_oid": {
+      "type": "string"
+    },
+    "previous_anchor": {
+      "type": "string"
+    },
+    "repo_head": {
+      "type": "string"
+    }
+  }
+}
