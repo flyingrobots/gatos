@@ -1,5 +1,8 @@
 # Chapter 12: The GATOS Vision
 
+![time-cube](https://github.com/user-attachments/assets/13a51cb0-43c9-4773-87ba-3e87e1334067)
+_The Time Cube: History • Possibility • Consequence_
+
 The preceding chapters have detailed the architecture and workflow of GATOS. We've seen how it uses Git to create a deterministic, auditable, and distributed operating surface. But the "how" is only part of the story. The "why" points to a new vision for how we build and interact with software.
 
 ## From Version Control to Reality Control
@@ -63,3 +66,12 @@ Together, these components fulfill the GATOS promise: to enable the creation of 
 The future of software is not just about building bigger and faster systems. It's about building systems that we can understand, that we can trust, and that can learn and evolve with us.
 
 Welcome to the GATOS multiverse.
+
+---
+
+**Prev**: [Chapter 11–Performance: Partial Folds, Caching, and Exploration](./CHAPTER-011.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
