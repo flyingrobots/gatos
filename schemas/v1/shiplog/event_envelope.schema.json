@@ -31,7 +31,7 @@
       "additionalProperties": {
         "$ref": "../common/ids.schema.json#/$defs/blake3Digest"
       },
-      "description": "Optional cross-references to related state roots or objects (blake3:...)."
+      "description": "Optional cross-references to related state roots or objects (blake3:<64-hex>)."
     },
     "ns": {
       "type": "string",

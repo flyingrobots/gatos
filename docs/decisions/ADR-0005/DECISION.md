@@ -33,6 +33,7 @@ Many integrations require an append‑only stream rather than only snapshot stat
 - Envelope canonicalization: RFC 8785 JSON Canonicalization Scheme (JCS). The event Content‑Id is `blake3(JCS(envelope))`.
 - ULID: 26‑char Crockford base32, uppercase, excluding I/L/O/U (`^[0-9A-HJKMNP-TV-Z]{26}$`).
 - Hashes: content digests are `blake3:<64‑hex>` per `schemas/v1/common/ids.schema.json`.
+- Numeric discipline: precision‑sensitive values (e.g., money/time) MUST be encoded as integers or strings.
 
 ```mermaid
 classDiagram
@@ -53,8 +54,8 @@ classDiagram
 
 ```mermaid
 graph TD
-  subgraph "Git Refs"
-    H1[refs/gatos/shiplog/orders/head]-->C1
+  subgraph "Git Refs (sample)"
+    H1[refs/gatos/shiplog/demo/head]-->C1
     C1((e1))-->C2((e2))-->C3((e3))
   end
   C1:::ev; C2:::ev; C3:::ev
@@ -145,8 +146,8 @@ $ gatosd shiplog append --topic governance --file event.json
 ok  commit=8b1c1e4 content_id=blake3:2a6c… ulid=01HF4Y9Q1SM8Q7K9DK2R3V4AWB
 
 $ gatosd shiplog read --topic governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
-01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2A6C…  8b1c1e4  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXD","ns":"governance","type":"proposal.created","payload":{…}}
-01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:C1D2…  9f0aa21  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXE","ns":"governance","type":"proposal.created","payload":{…}}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2A6C…  8b1c1e4  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXD","ns":"governance","type":"proposal.created","payload":{}}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:C1D2…  9f0aa21  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXE","ns":"governance","type":"proposal.approved","payload":{}}
 
 $ gatosd shiplog checkpoint set --group analytics --topic governance --commit 8b1c1e4
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
