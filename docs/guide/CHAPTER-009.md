@@ -97,3 +97,14 @@ Each theorem corresponds directly to a feature that provides a concrete benefit:
 *   **Pushouts** give you deterministic cross-repo merges.
 
 This is how GATOS delivers on its promise of a system that is not just powerful, but also trustworthy, auditable, and correct by construction.
+
+---
+
+**Next**: [Chapter 10–Proofs, Attestation, and Privacy](./CHAPTER-010.md)
+
+**Prev**: [Chapter 8–Interfaces & Integration](./CHAPTER-008.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

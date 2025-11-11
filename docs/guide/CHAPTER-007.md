@@ -56,3 +56,14 @@ This capability unlocks powerful workflows for decentralized collaboration:
 ## Summary
 
 Federation and Mind-Melds are what make GATOS a truly distributed operating surface. They provide a mathematically sound and verifiable way to compose and merge state across independent systems, moving beyond the limitations of a single repository. This enables a new class of decentralized applications where trust is established not by a central authority, but by shared, deterministic mathematics.
+
+---
+
+**Next**: [Chapter 8–Interfaces & Integration](./CHAPTER-008.md)
+
+**Prev**: [Chapter 6–The Message & Job Planes: Distributed Workflows](./CHAPTER-006.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

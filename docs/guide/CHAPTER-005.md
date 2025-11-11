@@ -64,3 +64,14 @@ This model provides significant benefits:
 ## Summary
 
 Project Stargate is the key to making GATOS a practical system for real-world teams. It provides a transparent, local-first architecture that combines the security and control of a self-hosted server with the scalability and rich ecosystem of a public platform. It allows developers to work with the familiar `git push origin` command while benefiting from a powerful, policy-driven, and auditable backend that enforces the GATOS guarantees at the source.
+
+---
+
+**Next**: [Chapter 6–The Message & Job Planes: Distributed Workflows](./CHAPTER-006.md)
+
+**Prev**: [Chapter 4–The Policy Plane: Governance as Code](./CHAPTER-004.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

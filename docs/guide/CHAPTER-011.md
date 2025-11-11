@@ -78,9 +78,9 @@ This combination allows GATOS to serve as both a high-integrity transactional sy
 
 ---
 
-**Next**: [Chapter 10–Proofs, Attestation, and Privacy](./CHAPTER-010.md)
+**Next**: [Chapter 12–The GATOS Vision](./CHAPTER-012.md)
 
-**Prev**: [Chapter 12–The GATOS Vision](./CHAPTER-001.md)
+**Prev**: [Chapter 10–Proofs, Attestation, and Privacy](./CHAPTER-010.md)
 
 ---
 

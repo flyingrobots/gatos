@@ -64,3 +64,14 @@ This PoE is recorded in the ledger, creating an unbreakable link between the job
 The Message and Job planes are what make GATOS a dynamic, living system. `gatos-mind` provides the nervous system, allowing for reliable, auditable communication. `gatos-compute` provides the motor function, enabling the system to perform work in a distributed and verifiable way.
 
 Together, they transform the GATOS repository from a passive record of history into an active, programmable "Operating Surface" that can orchestrate complex, distributed workflows with an unprecedented level of trust and transparency.
+
+---
+
+**Next**: [Chapter 7–Federation & Mind-Melds: Cross-Repo Operations](./CHAPTER-007.md)
+
+**Prev**: [Chapter 5–Project Stargate: Local Enforcement & Magic Mirrors](./CHAPTER-005.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
