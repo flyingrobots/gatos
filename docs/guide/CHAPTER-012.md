@@ -1,7 +1,7 @@
 # Chapter 12: The GATOS Vision
 
 ![time-cube](https://github.com/user-attachments/assets/13a51cb0-43c9-4773-87ba-3e87e1334067)
-_The Time Cube: History • Possibility • Consequence_
+> _The Time Cube: History • Possibility • Consequence_
 
 The preceding chapters have detailed the architecture and workflow of GATOS. We've seen how it uses Git to create a deterministic, auditable, and distributed operating surface. But the "how" is only part of the story. The "why" points to a new vision for how we build and interact with software.
 
