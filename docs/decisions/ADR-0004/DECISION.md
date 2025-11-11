@@ -123,6 +123,18 @@ The canonical `content_id` of the pointer itself is `blake3(JCS(pointer_json))`,
 
 **Schema:** `schemas/v1/privacy/opaque_pointer.schema.json`
 
+#### AAD Components (Example)
+
+When encrypting a private blob referenced by an Opaque Pointer, the AEAD AAD MUST bind all of the following, in order, as UTF‑8 bytes:
+
+```text
+1) pointer.digest
+2) requester.actor_id (e.g., user:alice | service:policy)
+3) policy.version (e.g., v1.2.3)
+```
+
+Implementations MAY structure these as concatenated bytes with clear domain separation (e.g., length‑prefixing) prior to supplying them as AAD to the AEAD algorithm.
+
 ### 3. The Projection Function (Normative)
 
 The State Engine (`gatos-echo`) is responsible for executing the projection.

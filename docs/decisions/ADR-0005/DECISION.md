@@ -101,9 +101,9 @@ Trailer-Schema:  https://gatos.dev/schemas/v1/shiplog/deployment_trailer.schema.
 
 Trailer schema: `schemas/v1/shiplog/deployment_trailer.schema.json`.
 
-MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit). The path is a logical path inside the Git commit tree: `/gatos/shiplog/...` is a blob stored in the tree referenced by the Shiplog commit, not a working‑directory file.
+MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit). The path is a logical path inside the Git commit tree: `/gatos/shiplog/...` is a blob stored in the tree referenced by the Shiplog commit, not a working‑directory file. Thus the object hash of the blob equals the canonical digest; verifiers MUST compare them byte‑for‑byte.
 
-Note: The trailer places `repo_head` as a top‑level field only. It MUST NOT appear inside nested objects such as `what`.
+Note: The trailer places `repo_head` as a top‑level field only. It MUST NOT appear inside nested objects such as `what` (or any nested object). Producers MUST ensure no duplication occurs.
 
 > [!IMPORTANT]
 > Hashing Law — parse → JCS → hash → write → commit. The bytes you hash MUST be the exact JCS bytes you write and commit.
@@ -125,7 +125,7 @@ Errors (normative):
 - `shiplog.read(ns, since_ulid, limit) -> [ (ulid, content_id, commit_oid, envelope) ]` (increasing ULID order).
 - `shiplog.tail(namespaces[], limit_per_ns)` MAY multiplex without cross‑namespace causality guarantees.
 
-Tail fairness (normative): When multiplexing multiple namespaces, implementations MUST use fair scheduling (e.g., per‑namespace round‑robin) so that no namespace is starved under sustained load. Implementations SHOULD emit a per‑namespace watermark (last ULID included) to help consumers resume without duplication. Consumers restore by resuming from each namespace’s last watermark or their checkpoint, whichever is newer; duplicates MUST be tolerated by idempotent processing keyed by `(ns, ulid)`.
+Tail fairness (normative): When multiplexing multiple namespaces, implementations MUST use fair scheduling (e.g., per‑namespace round‑robin) so that no namespace is starved under sustained load. The round‑robin order SHOULD be stable across restarts. Implementations SHOULD emit a per‑namespace watermark (last ULID included) to help consumers resume without duplication. Consumers restore by resuming from each namespace’s last watermark or their checkpoint, whichever is newer; duplicates MUST be tolerated by idempotent processing keyed by `(ns, ulid)`.
 
 ### 7) Consumer Checkpoints
 
@@ -163,7 +163,7 @@ ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
 
 ### 12) Anchors
 
-Anchors are signed, portable snapshots of a Shiplog namespace head. An anchor document conforms to `schemas/v1/shiplog/anchor.schema.json` and records `(ulid, topic/ns, head)` plus optional metadata. Producers MAY write an anchor when rolling out a deployment, completing a batch, or before compaction. Consumers use anchors as stable restore points and for cross‑repo attestation. If signatures are used, they MUST bind the anchor JSON bytes (JCS) and the Git commit oid referenced by `head`.
+Anchors are signed, portable snapshots of a Shiplog namespace head. An anchor document conforms to `schemas/v1/shiplog/anchor.schema.json` and records `(ulid, topic/ns, head)` plus optional metadata. Producers MAY write an anchor when rolling out a deployment, completing a batch, or before compaction. Consumers use anchors as stable restore points and for cross‑repo attestation. If signatures are used, they MUST bind the anchor JSON bytes (JCS) and the Git commit oid referenced by `head`. Anchors SHOULD be signed with the same key as the containing namespace’s governance identity to preserve a coherent audit chain.
 
 ## Error Taxonomy (Normative)
 
