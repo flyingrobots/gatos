@@ -67,6 +67,10 @@ The future of software is not just about building bigger and faster systems. It'
 
 Welcome to the GATOS multiverse.
 
+**FINALLY.** Git As The Operating Surface™.
+
+_Now you Git it._
+
 ---
 
 **Prev**: [Chapter 11–Performance: Partial Folds, Caching, and Exploration](./CHAPTER-011.md)
