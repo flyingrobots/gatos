@@ -1,10 +1,19 @@
 use anyhow::{bail, Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
+use git2::Repository;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use which::which;
 
 #[derive(Parser, Debug)]
-#[command(name = "xtask", version, about = "Repo task runner (cargo xtask)")]
+#[command(
+    name = "xtask",
+    version,
+    about = "Repo task runner (cargo xtask)",
+    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nENV:\n  MERMAID_MAX_PARALLEL     Concurrency for diagrams (default: min(cpu, 8))\n  MERMAID_CLI_VERSION      @mermaid-js/mermaid-cli pin (default: 10.9.0)\n  MERMAID_CMD_TIMEOUT_MS   Timeout for mmdc/npx (10s..15m, default: 120s)\n\nEXAMPLES:\n  cargo run -p xtask -- diagrams --all\n  cargo run -p xtask -- diagrams docs/TECH-SPEC.md\n  cargo run -p xtask -- schemas all\n  cargo run -p xtask -- links\n",
+    after_help = "Tip: use 'make ci-*' shims or 'cargo run -p xtask -- <command>' for CI parity."
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -15,19 +24,22 @@ enum Cmd {
     /// Run pre-commit pipeline (staged-only)
     PreCommit,
     /// Generate mermaid diagrams
+    #[command(group(
+        ArgGroup::new("input")
+            .args(["all", "files"]) // exactly one must be present
+            .required(true)
+            .multiple(false)
+    ))]
     Diagrams {
         /// Process all git-tracked .md files
         #[arg(long)]
         all: bool,
         /// Specific markdown files
         #[arg(value_name = "FILE", required = false)]
-        files: Vec<PathBuf>,
+        files: Option<Vec<PathBuf>>, // use Option so clap can tell presence vs empty
     },
     /// Validate JSON Schemas and examples (v1)
-    Schemas {
-        #[command(subcommand)]
-        sub: SchemaSub,
-    },
+    Schemas,
     /// Link checker for Markdown (lychee)
     Links {
         /// Optional file globs (default: **/*.md)
@@ -36,78 +48,63 @@ enum Cmd {
     },
 }
 
-#[derive(Subcommand, Debug)]
-enum SchemaSub {
-    /// Compile + validate + negatives (full suite)
-    All,
-    /// Compile only
-    Compile,
-    /// Validate examples only
-    Validate,
-    /// Negative tests only
-    Negative,
-}
+// No subcommands for schemas; always run the full suite
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::PreCommit => pre_commit(),
-        Cmd::Diagrams { all, files } => diagrams(all, &files),
-        Cmd::Schemas { sub } => schemas(sub),
+        Cmd::Diagrams { all, files } => diagrams(all, files),
+        Cmd::Schemas => schemas(),
         Cmd::Links { files } => links(files),
     }
 }
 
 fn pre_commit() -> Result<()> {
-    // Use existing Make target to keep parity; we can inline later
-    run("bash", ["-lc", "make -s pre-commit"], None)
+    // Call make directly (no shell), relies on CI/dev environment having make
+    run("make", ["-s", "pre-commit"], None)
 }
 
-fn diagrams(all: bool, files: &[PathBuf]) -> Result<()> {
+fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/mermaid/generate.mjs");
     if all {
         run(
             "node",
-            [script.to_string_lossy().as_ref(), "--all"],
+            [script.as_os_str(), OsStr::new("--all")],
             Some(&repo),
         )?
-    } else if !files.is_empty() {
-        let mut args = Vec::with_capacity(files.len() + 1);
-        args.push(script.to_string_lossy().to_string());
-        for f in files {
-            args.push(f.to_string_lossy().to_string());
+    } else if let Some(files) = files {
+        if files.is_empty() {
+            bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
         }
-        run("node", &args, Some(&repo))?
+        let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
+        args.push(script.as_os_str());
+        for f in &files {
+            args.push(f.as_os_str());
+        }
+        run("node", args, Some(&repo))?
     } else {
-        bail!("pass --all or one or more files");
+        bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
     }
     Ok(())
 }
 
-fn schemas(which: SchemaSub) -> Result<()> {
+fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    match which {
-        SchemaSub::All => run("bash", ["-lc", script.to_string_lossy().as_ref()], Some(&repo))?,
-        SchemaSub::Compile => run("bash", ["-lc", "./scripts/validate_schemas.sh && echo done | true"], Some(&repo))?,
-        SchemaSub::Validate => run(
-            "bash",
-            [
-                "-lc",
-                "./scripts/validate_schemas.sh | sed -n '1,/Validating example/,$p' >/dev/null",
-            ],
-            Some(&repo),
-        )?,
-        SchemaSub::Negative => run(
-            "bash",
-            [
-                "-lc",
-                "./scripts/validate_schemas.sh | sed -n '/Additional encoding tests/,$p' >/dev/null",
-            ],
-            Some(&repo),
-        )?,
-    }
+    // Execute via a shell explicitly for cross-platform compatibility
+    let shell = if which("bash").is_ok() {
+        "bash"
+    } else if which("sh").is_ok() {
+        "sh"
+    } else {
+        bail!(
+            "No suitable shell found to execute {:?}. Install bash/sh or run in CI.",
+            script
+        );
+    };
+    run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
 }
 
@@ -119,65 +116,86 @@ fn links(files: Vec<String>) -> Result<()> {
         files
     };
     // Prefer local lychee if present; otherwise Docker fallback
-    if which("lychee").is_some() {
+    if which("lychee").is_ok() {
         let mut args = vec!["--no-progress", "--config", ".lychee.toml"];
         for g in &arglist {
             args.push(g);
         }
-        run("lychee", args, Some(&repo))
-    } else if which("docker").is_some() {
-        let mut cmd = format!(
-            "docker run --rm -v \"{}:/work\" -w /work ghcr.io/lycheeverse/lychee:latest --no-progress --config .lychee.toml",
-            repo.display()
-        );
+        run("lychee", args, Some(&repo))?;
+        Ok(())
+    } else if which("docker").is_ok() {
+        // Build docker args with borrowed strings to avoid unnecessary cloning
+        let mount = format!("{}:/work", repo.display());
+        let mut docker_args: Vec<&OsStr> = Vec::with_capacity(11 + arglist.len());
+        docker_args.extend([
+            OsStr::new("run"),
+            OsStr::new("--rm"),
+            OsStr::new("-v"),
+            OsStr::new(mount.as_str()),
+            OsStr::new("-w"),
+            OsStr::new("/work"),
+            OsStr::new("ghcr.io/lycheeverse/lychee:latest"),
+            OsStr::new("--no-progress"),
+            OsStr::new("--config"),
+            OsStr::new(".lychee.toml"),
+        ]);
         for g in &arglist {
-            cmd.push(' ');
-            cmd.push_str(g);
+            docker_args.push(OsStr::new(g.as_str()));
         }
-        run("bash", ["-lc", &cmd], Some(&repo))
+        run("docker", docker_args, Some(&repo))?;
+        Ok(())
     } else {
-        bail!("lychee or docker required for link check")
+        bail!("Link check requires 'lychee' in PATH or Docker. Install lychee (https://github.com/lycheeverse/lychee) or install Docker to run the containerized check.")
     }
 }
 
 fn repo_root() -> Result<PathBuf> {
-    // Assume xtask is run from repo; use current dir
+    // Prefer libgit2 discovery to handle worktrees, submodules, and .git files
     let cwd = std::env::current_dir()?;
-    // Walk up to find .git dir/file
-    let mut dir = cwd.as_path();
-    for _ in 0..15 {
-        if dir.join(".git").exists() { return Ok(dir.to_path_buf()); }
-        if let Some(p) = dir.parent() { dir = p; } else { break; }
-    }
-    bail!("could not locate repo root from {:?}", cwd)
-}
-
-fn which(bin: &str) -> Option<PathBuf> {
-    let path = std::env::var_os("PATH")?;
-    for p in std::env::split_paths(&path) {
-        let cand = p.join(bin);
-        if cand.is_file() { return Some(cand); }
-        // Windows exe
-        if cfg!(windows) {
-            let ex = p.join(format!("{}.exe", bin));
-            if ex.is_file() { return Some(ex); }
+    if let Ok(repo) = Repository::discover(&cwd) {
+        if let Some(wd) = repo.workdir() {
+            return Ok(wd.to_path_buf());
+        }
+        // Bare repo: use parent of the .git directory
+        let git_dir = repo.path();
+        if let Some(parent) = git_dir.parent() {
+            return Ok(parent.to_path_buf());
         }
     }
-    None
+    // Fallback to manual traversal
+    let mut dir = cwd.as_path();
+    for _ in 0..15 {
+        if dir.join(".git").exists() {
+            return Ok(dir.to_path_buf());
+        }
+        if let Some(p) = dir.parent() {
+            dir = p;
+        } else {
+            break;
+        }
+    }
+    bail!(
+        "Could not locate repository root from {:?}. Run xtask from within the repository or a child directory.",
+        cwd
+    )
 }
 
 fn run<I, S>(cmd: &str, args: I, cwd: Option<&Path>) -> Result<()>
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: AsRef<OsStr>,
 {
     let mut c = Command::new(cmd);
-    c.args(args.into_iter().map(|s| s.as_ref().to_string()))
+    c.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-    if let Some(dir) = cwd { c.current_dir(dir); }
-    let status = c.status().with_context(|| format!("failed to spawn {}", cmd))?;
+    if let Some(dir) = cwd {
+        c.current_dir(dir);
+    }
+    let status = c
+        .status()
+        .with_context(|| format!("failed to spawn {}", cmd))?;
     if !status.success() {
         bail!("{} exited with status {}", cmd, status);
     }
