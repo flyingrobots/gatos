@@ -67,7 +67,18 @@ schema-validate:
 	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/event_envelope.schema.json -d examples/v1/shiplog/event_min.json -r schemas/v1/common/ids.schema.json && \
 	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_min.json && \
 	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/deployment_trailer.schema.json -d examples/v1/shiplog/trailer_min.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json -d examples/v1/shiplog/anchor_min.json'
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/anchor.schema.json -d examples/v1/shiplog/anchor_min.json && \
+	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/pointer_low_entropy_min.json'
+
+schema-negative:
+	@bash -lc 'set -euo pipefail; \
+	 if ! command -v node >/dev/null 2>&1; then \
+	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
+	# Negative: checkpoint requires both fields
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_ulid_only_invalid.json; \
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/shiplog/consumer_checkpoint.schema.json -d examples/v1/shiplog/checkpoint_commit_only_invalid.json; \
+	# Negative: low-entropy pointer must not allow plaintext digest
+	! npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/privacy/opaque_pointer.schema.json -d examples/v1/privacy/pointer_low_entropy_invalid.json'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \
