@@ -161,6 +161,10 @@ $ gatosd shiplog checkpoint set --group analytics --ns governance --commit 8b1c1
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
 ```
 
+### 12) Anchors
+
+Anchors are signed, portable snapshots of a Shiplog namespace head. An anchor document conforms to `schemas/v1/shiplog/anchor.schema.json` and records `(ulid, topic/ns, head)` plus optional metadata. Producers MAY write an anchor when rolling out a deployment, completing a batch, or before compaction. Consumers use anchors as stable restore points and for cross‑repo attestation. If signatures are used, they MUST bind the anchor JSON bytes (JCS) and the Git commit oid referenced by `head`.
+
 ## Error Taxonomy (Normative)
 
 | Code | HTTP | Meaning |
