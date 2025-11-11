@@ -56,7 +56,7 @@ graph TD
     subgraph "Pushout Diagram (Mind-Meld)"
         S[Schema Manifest] --> Sh_A[Shape A]
         S --> Sh_B[Shape B]
-        Sh_A --> Sh_AB[Meld (Shape AB)]
+        Sh_A --> Sh_AB["Meld (Shape AB)"]
         Sh_B --> Sh_AB
     end
 ```
