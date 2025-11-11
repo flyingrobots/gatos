@@ -63,7 +63,7 @@ This model is a direct application of the GATOS Morphology Calculus.
 
         style P1 fill:#cde,stroke:#333
         style P2 fill:#cde,stroke:#333
-    ```text
+    ```
 
 This ensures that the transformation is structure-preserving and that the public history remains a valid, deterministic projection of the complete history.
 
@@ -76,9 +76,9 @@ Private data overlays are fundamentally tied to an actor's identity, not an ephe
 * **Actor ID:** The canonical identifier for an actor, e.g., `ed25519:<pubkey>`.
 * **Private Refs:** Private data is stored under refs namespaced by the actor ID.
 
-    ```text
+    ```
     refs/gatos/private/<actor-id>/<ns>/<channel>
-    ```text
+    ```
 
 ### 2. Encryption Algorithm & Nonce Discipline (Normative)
 
@@ -88,7 +88,7 @@ Private data overlays are fundamentally tied to an actor's identity, not an ephe
 * AAD binding: AEAD AAD MUST bind the pointer digest (not a separate content_id), the requester actor id, and the effective policy version so that verifiers can validate context and detect misuse.
 * **Public Refs:** The corresponding public projection lives in the main state namespace.
 
-    ```text
+    ```
     refs/gatos/state/public/<ns>/<channel>
     ```
 
@@ -108,7 +108,7 @@ classDiagram
         +string capability                          // MUST NOT embed secrets
         +object extensions                          // forward-compatible
     }
-```text
+```
 
 * **`digest`**: The content-address of the private plaintext (`blake3(plaintext_bytes)`). This is the immutable link between the public and private worlds.
 * **`ciphertext_digest`**: The content-address of the stored ciphertext (`blake3(ciphertext_bytes)`). For low‑entropy privacy classes (see Policy Hooks), the public pointer **MUST** include `ciphertext_digest` and policy **MUST NOT** expose the plaintext digest publicly.
@@ -152,7 +152,7 @@ sequenceDiagram
     E->>E: 4. Apply rules to create PublicState + PrivateBlobs
     E->>L: 5. Commit PublicState to public refs
     E->>PS: 6. Store PrivateBlobs by digest
-```text
+```
 
 ### 4. Pointer Resolution Protocol (Normative)
 
@@ -180,11 +180,11 @@ A client resolving an Opaque Pointer **MUST** follow this protocol:
 
 Response headers on success:
 
-```text
+```
 Content-Type: application/octet-stream
 X-BLAKE3-Digest: blake3:<hex-of-response-body>
 Digest: sha-256=<base64-of-response-body>
-```text
+```
 
 Optional HTTP Message Signatures profile (RFC 9421):
 
@@ -209,7 +209,7 @@ sequenceDiagram
     else Unauthorized
         PN-->>C: 4. Return 401/403
     end
-```text
+```
 
 ### 5. Policy Hooks (Normative)
 
@@ -230,7 +230,7 @@ privacy:
       location: "gatos-node://ed25519:<owner-pubkey>"
     - select: "path.to.transient.data"
       action: "redact"
-```text
+```
 
 The `select` syntax will use a simple path-matching language (e.g., glob patterns) defined by the policy engine.
 
