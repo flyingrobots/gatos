@@ -1,0 +1,66 @@
+- name: type: bug
+  color: d73a4a
+  description: Bug report
+- name: type: enhancement
+  color: a2eeef
+  description: Feature or enhancement
+- name: type: docs
+  color: 0075ca
+  description: Documentation changes
+- name: type: spec/design
+  color: bfd4f2
+  description: Specification or design discussion
+- name: type: tooling
+  color: c2e0c6
+  description: Tooling or developer experience
+- name: type: test
+  color: e4e669
+  description: Tests or fixtures
+- name: area: xtask
+  color: 5319e7
+  description: Rust xtask tooling
+- name: area: schemas
+  color: b60205
+  description: JSON Schemas and examples
+- name: area: diagrams
+  color: 0e8a16
+  description: Mermaid diagrams and tooling
+- name: area: ci
+  color: fef2c0
+  description: CI/CD workflows
+- name: area: build
+  color: 1d76db
+  description: Build, Makefile, toolchain
+- name: area: determinism
+  color: 0366d6
+  description: Deterministic projections and encodings
+- name: area: privacy
+  color: 5319e7
+  description: Privacy / ciphertext handling concerns
+- name: area: governance
+  color: 0052cc
+  description: Governance model and docs
+- name: priority: p0
+  color: b60205
+  description: Critical priority
+- name: priority: p1
+  color: d93f0b
+  description: High priority
+- name: priority: p2
+  color: fbca04
+  description: Normal priority
+- name: status: blocked
+  color: 000000
+  description: Blocked on dependency
+- name: needs: info
+  color: cfd3d7
+  description: Needs more information
+- name: needs: repro
+  color: cfd3d7
+  description: Needs minimal reproduction
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers
+- name: help wanted
+  color: 008672
+  description: Help appreciated
