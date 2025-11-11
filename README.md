@@ -56,6 +56,10 @@ YoU dOnT kNoW wHaT gAtOs Is?! OmG!
 Y'all got that "Git-OS" thang?
 *It's GATOS!*
 
+## Tooling roadmap
+
+See `docs/ROADMAP-XTASK.md` for the current status of `xtask` and CI tooling.
+
 **GATOS. It's the Surface that Operates within Git.**
 
 I *git* it now!
@@ -153,7 +157,6 @@ Ask yourself...
 ---
 
 ![gatos2](https://github.com/user-attachments/assets/9a68ec95-7be6-4701-afda-0c08b6d79a1c)
-
 
 ## OK, ENOUGH. WTF is GATOS?!! WTF is an "Operating Surface"?
 
