@@ -1,4 +1,5 @@
-.PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit
+.PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit \
+        xtask ci-diagrams ci-schemas ci-linkcheck help
 
 all: schemas lint-md link-check
 
@@ -122,3 +123,38 @@ pre-commit:
 	   else echo "lychee not found and Docker unavailable; skipping link check" >&2; fi; \
 	 fi; \
 	 echo "[make pre-commit] Done."'
+## ---- xtask shims (Rust orchestrator) ----
+
+# Generic xtask passthrough: use ARGS to forward to the xtask CLI.
+# Example: `make xtask ARGS="diagrams --all"` or `make xtask ARGS="links"`
+xtask:
+	@cargo run -p xtask -- $(ARGS)
+
+# CI-parity shims
+# ci-diagrams: Generate all Mermaid diagrams. This target sets MERMAID_MAX_PARALLEL
+# for faster local/CI runs; other targets do not use parallelism env vars.
+ci-diagrams:
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all
+
+# ci-schemas: Validate and compile all JSON Schemas and example payloads.
+# No special env vars required; xtask handles Node/AJV invocation.
+ci-schemas:
+	@cargo run -p xtask -- schemas
+
+# ci-linkcheck: Run Markdown link checks (uses local lychee if available, else Docker).
+# Argument styles (by xtask subcommand):
+#   - diagrams: uses the `--all` flag for full-repo scan.
+#   - schemas: no `all` positional argument (runs the full suite by default).
+#   - links: no `all` positional argument (optionally accepts file globs; default is **/*.md).
+# If xtask subcommand signatures change, update this note and the shims below to keep rationale clear.
+ci-linkcheck:
+	@cargo run -p xtask -- links
+
+# help: list available xtask-related targets for quick discovery
+help:
+	@echo "xtask shims:"; \
+	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — passthrough to xtask (e.g., diagrams --all, links, schemas)"; \
+	echo "  make ci-diagrams                       — generate all Mermaid diagrams (MERMAID_MAX_PARALLEL honored)"; \
+	echo "  make ci-schemas                        — validate and compile all schemas/examples"; \
+	echo "  make ci-linkcheck                      — run Markdown link checks"; \
+	echo "Env: MERMAID_MAX_PARALLEL overrides diagram concurrency (default 6 here)";
