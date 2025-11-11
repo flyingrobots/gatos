@@ -6,7 +6,7 @@ GATOS is designed from the ground up to be performant at scale. It achieves this
 
 ## Partial and Lazy Folds
 
-The key to GATOS's performance is that it rarely needs to re-fold the entire history of the universe. The **GATOS Morphology Calculus** (as described in Chapter 9) provides the theoretical foundation for this with **Theorem 2 (Localization & Incrementality)**.
+The key to GATOS's performance is that it rarely needs to re-fold the entire history of the universe. The **GATOS Morphology Calculus** (as described in [Chapter 9](./CHAPTER-009.md) provides the theoretical foundation for this with **Theorem 2 (Localization & Incrementality)**.
 
 This theorem states that if the system's history can be broken down into independent regions (i.e., sets of events that don't have overlapping read/write sets), then the state of the whole is simply the composition of the states of the parts.
 
@@ -74,3 +74,15 @@ GATOS is designed for both correctness and performance. It achieves high perform
 *   **Explorer Off-ramps** bridge the gap to the traditional world of data analytics, providing a verifiable, read-optimized view of the GATOS ledger.
 
 This combination allows GATOS to serve as both a high-integrity transactional system and a high-performance analytical backend, without compromising on its core principles.
+
+
+---
+
+**Next**: [Chapter 10–Proofs, Attestation, and Privacy](./CHAPTER-010.md)
+
+**Prev**: [Chapter 12–The GATOS Vision](./CHAPTER-001.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
