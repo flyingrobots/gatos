@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/xtask",
     "crates/gatos-ledger-core",
     "crates/gatos-ledger-git",
     "crates/gatos-ledger",
