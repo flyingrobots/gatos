@@ -113,6 +113,8 @@ Invariant: envelope.ns MUST equal the commit header `Namespace:` value and the p
 
 Append(`ns`, `envelope`): validate schema; compute `content_id = blake3(JCS(envelope))`; enforce monotone ULID per namespace on this node; create commit with headers + trailer; CAS update `refs/gatos/shiplog/<ns>/head`; return `(commit_oid, ulid, content_id)`.
 
+ULID generation (normative): Implementations MUST use a monotonic ULID algorithm scoped per namespace. If the system clock moves backwards, the implementation MUST keep the last emitted millisecond timestamp and monotonically increase the randomness field; on overflow of the randomness field, the operation MUST fail with `TemporalOrder`. If two appends observe the same timestamp, the second MUST increase the randomness field compared to the previous append or fail with `AppendRejected` on CAS. Replayed appends MUST preserve the original ULID for that envelope; otherwise reject with `DigestMismatch`.
+
 Errors (normative):
 
 - 400 `InvalidEnvelope`; 409 `UlidOutOfOrder`; 409 `NotFastForward`; 422 `DigestMismatch`.
