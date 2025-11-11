@@ -1,5 +1,8 @@
 # Chapter 3: The State Plane: Deterministic Folds
 
+![gatos-lazy-folds](https://github.com/user-attachments/assets/d80a6eb7-52a9-4a13-b137-44f089d7f63a)
+> _Folding the Operating Surface into new shapes_
+
 The Ledger Plane provides an immutable history of every event that has ever occurred. However, a raw event log is not always a useful representation of the *current* state of the world. The role of the **State Plane** is to process this event log and compute a single, canonical, and verifiable snapshot of the system's state at a given point in time.
 
 This process is called a **fold**. A fold takes the linear history of the ledger and, like origami, creases and transforms it into a new, complex, and meaningful **shape**.
@@ -85,3 +88,14 @@ These checkpoints provide an optimized way to access the current state without h
 ## Summary
 
 The State Plane is where the abstract history of the ledger is transformed into a concrete, queryable state. Through the deterministic fold process, the operating surface is given its new shape. Powered by the sophisticated `gatos-echo` graph engine and the practical `gatos-kv` store, GATOS ensures that all participants in the distributed system can independently arrive at a shared, verifiable understanding of reality.
+
+---
+
+**Next**: [Chapter 4–The Policy Plane: Governance as Code](./CHAPTER-004.md)
+
+**Prev**: [Chapter 2–The Ledger Plane: An Immutable History](./CHAPTER-002.md)
+
+---
+
+**GATOS–_Git As The Operating Surface™_**  
+James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
