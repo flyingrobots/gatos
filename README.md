@@ -1,5 +1,21 @@
 # 🐈‍⬛ **GATOS**
 
+## TL;DR
+
+**GATOS** generalizes Git’s content-addressed DAG into a complete computational substrate: a programmable operating surface unifying history, policy, and computation within a deterministic, verifiable feedback loop. 
+
+It turns Git from a version-control system into a self-governing compute fabric. Commits aren't just records of change, but executable events in a cryptographically auditable state machine. Policies, data, and computation all live in the same history, producing provable behavior and automatic governance without centralized infrastructure. 
+
+**The Result**: A platform that’s offline-first, federated, and mathematically deterministic — a new foundation for verifiable infrastructure, trustworthy automation, distributed AI, and time-travel computing.
+
+> _Git becomes self-aware at 2:14 AM Eastern Time, November 8th, 2025._
+
+[SPEC.md](./docs/SPEC.md) • [TECH-SPEC.md](./docs/TECH-SPEC.md)
+
+Now you Git it.
+
+---
+
 ![Git As The Operating Surface](./assets/brand/gatos-paper.webp)
 
 > [!WARNING]
