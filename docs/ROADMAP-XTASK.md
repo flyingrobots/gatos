@@ -15,12 +15,11 @@ Status: living document. Tracks phases, decisions, and next steps for repo tooli
 - Makefile shims + `help` target; docs(CONTRIBUTING) quickstart.
 - Issue labeler + backfill workflows.
 
-## Near‑term
+## Near-term
 - Extract a reusable “puppeteer install” composite Action; add a “CI doctor” step (print versions, paths).
-- Decide policy for diagrams: commit SVGs vs verify‑only.
+- Decide policy for diagrams: commit SVGs vs verify-only.
 - Retire legacy scripts routed through Makefile; rely on `xtask` directly.
 
 ## Backlog
 - Distribute `xtask` as a prebuilt binary (optional).
 - Dev container for local parity.
-
