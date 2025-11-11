@@ -141,8 +141,6 @@ jobs:
         with:
           path: ~/.cache/puppeteer
           key: ${{ runner.os }}-puppeteer-chromium-${{ env.CHROMIUM_REVISION }}
-          restore-keys: |
-            ${{ runner.os }}-puppeteer-chromium-
       - name: Cache npm (npx)
         uses: actions/cache@v4
         with:
@@ -153,7 +151,16 @@ jobs:
         with:
           node-version: '20'
       - name: Install Chromium for Puppeteer (exact revision)
-        run: npx -y @puppeteer/browsers@1.4.6 install chromium@${{ env.CHROMIUM_REVISION }} --path "$HOME/.cache/puppeteer"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cache/puppeteer"
+          OUT=$(npx -y @puppeteer/browsers@1.4.6 install chromium@${{ env.CHROMIUM_REVISION }} --path "$HOME/.cache/puppeteer" | tail -n1)
+          echo "browsers install output: $OUT"
+          BIN_PATH=$(printf "%s" "$OUT" | sed -E 's/^[^ ]+ +//')
+          echo "Using Chromium at: $BIN_PATH"
+          echo "PUPPETEER_EXECUTABLE_PATH=$BIN_PATH" >> "$GITHUB_ENV"
+          echo "PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer" >> "$GITHUB_ENV"
       - name: Generate diagrams (renders SVGs)
         run: node scripts/mermaid/generate.mjs --all
       - name: Ensure committed diagrams are up-to-date (no diffs)
