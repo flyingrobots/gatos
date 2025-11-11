@@ -1,0 +1,100 @@
+name: Issue Labeler
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label issue by heuristics (create labels if missing)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Define label catalog (created if absent)
+            const catalog = [
+              { name: 'type: bug',          color: 'd73a4a', description: 'Bug report' },
+              { name: 'type: enhancement',  color: 'a2eeef', description: 'Feature or enhancement' },
+              { name: 'type: docs',         color: '0075ca', description: 'Documentation changes' },
+              { name: 'area: xtask',        color: '5319e7', description: 'Rust xtask tooling' },
+              { name: 'area: schemas',      color: 'b60205', description: 'JSON Schemas and examples' },
+              { name: 'area: diagrams',     color: '0e8a16', description: 'Mermaid diagrams and tooling' },
+              { name: 'area: ci',           color: 'fef2c0', description: 'CI/CD workflows' },
+              { name: 'area: build',        color: '1d76db', description: 'Build, Makefile, toolchain' },
+              { name: 'priority: p0',       color: 'b60205', description: 'Critical' },
+              { name: 'priority: p1',       color: 'd93f0b', description: 'High' },
+              { name: 'priority: p2',       color: 'fbca04', description: 'Normal' },
+              { name: 'status: blocked',    color: '000000', description: 'Blocked on dependency' },
+              { name: 'needs: info',        color: 'cfd3d7', description: 'Needs more information' },
+              { name: 'needs: repro',       color: 'cfd3d7', description: 'Needs minimal reproduction' },
+              { name: 'good first issue',   color: '7057ff', description: 'Good for newcomers' },
+              { name: 'help wanted',        color: '008672', description: 'Help appreciated' },
+            ];
+
+            // Ensure labels exist
+            const existing = await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo, per_page: 100 });
+            const have = new Map(existing.map(l => [l.name, l]));
+            for (const lbl of catalog) {
+              if (!have.has(lbl.name)) {
+                await github.rest.issues.createLabel({ owner, repo, name: lbl.name, color: lbl.color, description: lbl.description });
+              }
+            }
+
+            // Heuristics
+            function computeLabels(title, body) {
+              const t = (title || '').toLowerCase();
+              const b = (body || '').toLowerCase();
+              const text = t + '\n' + b;
+              const out = new Set();
+
+              if (/\b(p0|priority 0|blocker)\b/.test(text)) out.add('priority: p0');
+              else if (/\b(p1|priority 1)\b/.test(text)) out.add('priority: p1');
+              else if (/\b(p2|priority 2)\b/.test(text)) out.add('priority: p2');
+
+              if (/(panic|stack overflow|crash|bug|regression|broken|error:)/.test(text)) out.add('type: bug');
+              if (/(feature|enhancement|improv|support.*new|add.*support)/.test(text)) out.add('type: enhancement');
+              if (/(docs|readme|markdown|typo|spelling)/.test(text)) out.add('type: docs');
+
+              if (/(xtask)/.test(text)) out.add('area: xtask');
+              if (/(schema|ajv|json\s*schema|ids\.schema\.json)/.test(text)) out.add('area: schemas');
+              if (/(mermaid|diagram|mmdc|puppeteer)/.test(text)) out.add('area: diagrams');
+              if (/(github actions|workflow|ci\.yml|pipeline|action)/.test(text)) out.add('area: ci');
+              if (/(makefile|cargo build|toolchain|rustup|rust-toolchain)/.test(text)) out.add('area: build');
+
+              if (/(good first issue)/.test(text)) out.add('good first issue');
+              if (/(help wanted|looking for help)/.test(text)) out.add('help wanted');
+
+              if (/(blocked|waiting on|dependent on)/.test(text)) out.add('status: blocked');
+              if (/(need[s]? more info|clarify|repro steps|cannot reproduce)/.test(text)) out.add('needs: info');
+              if (/(repro|minimal reproduction|sample project)/.test(text)) out.add('needs: repro');
+
+              // Default type if none inferred
+              if (![...out].some(n => n.startsWith('type: '))) {
+                // leave untyped; human can decide
+              }
+              return [...out];
+            }
+
+            const issue = context.payload.issue;
+            if (!issue) return core.info('No issue payload present');
+            const current = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name);
+            if (current.length > 0) {
+              core.info(`Issue #${issue.number} already has labels: ${current.join(', ')}; will only add missing inferred ones.`);
+            }
+
+            const toAdd = computeLabels(issue.title, issue.body).filter(n => !current.includes(n));
+            if (toAdd.length) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: toAdd });
+              core.info(`Added labels to #${issue.number}: ${toAdd.join(', ')}`);
+            } else {
+              core.info(`No labels to add for #${issue.number}.`);
+            }
