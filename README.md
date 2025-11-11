@@ -158,7 +158,6 @@ Ask yourself...
 
 ![gatos2](https://github.com/user-attachments/assets/9a68ec95-7be6-4701-afda-0c08b6d79a1c)
 
-
 ## OK, ENOUGH. WTF is GATOS?!! WTF is an "Operating Surface"?
 
 ### Git: As The Operating Surface
