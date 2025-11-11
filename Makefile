@@ -9,8 +9,9 @@ clean:
 test:
 	@cargo test --workspace --locked
 
+# Generate Mermaid diagrams for the entire repo via xtask
 diagrams:
-	@bash -lc 'scripts/mermaid/generate_all.sh'
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all
 
 lint-md:
     @bash -lc 'if command -v node >/dev/null 2>&1; then \
