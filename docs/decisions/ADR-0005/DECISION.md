@@ -130,7 +130,7 @@ AEAD algorithm is pinned by ADR‑0004 to XChaCha20‑Poly1305. Nonces MUST be u
 
 ### 9) Governance and Ledger Interactions
 
-- Governance (ADR‑0003): Should emit Shiplog events under `topic="governance"`.
+- Governance (ADR‑0003): Should emit Shiplog events under `topic="governance"`; envelopes carry `ns="governance"` and the commit header sets `Topic: governance`.
 - Ledger mirroring: MAY mirror ledger events; must preserve envelope determinism.
 
 ### 10) Security Considerations
@@ -145,8 +145,8 @@ $ gatosd shiplog append --topic governance --file event.json
 ok  commit=8b1c1e4 content_id=blake3:2a6c… ulid=01HF4Y9Q1SM8Q7K9DK2R3V4AWB
 
 $ gatosd shiplog read --topic governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
-01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c…  8b1c1e4  {"ulid":"01HF4Y9...","ns":"governance",...}
-01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2...  9f0aa21  {"ulid":"01HF4Y9...","ns":"governance",...}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2A6C…  8b1c1e4  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXD","ns":"governance","type":"proposal.created","payload":{…}}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:C1D2…  9f0aa21  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXE","ns":"governance","type":"proposal.created","payload":{…}}
 
 $ gatosd shiplog checkpoint set --group analytics --topic governance --commit 8b1c1e4
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
@@ -166,18 +166,18 @@ ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
 
 ## Consequences
 
-## Error Taxonomy
+Clients SHOULD return a problem+json response with a stable `code` plus HTTP status. Example:
 
-| Code | HTTP | Meaning |
-|:-----|:----:|:--------|
-| AppendRejected | 409 | Not fast-forward (CAS failed) |
-| TemporalOrder | 409 | ULID/timestamp monotonicity failure |
-| PolicyFail | 403 | Policy decision denied |
-| SigInvalid | 422 | Signature/attestation failed |
-| DigestMismatch | 422 | Hash mismatch on body/envelope |
-| CapabilityUnavailable | 503 | Dependent capability/KMS/storage unavailable |
-
-Clients SHOULD return a problem+json response with a stable `code` plus HTTP status.
+```json
+{
+  "type": "https://gatos.dev/problems/append-rejected",
+  "title": "AppendRejected",
+  "status": 409,
+  "code": "AppendRejected",
+  "detail": "Not fast-forward (CAS failed)",
+  "instance": "urn:commit:8b1c1e4"
+}
+```
 
 
 Pros: clean integration surface; deterministic envelopes; replay + analytics; explicit privacy.
