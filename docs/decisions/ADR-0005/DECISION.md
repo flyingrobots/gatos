@@ -7,11 +7,11 @@ Requires: [ADR-0001, ADR-0004]
 Related: [ADR-0002, ADR-0003]
 Tags: [Shiplog, Event Stream, Consumers, JCS, ULID]
 Schemas:
-  - ../../../../schemas/v1/shiplog/event_envelope.schema.json
-  - ../../../../schemas/v1/shiplog/consumer_checkpoint.schema.json
-  - ../../../../schemas/v1/shiplog/deployment_trailer.schema.json
-  - ../../../../schemas/v1/shiplog/anchor.schema.json
-  - ../../../../schemas/v1/privacy/opaque_pointer.schema.json
+  - ../../../schemas/v1/shiplog/event_envelope.schema.json
+  - ../../../schemas/v1/shiplog/consumer_checkpoint.schema.json
+  - ../../../schemas/v1/shiplog/deployment_trailer.schema.json
+  - ../../../schemas/v1/shiplog/anchor.schema.json
+  - ../../../schemas/v1/privacy/opaque_pointer.schema.json
 Supersedes: []
 Superseded-By: []
 ---
@@ -48,9 +48,9 @@ classDiagram
 
 ### 2) Namespaces and Ordering
 
-- Per‑topic head ref (append‑only, linear): `refs/gatos/shiplog/<topic>/head`
-- Topic naming: `^[a-z][a-z0-9._-]{0,63}$` (ASCII, lowercase start).
-- Ordering per topic is the Git parent chain. Appends MUST be fast‑forward (CAS on ref update). On a single node, ULIDs MUST increase strictly per topic.
+- Per‑namespace head ref (append‑only, linear): `refs/gatos/shiplog/<ns>/head`
+- Namespace naming: `^[a-z][a-z0-9._-]{0,63}$` (ASCII, lowercase start).
+- Ordering per namespace is the Git parent chain. Appends MUST be fast‑forward (CAS on ref update). On a single node, ULIDs MUST increase strictly per namespace.
 
 ```mermaid
 graph TD
@@ -78,7 +78,7 @@ Each Shiplog commit MUST include headers in the commit message (any order), foll
 ```text
 Event-Id: ulid:<ULID>
 Content-Id: blake3:<64-hex>
-Topic: <topic>
+Namespace: <ns>
 Schema: https://gatos.dev/schemas/v1/shiplog/event_envelope.schema.json
 ---
 { "version": 1,
@@ -100,16 +100,16 @@ Schema: https://gatos.dev/schemas/v1/shiplog/event_envelope.schema.json
 
 Trailer schema: `schemas/v1/shiplog/deployment_trailer.schema.json`.
 
-MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<topic>/<ULID>.json` (parse → JCS → hash → write → commit).
+MUST: validate the trailer against this schema, and write the exact JCS bytes hashed for the envelope to `/gatos/shiplog/<ns>/<ULID>.json` (parse → JCS → hash → write → commit).
 
 > [!IMPORTANT]
 > Hashing Law — parse → JCS → hash → write → commit. The bytes you hash MUST be the exact JCS bytes you write and commit.
 
 ### 5) Append Semantics
 
-Invariant: envelope.ns MUST equal the commit header `Topic:` value and the per-topic ref segment.
+Invariant: envelope.ns MUST equal the commit header `Namespace:` value and the per‑namespace ref segment.
 
-Append(`topic`, `envelope`): validate schema; compute `content_id = blake3(JCS(envelope))`; enforce monotone ULID per topic on this node; create commit with headers + trailer; CAS update `refs/gatos/shiplog/<topic>/head`; return `(commit_oid, ulid, content_id)`.
+Append(`ns`, `envelope`): validate schema; compute `content_id = blake3(JCS(envelope))`; enforce monotone ULID per namespace on this node; create commit with headers + trailer; CAS update `refs/gatos/shiplog/<ns>/head`; return `(commit_oid, ulid, content_id)`.
 
 Errors (normative):
 
@@ -117,12 +117,12 @@ Errors (normative):
 
 ### 6) Query Semantics
 
-- `shiplog.read(topic, since_ulid, limit) -> [ (ulid, content_id, commit_oid, envelope) ]` (increasing ULID order).
-- `shiplog.tail(topics[], limit_per_topic)` MAY multiplex without cross‑topic causality guarantees.
+- `shiplog.read(ns, since_ulid, limit) -> [ (ulid, content_id, commit_oid, envelope) ]` (increasing ULID order).
+- `shiplog.tail(namespaces[], limit_per_ns)` MAY multiplex without cross‑namespace causality guarantees.
 
 ### 7) Consumer Checkpoints
 
-- `refs/gatos/consumers/<group>/<topic>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`. The `commit_oid` value MUST be lowercase hex.
+- `refs/gatos/consumers/<group>/<ns>` points to the last processed Shiplog commit OID. Portable JSON (optional): `schemas/v1/shiplog/consumer_checkpoint.schema.json`. The `commit_oid` value MUST be lowercase hex.
 
 ### 8) Privacy Interactions (ADR‑0004)
 
@@ -132,7 +132,7 @@ AEAD algorithm is pinned by ADR‑0004 to XChaCha20‑Poly1305. Nonces MUST be u
 
 ### 9) Governance and Ledger Interactions
 
-- Governance (ADR‑0003): Should emit Shiplog events under `topic="governance"`; envelopes carry `ns="governance"` and the commit header sets `Topic: governance`.
+- Governance (ADR‑0003): Should emit Shiplog events under `ns="governance"`; envelopes carry `ns="governance"` and the commit header sets `Namespace: governance`.
 - Ledger mirroring: MAY mirror ledger events; must preserve envelope determinism.
 
 ### 10) Security Considerations
@@ -143,14 +143,14 @@ AEAD algorithm is pinned by ADR‑0004 to XChaCha20‑Poly1305. Nonces MUST be u
 ### 11) CLI Examples
 
 ```bash
-$ gatosd shiplog append --topic governance --file event.json
+$ gatosd shiplog append --ns governance --file event.json
 ok  commit=8b1c1e4 content_id=blake3:2a6c… ulid=01HF4Y9Q1SM8Q7K9DK2R3V4AWB
 
-$ gatosd shiplog read --topic governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
-01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2A6C…  8b1c1e4  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXD","ns":"governance","type":"proposal.created","payload":{}}
-01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:C1D2…  9f0aa21  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXE","ns":"governance","type":"proposal.approved","payload":{}}
+$ gatosd shiplog read --ns governance --since 01HF4Y9Q1SM8Q7K9DK2R3V4AWB --limit 2
+01HF4Y9Q1SM8Q7K9DK2R4V5CXD  blake3:2a6c…  8b1c1e4  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXD","ns":"governance","type":"proposal.created","payload":{}}
+01HF4Y9Q1SM8Q7K9DK2R4V5CXE  blake3:c1d2…  9f0aa21  {"ulid":"01HF4Y9Q1SM8Q7K9DK2R4V5CXE","ns":"governance","type":"proposal.approved","payload":{}}
 
-$ gatosd shiplog checkpoint set --group analytics --topic governance --commit 8b1c1e4
+$ gatosd shiplog checkpoint set --group analytics --ns governance --commit 8b1c1e4
 ok  refs/gatos/consumers/analytics/governance -> 8b1c1e4
 ```
 
