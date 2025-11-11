@@ -142,8 +142,11 @@ ci-schemas:
 	@cargo run -p xtask -- schemas
 
 # ci-linkcheck: Run Markdown link checks (uses local lychee if available, else Docker).
-# Note: xtask diagrams subcommand uses a flag style (`--all`) whereas schemas takes
-# no positional `all` argument. This mirrors the xtask CLI design.
+# Argument styles (by xtask subcommand):
+#   - diagrams: uses the `--all` flag for full-repo scan.
+#   - schemas: no `all` positional argument (runs the full suite by default).
+#   - links: no `all` positional argument (optionally accepts file globs; default is **/*.md).
+# If xtask subcommand signatures change, update this note and the shims below to keep rationale clear.
 ci-linkcheck:
 	@cargo run -p xtask -- links
 
