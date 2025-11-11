@@ -82,10 +82,10 @@ Private data overlays are fundamentally tied to an actor's identity, not an ephe
 
 ### 2. Encryption Algorithm & Nonce Discipline (Normative)
 
-* AEAD algorithm: Implementations MUST use XChaCha20-Poly1305 for encrypting private blobs referenced by Opaque Pointers.
-* Nonces: 24-byte (192-bit) nonces MUST be unique per key. Implementations SHOULD use deterministic nonces derived from the pointer digest via HKDF (domain-separated), or a crash-safe, monotonic per-key counter stored in KMS. Random nonces are permitted only with a documented collision budget and active monitoring.
+* AEAD algorithm: Implementations MUST use XChaCha20-Poly1305 for encrypting private blobs referenced by Opaque Pointers. This is the only normative algorithm for the privacy overlay.
+* Nonces: 24-byte (192-bit) nonces MUST be unique per key. Implementations SHOULD use deterministic, domain‑separated nonces derived via HKDF from the pointer digest and context, or a crash‑safe, monotonic per‑key counter stored in KMS. Random nonces are permitted only with a documented collision budget and active monitoring.
 * Catastrophic reuse: Nonce reuse under the same key is catastrophic and MUST be proven impossible by construction (deterministic derivation) or by counter invariants.
-* AAD binding: AEAD AAD MUST bind the pointer digest, the requester actor id, and the effective policy version so that verifiers can validate context and detect misuse.
+* AAD binding: AEAD AAD MUST bind the pointer digest (not a separate content_id), the requester actor id, and the effective policy version so that verifiers can validate context and detect misuse.
 * **Public Refs:** The corresponding public projection lives in the main state namespace.
 
     ```text
@@ -277,7 +277,7 @@ This provides a simple, top-level indicator that a projection has occurred, prom
 ## Security & Privacy Notes (Normative)
 
 * Capability references in pointers MUST NOT contain secrets or pre‑signed tokens. Use stable identifiers and resolve sensitive data via policy.
-* AES‑256‑GCM (if used) MUST include AAD composed of: actor id, pointer `content_id`, and policy version; nonces MUST be 96‑bit, randomly generated, and never reused per key.
+> Non‑normative interop profile: Some legacy deployments may use AES‑256‑GCM. If and only if such interop is required, deployments MAY support AES‑256‑GCM with AAD composed of (actor id, pointer digest, policy version) and 96‑bit nonces that are never reused per key. This profile is deprecated and MUST NOT be the default.
 * Right‑to‑be‑forgotten: deleting private blobs breaks pointer resolution but does not remove the public pointer. Implement erasure as a tombstone event plus an audit record.
 
 ### Algorithm variants (experimental; private attestations only)
