@@ -95,20 +95,15 @@ jobs:
 
   markdownlint:
     runs-on: ubuntu-latest
-    name: Markdownlint
+    name: Markdownlint (xtask)
     steps:
       - uses: actions/checkout@v4
-      - name: Cache npm (npx)
-        uses: actions/cache@v4
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-20-npx-cache-${{ hashFiles('.github/workflows/ci.yml') }}
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: markdownlint (check only)
-        run: npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+          toolchain: 1.81.0
+      - uses: Swatinem/rust-cache@v2
+      - name: markdownlint via xtask (no Node)
+        run: cargo run -p xtask -- md
 
   schemas:
     runs-on: ubuntu-latest

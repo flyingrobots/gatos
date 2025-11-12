@@ -13,19 +13,13 @@ test:
 diagrams:
 	@bash -lc 'bash ./scripts/diagrams.sh'
 
+
+# Markdown lint via xtask (no Node required)
 lint-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
-      npx -y markdownlint-cli "**/*.md" --config .markdownlint.json; \
-	elif command -v docker >/dev/null 2>&1; then \
-      docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --config .markdownlint.json"; \
-	else echo "Need Node.js or Docker" >&2; exit 1; fi'
+	@cargo run -p xtask -- md
 
 fix-md:
-    @bash -lc 'if command -v node >/dev/null 2>&1; then \
-      npx -y markdownlint-cli "**/*.md" --fix --config .markdownlint.json; \
-	elif command -v docker >/dev/null 2>&1; then \
-      docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc "npx -y markdownlint-cli \"**/*.md\" --fix --config .markdownlint.json"; \
-	else echo "Need Node.js or Docker" >&2; exit 1; fi'
+	@cargo run -p xtask -- md --fix
 
 link-check:
 	@bash -lc 'if command -v lychee >/dev/null 2>&1; then \

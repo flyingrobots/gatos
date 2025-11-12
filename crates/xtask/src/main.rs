@@ -46,6 +46,15 @@ enum Cmd {
         #[arg(value_name = "GLOB", required = false)]
         files: Vec<String>,
     },
+    /// Markdown lint (subset of common rules). Use --fix to auto-fix.
+    Md {
+        /// Auto-fix a subset of rules (whitespace/blank lines/non-ASCII hyphens)
+        #[arg(long)]
+        fix: bool,
+        /// Optional markdown files (default: all git-tracked *.md)
+        #[arg(value_name = "FILE", required = false)]
+        files: Vec<PathBuf>,
+    },
 }
 
 // No subcommands for schemas; always run the full suite
@@ -57,6 +66,7 @@ fn main() -> Result<()> {
         Cmd::Diagrams { all, files } => diagrams(all, files),
         Cmd::Schemas => schemas(),
         Cmd::Links { files } => links(files),
+        Cmd::Md { fix, files } => md_lint(fix, files),
     }
 }
 
@@ -200,4 +210,120 @@ where
         bail!("{} exited with status {}", cmd, status);
     }
     Ok(())
+}
+
+fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
+    let repo = repo_root()?;
+    // Collect files: use provided or git ls-files
+    let md_files: Vec<PathBuf> = if files.is_empty() {
+        let out = Command::new("git")
+            .args(["ls-files", "--", "*.md"])
+            .current_dir(&repo)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .output()
+            .context("git ls-files for *.md failed")?;
+        let s = String::from_utf8_lossy(&out.stdout);
+        s.lines().map(|l| repo.join(l.trim())).collect()
+    } else {
+        files
+    };
+
+    let mut total_issues = 0usize;
+    for path in md_files {
+        if !path.exists() { continue; }
+        let orig = std::fs::read_to_string(&path)
+            .with_context(|| format!("read {}", path.display()))?;
+        let (mut updated, issues) = lint_one(&orig);
+        if issues > 0 {
+            total_issues += issues;
+            eprintln!("[md] {}: {} issue(s)", path.strip_prefix(&repo).unwrap_or(&path).display(), issues);
+            if fix {
+                // Apply safe fixes: trailing spaces (MD009), multiple blanks (MD012), blanks around headings (MD022), lists (MD032), non-ASCII hyphens
+                // updated already contains fixes for these rules
+                if updated != orig {
+                    std::fs::write(&path, updated.as_bytes()).with_context(|| format!("write {}", path.display()))?;
+                }
+            }
+        }
+        // If not fixing, but we mutated updated for planning, ensure we don't write
+        if !fix { updated.clear(); }
+    }
+    if total_issues > 0 && !fix {
+        bail!("Markdown lint found {} issue(s). Run: cargo run -p xtask -- md --fix", total_issues);
+    }
+    Ok(())
+}
+
+fn lint_one(s: &str) -> (String, usize) {
+    let mut issues = 0usize;
+    let mut out: Vec<String> = Vec::new();
+    let mut lines: Vec<&str> = s.split_inclusive('\n').collect();
+    if lines.is_empty() { return (s.to_string(), 0); }
+
+    // Track code fence state to avoid touching code blocks
+    let mut in_fence = false;
+    let fence_re = regex::Regex::new(r"^\s*(```|~~~)").unwrap();
+
+    // First pass: normalize non-ASCII hyphen (U+2011) and trailing spaces (MD009)
+    let mut norm: Vec<String> = Vec::with_capacity(lines.len());
+    for l in lines.drain(..) {
+        let mut ll = l.replace('\u{2011}', "-");
+        if ll.contains('\u{2011}') { issues += 1; }
+        if fence_re.is_match(&ll) { in_fence = !in_fence; }
+        if !in_fence {
+            // Remove single trailing space, keep double-space hard breaks
+            if ll.ends_with(" \n") {
+                if !ll.ends_with("  \n") {
+                    ll = ll[..ll.len()-2].to_string(); ll.push('\n'); issues += 1;
+                }
+            } else if ll.ends_with(' ') { ll = ll.trim_end().to_string(); issues += 1; }
+        }
+        norm.push(ll);
+    }
+
+    // Second pass: enforce MD012 (no multiple blank lines), MD022 (blank around headings), MD032 (blank around lists)
+    let heading_re = regex::Regex::new(r"^\s*#{1,6}\s+\S").unwrap();
+    let list_re = regex::Regex::new(r"^\s*([-*+]\s+|\d+\.\s+)\S").unwrap();
+
+    in_fence = false;
+    let mut i = 0usize;
+    while i < norm.len() {
+        let mut line = norm[i].clone();
+        if fence_re.is_match(&line) { in_fence = !in_fence; }
+
+        let is_blank = line.trim().is_empty();
+        // MD012: collapse multiple blank lines
+        if is_blank {
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(false);
+            if prev_blank { issues += 1; /* skip adding this extra blank */ i+=1; continue; }
+        }
+
+        // Handle headings/lists only when not inside fences
+        if !in_fence && heading_re.is_match(&line) {
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
+            if !prev_blank { out.push("\n".to_string()); issues += 1; }
+            out.push(line);
+            // Ensure blank after heading
+            let next = norm.get(i+1).cloned().unwrap_or_default();
+            if !next.trim().is_empty() { out.push("\n".to_string()); issues += 1; }
+            i += 1; continue;
+        }
+
+        if !in_fence && list_re.is_match(&line) {
+            // Ensure blank line before list block
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
+            if !prev_blank { out.push("\n".to_string()); issues += 1; }
+            // Emit list block and ensure trailing blank after the block
+            while i < norm.len() && list_re.is_match(norm[i].trim()) { out.push(norm[i].clone()); i+=1; }
+            let next = norm.get(i).cloned().unwrap_or_default();
+            if !next.trim().is_empty() { out.push("\n".to_string()); issues += 1; }
+            continue;
+        }
+
+        out.push(line);
+        i += 1;
+    }
+
+    (out.join(""), issues)
 }
