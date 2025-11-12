@@ -1,25 +1,99 @@
 #!/usr/bin/env python3
-import argparse, pathlib, re, sys
+"""
+Linkify bare "Chapter N" mentions in docs/guide/*.md to point at the corresponding
+chapter files, e.g.:
+
+  "... see Chapter 3." -> "... see [Chapter 3](./CHAPTER-003.md)."
+
+Heuristics:
+- Skips code fences and Markdown headings.
+- Avoids touching lines that already link to CHAPTER-*.md.
+- Only links patterns of the form /\b[Cc]hapter\s+([1-9]|1[0-2])\b/.
+
+Usage:
+  python scripts/linkify_chapters.py --check   # exits non-zero if changes needed
+  python scripts/linkify_chapters.py --write   # applies changes in-place
+  python scripts/linkify_chapters.py           # dry-run report
+"""
+import argparse
+import pathlib
+import re
+import sys
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-GUIDE = ROOT / 'docs' / 'guide'
+GUIDE_DIR = ROOT / "docs" / "guide"
+
+CHAPTER_FILE = lambda n: f"CHAPTER-{int(n):03d}.md"
+
 CHAPTER_RE = re.compile(r"\b[Cc]hapter\s+([1-9]|1[0-2])\b")
 
-def process(path):
-    t = path.read_text(encoding='utf-8')
-    def repl(m):
-        n = int(m.group(1))
-        return f"[Chapter {n}](./CHAPTER-{n:03d}.md)"
-    parts = re.split(r"(^```.*$)", t, flags=re.M)
-    out=[]; in_code=False; changed=False
-    for p in parts:
-        if p.startswith('```'): in_code=not in_code; out.append(p); continue
-        if in_code: out.append(p); continue
-        new = CHAPTER_RE.sub(repl, p)
-        changed |= new != p
-        out.append(new)
-    if changed:
-        path.write_text(''.join(out), encoding='utf-8')
+def should_skip_line(line: str) -> bool:
+    # Skip if already links to a chapter
+    if "](./CHAPTER-" in line or "](CHAPTER-" in line:
+        return True
+    # Skip headings
+    if line.lstrip().startswith("#"):
+        return True
+    return False
 
-if __name__=='__main__':
-    for md in GUIDE.glob('*.md'):
-        process(md)
+def linkify_line(line: str) -> str:
+    # Avoid lines that already have chapter links
+    if should_skip_line(line):
+        return line
+
+    def repl(m: re.Match) -> str:
+        num = int(m.group(1))
+        target = CHAPTER_FILE(num)
+        # Rough guard: avoid replacing when already inside [..]
+        start = m.start()
+        if "[" in line[:start] and "]" in line[:start]:
+            # There's a prior [] pair on this line; be conservative and skip
+            return m.group(0)
+        return f"[Chapter {num}](./{target})"
+
+    return CHAPTER_RE.sub(repl, line)
+
+def process_file(path: pathlib.Path) -> tuple[bool, str]:
+    text = path.read_text(encoding="utf-8")
+    out_lines = []
+    changed = False
+    in_code = False
+    for line in text.splitlines(keepends=True):
+        if line.strip().startswith("```"):
+            in_code = not in_code
+            out_lines.append(line)
+            continue
+        if in_code:
+            out_lines.append(line)
+            continue
+        new_line = linkify_line(line)
+        if new_line != line:
+            changed = True
+        out_lines.append(new_line)
+    return changed, "".join(out_lines)
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--write", action="store_true", help="apply changes in-place")
+    ap.add_argument("--check", action="store_true", help="exit non-zero if changes required")
+    args = ap.parse_args()
+
+    changed_any = False
+    for md in sorted(GUIDE_DIR.glob("*.md")):
+        if md.name.startswith("CHAPTER-") or md.name in {"README.md", "HELLO-OPS.md", "HELLO-PRIVACY.md"}:
+            # Still process chapters; they may reference other chapters in prose
+            pass
+        chg, new_text = process_file(md)
+        if chg:
+            changed_any = True
+            if args.write:
+                md.write_text(new_text, encoding="utf-8")
+            print(f"would change: {md}")
+
+    if args.check and changed_any:
+        return 2
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
+
