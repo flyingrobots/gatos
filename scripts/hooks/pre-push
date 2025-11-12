@@ -4,14 +4,18 @@ set -euo pipefail
 top="$(git rev-parse --show-toplevel)"
 cd "$top"
 
-echo "[pre-push] markdownlint check (all Markdown)"
-if command -v node >/dev/null 2>&1; then
+echo "[pre-push] markdown lint (prefer rumdl; fallback to xtask md; then Node/Docker)"
+if command -v rumdl >/dev/null 2>&1; then
+  rumdl check .
+elif command -v cargo >/dev/null 2>&1; then
+  cargo run -p xtask -- md
+elif command -v node >/dev/null 2>&1; then
   npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
 elif command -v docker >/dev/null 2>&1; then
   docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc \
     "npx -y markdownlint-cli@0.45.0 \"**/*.md\" --config .markdownlint.json"
 else
-  echo "[pre-push][ERROR] Need Node.js or Docker to run markdownlint; aborting push" >&2
+  echo "[pre-push][ERROR] No linter available (rumdl/cargo/node/docker missing); aborting push" >&2
   exit 1
 fi
 

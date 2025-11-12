@@ -16,10 +16,10 @@ diagrams:
 
 # Markdown lint via xtask (no Node required)
 lint-md:
-	@cargo run -p xtask -- md
+	@bash -lc 'if command -v rumdl >/dev/null 2>&1; then rumdl check .; else cargo run -p xtask -- md; fi'
 
 fix-md:
-	@cargo run -p xtask -- md --fix
+	@bash -lc 'if command -v rumdl >/dev/null 2>&1; then rumdl check . --fix; else cargo run -p xtask -- md --fix; fi'
 
 link-check:
 	@bash -lc 'if command -v lychee >/dev/null 2>&1; then \
