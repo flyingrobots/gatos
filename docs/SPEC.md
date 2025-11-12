@@ -258,6 +258,11 @@ For identical inputs, and the same `policy_root`, the byte sequence of `state_ro
 
 A Fold is defined by a `.yaml` spec. Its output, a **State Checkpoint**, is a commit on `refs/gatos/state/<ns>` whose tree contains the materialized state artifacts.
 
+> See also
+>
+> - Hello walkthrough (Ops): [HELLO-OPS](./guide/HELLO-OPS.md) shows append → fold → verify trailers.
+> - Hello walkthrough (Privacy): [HELLO-PRIVACY](./guide/HELLO-PRIVACY.md) shows pointers and deterministic public folds.
+
 ### 5.3 State Checkpoint Trailers (Normative)
 
 Every state checkpoint commit under `refs/gatos/state/<ns>` **MUST** include the following trailers with canonical encodings:
@@ -271,6 +276,11 @@ Fold-Version: <schema-version>     # application/shape schema version
 ```
 
 These trailers enable portable verification and reproducible builds of state across nodes and platforms.
+
+> Cross‑reference
+>
+> - TECH‑SPEC fold/verification references these trailers.
+> - Walkthrough usage: [HELLO-OPS](./guide/HELLO-OPS.md#2-fold-to-state-and-inspect).
 
 ---
 

@@ -127,6 +127,11 @@ graph TD
     D -- blake3 --> E[state_root];
 ```
 
+See also:
+
+- Checkpoint trailers (normative) in SPEC: [State Checkpoint Trailers](./SPEC.md#53-state-checkpoint-trailers-normative)
+- Walkthrough: [HELLO-OPS](./guide/HELLO-OPS.md#2-fold-to-state-and-inspect)
+
 ---
 
 ## 4. Index & Cache
@@ -204,6 +209,11 @@ Error frames are normalized:
 ```json
 { "ok": false, "id": "01C", "code": "ERR_INVALID_NS", "reason": "namespace not found" }
 ```
+
+Walkthroughs
+
+- Append → Fold → Job result (PoE): [HELLO-OPS](./guide/HELLO-OPS.md)
+- Opaque pointers and rekey: [HELLO-PRIVACY](./guide/HELLO-PRIVACY.md)
 
 ---
 
