@@ -1,4 +1,3 @@
-import { defineConfig } from 'vitepress'
 import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -47,7 +46,7 @@ function mermaidToImg(md: any) {
   }
 }
 
-export default defineConfig({
+export default {
   title: 'GATOS',
   description: 'Git As The Operating Surface',
   lastUpdated: true,
@@ -90,4 +89,4 @@ export default defineConfig({
       }) as any
     ]
   }
-})
+}
