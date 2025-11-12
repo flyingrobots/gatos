@@ -22,7 +22,11 @@ if command -v docker >/dev/null 2>&1; then
     node:20 bash -lc "$CMD"
 elif command -v node >/dev/null 2>&1; then
   # Host Node path; pass explicit concurrency to mermaid via env
-  if [ "$#" -gt 0 ]; then MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "$@"; else MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs --all; fi
+  if [ "$#" -gt 0 ]; then
+    MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "$@"
+  else
+    MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs --all
+  fi
 else
   echo "Need Node.js or Docker to render Mermaid diagrams" >&2
   exit 1

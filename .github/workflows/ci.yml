@@ -33,8 +33,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt --check
         run: cargo fmt --all -- --check
-      - name: Install dprint
-        run: cargo install dprint --locked || true
+      - name: Install dprint if missing
+        run: |
+          if ! command -v dprint >/dev/null 2>&1; then
+            cargo install dprint --locked
+          fi
       - name: dprint check (JSON/YAML)
         run: dprint check
 

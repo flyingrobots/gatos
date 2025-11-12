@@ -89,7 +89,9 @@ fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
         }
         let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
         args.push(wrapper.as_os_str());
-        for f in &files { args.push(f.as_os_str()); }
+        for f in &files {
+            args.push(f.as_os_str());
+        }
         run(shell, args, Some(&repo))?
     } else {
         bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
@@ -100,7 +102,13 @@ fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
 fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    let shell = if which("bash").is_ok() { "bash" } else if which("sh").is_ok() { "sh" } else { bail!("No suitable shell for {:?}", script) };
+    let shell = if which("bash").is_ok() {
+        "bash"
+    } else if which("sh").is_ok() {
+        "sh"
+    } else {
+        bail!("No suitable shell for {:?}", script)
+    };
     run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
 }
@@ -218,26 +226,35 @@ fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
 
     let mut total_issues = 0usize;
     for path in md_files {
-        if !path.exists() { continue; }
-        let orig = std::fs::read_to_string(&path)
-            .with_context(|| format!("read {}", path.display()))?;
+        if !path.exists() {
+            continue;
+        }
+        let orig =
+            std::fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
         let (mut updated, issues) = lint_one(&orig);
         if issues > 0 {
             total_issues += issues;
-            eprintln!("[md] {}: {} issue(s)", path.strip_prefix(&repo).unwrap_or(&path).display(), issues);
+            eprintln!(
+                "[md] {}: {} issue(s)",
+                path.strip_prefix(&repo).unwrap_or(&path).display(),
+                issues
+            );
             if fix {
                 // Apply safe fixes: trailing spaces (MD009), multiple blanks (MD012), blanks around headings (MD022), lists (MD032), non-ASCII hyphens
                 // updated already contains fixes for these rules
                 if updated != orig {
-                    std::fs::write(&path, updated.as_bytes()).with_context(|| format!("write {}", path.display()))?;
+                    std::fs::write(&path, updated.as_bytes())
+                        .with_context(|| format!("write {}", path.display()))?;
                 }
             }
         }
-        // If not fixing, but we mutated updated for planning, ensure we don't write
-        if !fix { updated.clear(); }
+        // If not fixing, drop the planned update without writing
     }
     if total_issues > 0 && !fix {
-        bail!("Markdown lint found {} issue(s). Run: cargo run -p xtask -- md --fix", total_issues);
+        bail!(
+            "Markdown lint found {} issue(s). Run: cargo run -p xtask -- md --fix",
+            total_issues
+        );
     }
     Ok(())
 }
@@ -246,7 +263,9 @@ fn lint_one(s: &str) -> (String, usize) {
     let mut issues = 0usize;
     let mut out: Vec<String> = Vec::new();
     let mut lines: Vec<&str> = s.split_inclusive('\n').collect();
-    if lines.is_empty() { return (s.to_string(), 0); }
+    if lines.is_empty() {
+        return (s.to_string(), 0);
+    }
 
     // Track code fence state to avoid touching code blocks
     let mut in_fence = false;
@@ -255,16 +274,41 @@ fn lint_one(s: &str) -> (String, usize) {
     // First pass: normalize non-ASCII hyphen (U+2011) and trailing spaces (MD009)
     let mut norm: Vec<String> = Vec::with_capacity(lines.len());
     for l in lines.drain(..) {
-        if l.contains('\u{2011}') { issues += 1; }
+        if l.contains('\u{2011}') {
+            issues += 1;
+        }
         let mut ll = l.replace('\u{2011}', "-");
-        if fence_re.is_match(&ll) { in_fence = !in_fence; }
+        if fence_re.is_match(&ll) {
+            in_fence = !in_fence;
+        }
         if !in_fence {
-            // Remove single trailing space, keep double-space hard breaks
-            if ll.ends_with(" \n") {
-                if !ll.ends_with("  \n") {
-                    ll = ll[..ll.len()-2].to_string(); ll.push('\n'); issues += 1;
+            // Trailing spaces normalization:
+            // - exactly one trailing space before newline => trim (no hard break)
+            // - two or more trailing spaces before newline => normalize to exactly two spaces
+            if ll.ends_with('\n') {
+                let bytes = ll.as_bytes();
+                let mut idx = bytes.len() - 1; // pos of '\n'
+                let mut spaces = 0usize;
+                while idx > 0 && bytes[idx - 1] == b' ' {
+                    spaces += 1;
+                    idx -= 1;
                 }
-            } else if ll.ends_with(' ') { ll = ll.trim_end().to_string(); issues += 1; }
+                if spaces == 1 {
+                    ll.truncate(ll.len() - 2); // drop ' ' before \n
+                    ll.push('\n');
+                    issues += 1;
+                } else if spaces >= 2 {
+                    if spaces != 2 {
+                        let keep_until = ll.len() - (spaces + 1); // exclude run + \n
+                        ll.truncate(keep_until);
+                        ll.push_str("  \n");
+                        issues += 1;
+                    }
+                }
+            } else if ll.ends_with(' ') {
+                ll = ll.trim_end().to_string();
+                issues += 1;
+            }
         }
         norm.push(ll);
     }
@@ -276,35 +320,57 @@ fn lint_one(s: &str) -> (String, usize) {
     in_fence = false;
     let mut i = 0usize;
     while i < norm.len() {
-        let mut line = norm[i].clone();
-        if fence_re.is_match(&line) { in_fence = !in_fence; }
+        let line = norm[i].clone();
+        if fence_re.is_match(&line) {
+            in_fence = !in_fence;
+        }
 
         let is_blank = line.trim().is_empty();
         // MD012: collapse multiple blank lines
         if is_blank {
             let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(false);
-            if prev_blank { issues += 1; /* skip adding this extra blank */ i+=1; continue; }
+            if prev_blank {
+                issues += 1; /* skip adding this extra blank */
+                i += 1;
+                continue;
+            }
         }
 
         // Handle headings/lists only when not inside fences
         if !in_fence && heading_re.is_match(&line) {
             let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
-            if !prev_blank { out.push("\n".to_string()); issues += 1; }
+            if !prev_blank {
+                out.push("\n".to_string());
+                issues += 1;
+            }
             out.push(line);
             // Ensure blank after heading
-            let next = norm.get(i+1).cloned().unwrap_or_default();
-            if !next.trim().is_empty() { out.push("\n".to_string()); issues += 1; }
-            i += 1; continue;
+            let next = norm.get(i + 1).cloned().unwrap_or_default();
+            if !next.trim().is_empty() {
+                out.push("\n".to_string());
+                issues += 1;
+            }
+            i += 1;
+            continue;
         }
 
         if !in_fence && list_re.is_match(&line) {
             // Ensure blank line before list block
             let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
-            if !prev_blank { out.push("\n".to_string()); issues += 1; }
+            if !prev_blank {
+                out.push("\n".to_string());
+                issues += 1;
+            }
             // Emit list block and ensure trailing blank after the block
-            while i < norm.len() && list_re.is_match(norm[i].trim()) { out.push(norm[i].clone()); i+=1; }
+            while i < norm.len() && list_re.is_match(norm[i].trim()) {
+                out.push(norm[i].clone());
+                i += 1;
+            }
             let next = norm.get(i).cloned().unwrap_or_default();
-            if !next.trim().is_empty() { out.push("\n".to_string()); issues += 1; }
+            if !next.trim().is_empty() {
+                out.push("\n".to_string());
+                issues += 1;
+            }
             continue;
         }
 

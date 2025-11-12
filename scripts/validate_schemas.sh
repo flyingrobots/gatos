@@ -4,9 +4,9 @@ set -euo pipefail
 echo "[schemas] Using Dockerized AJV (no host Node required)…"
 
 run_ajv() {
-  local subcmd=$1; shift
-  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc \
-    "npx -y ajv-cli@5 ajv $subcmd --spec=draft2020 --strict=true -c ajv-formats $*"
+  local subcmd="$1"; shift
+  docker run --rm -v "$PWD:/work" -w /work node:20 \
+    npx -y ajv-cli@5 ajv "$subcmd" --spec=draft2020 --strict=true -c ajv-formats "$@"
 }
 
 AJV_COMMON_REF="schemas/v1/common/ids.schema.json"
