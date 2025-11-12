@@ -107,6 +107,11 @@ graph TD
   - Create Opaque Pointer → fold with private blob
   - Rekey the blob → verify determinism of public state
 
+See the full step‑by‑step guides:
+
+- [Hello, GATOS — Operations Path](./HELLO-OPS.md)
+- [Hello, GATOS — Data Privacy Path](./HELLO-PRIVACY.md)
+
 ### Part 1: The Foundations
 
 *   [Chapter 1: The GATOS System Model](./CHAPTER-001.md)

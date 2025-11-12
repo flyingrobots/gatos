@@ -258,6 +258,20 @@ For identical inputs, and the same `policy_root`, the byte sequence of `state_ro
 
 A Fold is defined by a `.yaml` spec. Its output, a **State Checkpoint**, is a commit on `refs/gatos/state/<ns>` whose tree contains the materialized state artifacts.
 
+### 5.3 State Checkpoint Trailers (Normative)
+
+Every state checkpoint commit under `refs/gatos/state/<ns>` **MUST** include the following trailers with canonical encodings:
+
+```
+State-Root: blake3:<hex>          # lowercase hex digest of canonical state
+Ledger-Head: <commit-oid>         # last ledger commit included in this fold
+Policy-Root: <commit-oid>         # commit/digest that identifies the effective policy
+Fold-Engine: echo@<semver>        # fold engine identity and version
+Fold-Version: <schema-version>     # application/shape schema version
+```
+
+These trailers enable portable verification and reproducible builds of state across nodes and platforms.
+
 ---
 
 ## 6. Policy & Decision Audit
