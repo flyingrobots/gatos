@@ -79,21 +79,21 @@ fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
     let repo = repo_root()?;
     // Prefer script wrapper which selects Dockerized Node when available (Node-free path)
     let wrapper = repo.join("scripts/diagrams.sh");
+    let shell = if which("bash").is_ok() { "bash" } else { "sh" };
     if all {
-        // wrapper always renders all diagrams; no extra args needed
-        let shell = if which("bash").is_ok() { "bash" } else { "sh" };
+        // wrapper renders all diagrams when no args are given
         run(shell, [wrapper.as_os_str()], Some(&repo))?
     } else if let Some(files) = files {
         if files.is_empty() {
             bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
         }
-        // For file-specific runs, call the Node script directly; wrapper currently supports --all only
-        let script = repo.join("scripts/mermaid/generate.mjs");
         let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
-        args.push(script.as_os_str());
+        args.push(wrapper.as_os_str());
         for f in &files { args.push(f.as_os_str()); }
-        run("node", args, Some(&repo))?
-    } else { bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files."); }
+        run(shell, args, Some(&repo))?
+    } else {
+        bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
+    }
     Ok(())
 }
 

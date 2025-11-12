@@ -10,10 +10,10 @@ if command -v docker >/dev/null 2>&1; then
   docker run --rm \
     -e MERMAID_MAX_PARALLEL="$CONC" \
     -v "$PWD:/work" -w /work \
-    node:20 bash -lc 'npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs '$ARGS''
+    node:20 bash -lc 'npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; MERMAID_MAX_PARALLEL="'$CONC'" node scripts/mermaid/generate.mjs '$ARGS''
 elif command -v node >/dev/null 2>&1; then
   # Host Node path; pass explicit concurrency to mermaid via env
-  if [ "$#" -gt 0 ]; then node scripts/mermaid/generate.mjs "$@"; else node scripts/mermaid/generate.mjs --all; fi
+  if [ "$#" -gt 0 ]; then MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "$@"; else MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs --all; fi
 else
   echo "Need Node.js or Docker to render Mermaid diagrams" >&2
   exit 1

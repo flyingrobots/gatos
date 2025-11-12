@@ -33,6 +33,15 @@ if [[ "${PREPUSH_SKIP_RUST:-0}" != "1" ]]; then
       echo "[pre-push][ERROR] cargo check failed" >&2
       exit 1
     fi
+    if command -v dprint >/dev/null 2>&1; then
+      echo "[pre-push] dprint check (JSON/YAML)"
+      if ! dprint check; then
+        echo "[pre-push][ERROR] dprint check failed" >&2
+        exit 1
+      fi
+    else
+      echo "[pre-push][WARN] dprint not found; skipping JSON/YAML format check" >&2
+    fi
   else
     echo "[pre-push][WARN] cargo not found; skipping Rust checks" >&2
   fi
