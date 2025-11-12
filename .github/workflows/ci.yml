@@ -33,6 +33,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt --check
         run: cargo fmt --all -- --check
+      - name: Install dprint
+        run: cargo install dprint --locked || true
+      - name: dprint check (JSON/YAML)
+        run: dprint check
 
   clippy:
     runs-on: ubuntu-latest

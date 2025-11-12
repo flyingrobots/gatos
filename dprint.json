@@ -1,0 +1,17 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "projectType": "openSource",
+  "plugins": [
+    "https://plugins.dprint.dev/json-0.17.4.wasm",
+    "https://plugins.dprint.dev/yaml-0.6.1.wasm"
+  ],
+  "includes": ["**/*.json", "**/*.yml", "**/*.yaml"],
+  "excludes": ["target/**", ".git/**", "node_modules/**"],
+  "json": {
+    "indentWidth": 2,
+    "trailingCommas": "none"
+  },
+  "yaml": {
+    "lineWidth": 100
+  }
+}

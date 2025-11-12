@@ -78,11 +78,11 @@ pre-commit:
 	 fi; \
 	 echo "[make pre-commit] Prettier JSON/YAML…"; \
 	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "*.yaml")" ]; then \
-	   if command -v docker >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
-	           "npx -y prettier -w -- \"{}\""; \
-	   else echo "Docker required for Prettier" >&2; exit 1; fi; \
+	   if command -v dprint >/dev/null 2>&1; then \
+	     dprint fmt; \
+	   else \
+	     echo "dprint not found; install with: cargo install dprint" >&2; exit 1; \
+	   fi; \
 	   git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" | xargs -0 git add --; \
 	 fi; \
 	 echo "[make pre-commit] Mermaid (staged MD only)…"; \
