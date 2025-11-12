@@ -11,7 +11,7 @@ test:
 
 # Generate Mermaid diagrams for the entire repo (one-liner; script handles Node/Docker + defaults)
 diagrams:
-	@bash -lc 'scripts/diagrams.sh'
+	@bash -lc 'bash ./scripts/diagrams.sh'
 
 lint-md:
     @bash -lc 'if command -v node >/dev/null 2>&1; then \
