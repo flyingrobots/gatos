@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -28,10 +29,18 @@ function mermaidToImg(md: any) {
       const count = (counters.get(rel) || 0) + 1
       counters.set(rel, count)
       const safe = rel.replace(/\\/g, '/').replace(/\.md$/, '').replace(/\//g, '__')
-      const svgRel = `/diagrams/generated/${safe}__mermaid_${count}.svg`
-      const svgAbs = path.join(process.cwd(), 'docs', svgRel.replace(/^\//, ''))
-      if (fs.existsSync(svgAbs)) {
-        return `<figure><img src="${svgRel}" alt="diagram ${count}" loading="lazy"/></figure>\n`
+      const base = `/diagrams/generated/${safe}__mermaid_${count}`
+      const abs = (p: string) => path.join(process.cwd(), 'docs', p.replace(/^\//, ''))
+      const relLight = `${base}-light.svg`
+      const relDark = `${base}-dark.svg`
+      const relPlain = `${base}.svg`
+      const hasLight = fs.existsSync(abs(relLight))
+      const hasDark = fs.existsSync(abs(relDark))
+      const hasPlain = fs.existsSync(abs(relPlain))
+      if (hasLight && hasDark) {
+        return `<figure><picture><source srcset="${relDark}" media="(prefers-color-scheme: dark)"><img src="${relLight}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
+      } else if (hasPlain) {
+        return `<figure><img src="${relPlain}" alt="diagram ${count}" loading="lazy"/></figure>\n`
       }
     }
     return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options)
@@ -73,6 +82,12 @@ export default defineConfig({
     config: (md) => {
       mermaidToImg(md)
     }
+  },
+  vite: {
+    plugins: [
+      pagefindPlugin({
+        // default options are fine; tweak here if needed
+      }) as any
+    ]
   }
 })
-
