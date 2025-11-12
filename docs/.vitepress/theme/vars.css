@@ -1,0 +1,13 @@
+:root {
+  --vp-c-brand-1: #7c3aed;
+  --vp-c-brand-2: #6d28d9;
+  --vp-c-brand-3: #8b5cf6;
+}
+
+.vp-doc figure {
+  text-align: center;
+}
+.vp-doc figure img {
+  max-width: 100%;
+  height: auto;
+}
