@@ -11,7 +11,7 @@ test:
 
 # Generate Mermaid diagrams for the entire repo (one-liner; script handles Node/Docker + defaults)
 diagrams:
-	@bash -lc 'bash ./scripts/diagrams.sh'
+	@bash -c 'bash ./scripts/diagrams.sh'
 
 
 # Markdown lint via xtask (no Node required)
@@ -119,7 +119,7 @@ xtask:
 # CI-parity shims
 # ci-diagrams: Generate all Mermaid diagrams via the shell wrapper.
 ci-diagrams:
-	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash -lc 'bash ./scripts/diagrams.sh --all'
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash -c 'bash ./scripts/diagrams.sh --all'
 
 # ci-schemas: Validate and compile all JSON Schemas and example payloads.
 # No special env vars required; xtask handles Node/AJV invocation.

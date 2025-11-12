@@ -15,8 +15,7 @@ services:
     working_dir: /work
     volumes:
       - .:/work
-    command: >-
-      bash -lc "./scripts/validate_schemas.sh"
+    command: ["bash", "-c", "./scripts/validate_schemas.sh"]
 
   ci-markdownlint:
     image: node:20
