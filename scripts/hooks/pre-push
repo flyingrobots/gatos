@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+top="$(git rev-parse --show-toplevel)"
+cd "$top"
+
+echo "[pre-push] markdownlint check (README and all Markdown)"
+if command -v node >/dev/null 2>&1; then
+  npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+elif command -v docker >/dev/null 2>&1; then
+  docker run --rm -v "$PWD:/work" -w /work node:20 bash -lc \
+    "npx -y markdownlint-cli@0.45.0 \"**/*.md\" --config .markdownlint.json"
+else
+  echo "[pre-push][ERROR] Need Node.js or Docker to run markdownlint; aborting push" >&2
+  exit 1
+fi
+
+echo "[pre-push] OK"
