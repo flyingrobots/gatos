@@ -5,12 +5,21 @@ set -euo pipefail
 CONC="${MERMAID_MAX_PARALLEL:-6}"
 
 if command -v docker >/dev/null 2>&1; then
-  # Dockerized Node fallback; pass explicit concurrency into container
-  if [ "$#" -gt 0 ]; then ARGS="$*"; else ARGS="--all"; fi
+  # Dockerized Node preferred; pass explicit concurrency as env; safely quote args
+  if [ "$#" -gt 0 ]; then
+    # Build a shell-escaped argument string
+    ARGS_Q=""
+    for a in "$@"; do
+      ARGS_Q+=" $(printf '%q' "$a")"
+    done
+    CMD="npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs${ARGS_Q}"
+  else
+    CMD="npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs --all"
+  fi
   docker run --rm \
     -e MERMAID_MAX_PARALLEL="$CONC" \
     -v "$PWD:/work" -w /work \
-    node:20 bash -lc 'npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; MERMAID_MAX_PARALLEL="'$CONC'" node scripts/mermaid/generate.mjs '$ARGS''
+    node:20 bash -lc "$CMD"
 elif command -v node >/dev/null 2>&1; then
   # Host Node path; pass explicit concurrency to mermaid via env
   if [ "$#" -gt 0 ]; then MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "$@"; else MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs --all; fi

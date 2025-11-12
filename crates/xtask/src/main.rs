@@ -255,8 +255,8 @@ fn lint_one(s: &str) -> (String, usize) {
     // First pass: normalize non-ASCII hyphen (U+2011) and trailing spaces (MD009)
     let mut norm: Vec<String> = Vec::with_capacity(lines.len());
     for l in lines.drain(..) {
+        if l.contains('\u{2011}') { issues += 1; }
         let mut ll = l.replace('\u{2011}', "-");
-        if ll.contains('\u{2011}') { issues += 1; }
         if fence_re.is_match(&ll) { in_fence = !in_fence; }
         if !in_fence {
             // Remove single trailing space, keep double-space hard breaks

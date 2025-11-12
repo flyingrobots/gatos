@@ -38,3 +38,4 @@ wasm-bindgen = "0.2.104"
 anyhow = "~1.0.100"
 smallvec = { version = "1.13.2", default-features = false }
 regex = "1.11.0"
+jsonschema = "~0.17.1"
