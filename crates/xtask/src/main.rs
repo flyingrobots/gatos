@@ -100,17 +100,7 @@ fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
 fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    // Execute via a shell explicitly for cross-platform compatibility
-    let shell = if which("bash").is_ok() {
-        "bash"
-    } else if which("sh").is_ok() {
-        "sh"
-    } else {
-        bail!(
-            "No suitable shell found to execute {:?}. Install bash/sh or run in CI.",
-            script
-        );
-    };
+    let shell = if which("bash").is_ok() { "bash" } else if which("sh").is_ok() { "sh" } else { bail!("No suitable shell for {:?}", script) };
     run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
 }
