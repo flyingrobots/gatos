@@ -70,28 +70,19 @@ schemas: schema-compile schema-validate schema-negative
 
 pre-commit:
 	@bash -lc 'set -euo pipefail; \
-	 echo "[make pre-commit] markdownlint fix…"; \
+	 echo "[make pre-commit] markdown lint (prefer rumdl, then xtask md --fix)…"; \
 	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
-	   if command -v node >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 npx -y markdownlint-cli --fix --config .markdownlint.json --; \
-	   elif command -v docker >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
-	           "npx -y markdownlint-cli --fix --config .markdownlint.json -- \"{}\""; \
-	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
+	   if command -v rumdl >/dev/null 2>&1; then rumdl check . --fix; \
+	   else cargo run -p xtask -- md --fix; fi; \
 	   git diff --cached --name-only -z --diff-filter=ACM -- "*.md" | xargs -0 git add --; \
 	 fi; \
 	 echo "[make pre-commit] Prettier JSON/YAML…"; \
 	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "*.yaml")" ]; then \
-	   if command -v node >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" \
-	       | xargs -0 npx -y prettier -w --; \
-	   elif command -v docker >/dev/null 2>&1; then \
+	   if command -v docker >/dev/null 2>&1; then \
 	     git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" \
 	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
 	           "npx -y prettier -w -- \"{}\""; \
-	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
+	   else echo "Docker required for Prettier" >&2; exit 1; fi; \
 	   git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" | xargs -0 git add --; \
 	 fi; \
 	 echo "[make pre-commit] Mermaid (staged MD only)…"; \
