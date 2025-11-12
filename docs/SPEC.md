@@ -31,7 +31,7 @@ graph TD
 
 **Git** refers to any conformant implementation supporting refs, commits, trees, blobs, notes, and atomic ref updates.
 
-**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated.
+**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`.
 
 ---
 
@@ -221,13 +221,21 @@ classDiagram
         +String[] caps
         +Object payload
         +String policy_root
-        +String sig
+        +String sig_alg
+        +String ts
     }
 ```
 
+Canonicalization and signing:
+
+- Encode the envelope (with `sig` omitted) as **DAG‑CBOR** to produce canonical bytes.
+- Content addressing: `Event-CID = cidv1(dag-cbor, blake3(canonical_bytes))`.
+- Sign `canonical_bytes` with `sig_alg` (e.g., `ed25519`); record signature in commit trailers.
+- Recommended trailers: `Event-CID`, `Sig-Alg`, `Sig`.
+
 ### 4.2 Journal Semantics
 
-Appending an event **MUST** create a new commit on an append-only ref in `refs/gatos/journal/<ns>/<actor>`. Ref updates **MUST** use atomic compare-and-swap.
+Appending an event **MUST** create a new commit on an append-only ref in `refs/gatos/journal/<ns>/<actor>`. Ref updates **MUST** use atomic compare-and-swap via `git update-ref <old> <new>`.
 
 ---
 
@@ -244,7 +252,7 @@ graph TD
     B --> D[State Root];
 ```
 
-For identical inputs, the byte sequence of `state_root` **MUST** be identical.
+For identical inputs, and the same `policy_root`, the byte sequence of `state_root` **MUST** be identical.
 
 ### 5.2 Fold Spec & Checkpoints
 
@@ -282,7 +290,7 @@ On **DENY**, the gate **MUST** append an audit decision to `refs/gatos/audit/pol
 
 ---
 
-## 7. Blob Pointers & Opaque Storage
+## 7. Blob Pointers & Opaque Storage (Hybrid Privacy)
 
 Large or sensitive data is stored out-of-band in a content-addressed store and referenced via pointers.
 
@@ -297,13 +305,12 @@ classDiagram
     class OpaquePointer {
         +String kind: "opaque"
         +String algo
-        +String hash
         +String ciphertext_hash
-        +Object cipher_meta
+        +Object encrypted_meta
     }
 ```
 
-Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git.
+Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git. Public pointers MUST NOT reveal a raw plaintext hash; if a commitment is required, use a hiding commitment scheme and keep the plaintext hash inside `encrypted_meta`.
 
 ---
 
@@ -317,7 +324,7 @@ sequenceDiagram
     participant GATOS
     participant Consumer
 
-    Publisher->>GATOS: Publish Message (QoS: exactly_once)
+    Publisher->>GATOS: Publish Message (QoS: at_least_once)
     GATOS-->>Consumer: Deliver Message
     Consumer->>Consumer: Process Message
     Consumer->>GATOS: Send Ack
@@ -325,7 +332,12 @@ sequenceDiagram
     GATOS->>GATOS: Create gmb.commit Event
 ```
 
-Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. `exactly_once` delivery semantics require consumers to write an `ack` to `refs/gatos/mbus-ack/`.
+Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. Delivery is **at‑least‑once**; consumers **SHOULD** dedupe on read using the message `ULID` as an idempotency key and **MAY** write `ack`s to `refs/gatos/mbus-ack/`.
+
+Retention and compaction:
+
+- Segment topics (e.g., `<topic>/0001`, `<topic>/0002`) and prune segments once all consumer checkpoints have advanced beyond them.
+- Deployments **SHOULD** enable `fetch.writeCommitGraph=true` and `repack.writeBitmaps=true` for busy topics.
 
 ---
 
@@ -562,12 +574,12 @@ stateDiagram-v2
 The lifecycle is represented entirely through Git objects:
 
 - **Job:** A commit whose tree contains a `job.yaml` manifest.
-- **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR‑0002 Canonical Job Identifier).
+- **Claim:** A single lock ref `refs/gatos/jobs/<job-id>/claim`. Workers perform an atomic `git update-ref 0000… <claim-oid>` (compare‑and‑swap). The winner writes its `worker_id` inside the claim object.
 - **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
 
-When a **Job** commit is created, a message **MUST** be published to a topic on the Message Plane for discovery by workers.
+When a **Job** commit is created, a message **MUST** be published to a topic on the Message Plane for discovery by workers. Delivery is at‑least‑once; workers MUST be idempotent.
 
 ### 19.3 Proof-Of-Execution
 

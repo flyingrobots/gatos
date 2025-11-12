@@ -194,7 +194,15 @@ sequenceDiagram
     Daemon-->>Client: {"ack":true, "id":"01C"}
     loop Subscription Stream
         Daemon-->>Client: {"type":"bus.message", "id":"01C", "topic":"...", "payload":{...}}
+        Daemon-->>Client: {"kind":"ping"}
+        Client-->>Daemon: {"kind":"pong"}
     end
+```
+
+Error frames are normalized:
+
+```json
+{ "ok": false, "id": "01C", "code": "ERR_INVALID_NS", "reason": "namespace not found" }
 ```
 
 ---
@@ -359,7 +367,7 @@ sequenceDiagram
     GATOS (Ledger)->>Bus (Message Plane): 2. Publish Job message
     Worker->>Bus (Message Plane): 3. Subscribe to job topic
     Bus (Message Plane)->>Worker: 4. Receive Job message
-    Worker->>GATOS (Ledger): 5. Atomically create Claim ref
+    Worker->>GATOS (Ledger): 5. Atomically create claim ref (update-ref zero→claim)
     GATOS (Ledger)-->>Worker: 6. Claim successful
     Worker->>Worker: 7. Execute Job
     Worker->>GATOS (Ledger): 8. Create Result commit
@@ -368,7 +376,7 @@ sequenceDiagram
 ### Implementation Plan
 
 1. **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
-2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a Git ref.
+2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare‑and‑swap on a single lock ref `refs/gatos/jobs/<job-id>/claim`.
 3. **Execution:** The worker will execute the job's `command` in a sandboxed environment.
 4. **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
 5. **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
