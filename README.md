@@ -9,17 +9,17 @@
 >
 > *- flyingrobots*
 >
-> ** a little category theory joke... Eh, maybe you had to be there...*
+> *a little category theory joke... Eh, maybe you had to be there...*
 
 ```bash
 
-8""""8 8""""8 ""8"" 8"""88 8""""8 
+8""""8 8""""8 ""8"" 8"""88 8""""8
 8    " 8    8   8   8    8 8      
-8e     8eeee8   8e  8    8 8eeeee 
-88  ee 88   8   88  8    8     88 
-88   8 88   8   88  8    8 e   88 
-88eee8 88   8   88  8eeee8 8eee88 
- 
+8e     8eeee8   8e  8    8 8eeeee
+88  ee 88   8   88  8    8     88
+88   8 88   8   88  8    8 e   88
+88eee8 88   8   88  8eeee8 8eee88
+
   Git As The Operating Surface™  
 ```
 
