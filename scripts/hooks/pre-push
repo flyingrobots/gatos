@@ -4,7 +4,7 @@ set -euo pipefail
 top="$(git rev-parse --show-toplevel)"
 cd "$top"
 
-echo "[pre-push] markdownlint check (README and all Markdown)"
+echo "[pre-push] markdownlint check (all Markdown)"
 if command -v node >/dev/null 2>&1; then
   npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
 elif command -v docker >/dev/null 2>&1; then
@@ -13,6 +13,25 @@ elif command -v docker >/dev/null 2>&1; then
 else
   echo "[pre-push][ERROR] Need Node.js or Docker to run markdownlint; aborting push" >&2
   exit 1
+fi
+
+
+# Quick Rust hygiene (fast): rustfmt check and cargo check (can skip via PREPUSH_SKIP_RUST=1)
+if [[ "${PREPUSH_SKIP_RUST:-0}" != "1" ]]; then
+  if command -v cargo >/dev/null 2>&1; then
+    echo "[pre-push] cargo fmt --check"
+    if ! cargo fmt --all -- --check; then
+      echo "[pre-push][ERROR] rustfmt check failed" >&2
+      exit 1
+    fi
+    echo "[pre-push] cargo check (workspace)"
+    if ! cargo check --workspace -q; then
+      echo "[pre-push][ERROR] cargo check failed" >&2
+      exit 1
+    fi
+  else
+    echo "[pre-push][WARN] cargo not found; skipping Rust checks" >&2
+  fi
 fi
 
 echo "[pre-push] OK"
