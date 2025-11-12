@@ -39,13 +39,17 @@ graph TD
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
-            Policy("gatos-policy");
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
         end
 
         subgraph "State Plane"
             Echo("gatos-echo");
             KV("gatos-kv");
+        end
+
+        subgraph "Policy Plane"
+            Policy("gatos-policy");
         end
 
         subgraph "Message Plane"
@@ -54,10 +58,6 @@ graph TD
 
         subgraph "Job Plane"
             Compute("gatos-compute");
-        end
-
-        subgraph "Ledger Plane"
-            Ledger("gatos-ledger");
         end
 
         Daemon --> Policy;
@@ -266,6 +266,11 @@ graph TD
 - Proof-of-Meld (PoM): Digest that commits to two input shapes and a schema manifest.
 - JSONL: JSON Lines, one JSON object per line over a stream.
 - ULID: Lexicographically sortable 128-bit unique identifier (26-char Crockford base32).
+
+> Style & Terminology
+>
+> - Always write `JSONL`, `ULID`, `Proof‑of‑Execution`, and `Proof‑of‑Meld` with consistent capitalization.
+> - Refer to the daemon as `gatosd` and the CLI as `git gatos`.
 ---
 
 **Next**: [Chapter 1–The GATOS System Model](./CHAPTER-001.md)

@@ -22,6 +22,9 @@ gitGraph
     branch "refs/gatos/journal/prod"
 ```
 
+> [!NOTE]
+> The `gitGraph` diagram requires Mermaid 10 or newer in your renderer.
+
 ## The Event Envelope
 
 Every action in GATOS is initiated by an **`Event`**. This event is wrapped in a standardized **`EventEnvelope`** before being committed to the ledger. This envelope contains all the necessary metadata for processing and auditing.
