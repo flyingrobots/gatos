@@ -92,8 +92,8 @@ pre-commit:
 	       | xargs -0 node scripts/mermaid/generate.mjs; \
 	   elif command -v docker >/dev/null 2>&1; then \
 	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 bash -lc \
-	           "npx -y @mermaid-js/mermaid-cli >/dev/null 2>&1; node scripts/mermaid/generate.mjs \"{}\""; \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 \
+	           node scripts/mermaid/generate.mjs \"{}\"; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
 	   if [ -d docs/diagrams/generated ]; then git add -- docs/diagrams/generated; fi; \
 	 fi; \
