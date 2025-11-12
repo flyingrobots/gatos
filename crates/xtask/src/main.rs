@@ -11,8 +11,8 @@ use which::which;
     name = "xtask",
     version,
     about = "Repo task runner (cargo xtask)",
-    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nENV:\n  MERMAID_MAX_PARALLEL     Concurrency for diagrams (default: min(cpu, 8))\n  MERMAID_CLI_VERSION      @mermaid-js/mermaid-cli pin (default: 10.9.0)\n  MERMAID_CMD_TIMEOUT_MS   Timeout for mmdc/npx (10s..15m, default: 120s)\n\nEXAMPLES:\n  cargo run -p xtask -- diagrams --all\n  cargo run -p xtask -- diagrams docs/TECH-SPEC.md\n  cargo run -p xtask -- schemas all\n  cargo run -p xtask -- links\n",
-    after_help = "Tip: use 'make ci-*' shims or 'cargo run -p xtask -- <command>' for CI parity."
+    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nEXAMPLES:\n  cargo run -p xtask -- schemas\n  cargo run -p xtask -- links\n  cargo run -p xtask -- md --fix\n",
+    after_help = "Guidance: use scripts/diagrams.sh (or 'make diagrams') for Mermaid diagrams. xtask focuses on Rust-based workflows."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -23,8 +23,8 @@ struct Cli {
 enum Cmd {
     /// Run pre-commit pipeline (staged-only)
     PreCommit,
-    /// Generate mermaid diagrams
-    #[command(group(
+    /// Generate mermaid diagrams (deprecated; use scripts/diagrams.sh)
+    #[command(hide = true, group(
         ArgGroup::new("input")
             .args(["all", "files"]) // exactly one must be present
             .required(true)
@@ -75,28 +75,8 @@ fn pre_commit() -> Result<()> {
     run("make", ["-s", "pre-commit"], None)
 }
 
-fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
-    let repo = repo_root()?;
-    // Prefer script wrapper which selects Dockerized Node when available (Node-free path)
-    let wrapper = repo.join("scripts/diagrams.sh");
-    let shell = if which("bash").is_ok() { "bash" } else { "sh" };
-    if all {
-        // wrapper renders all diagrams when no args are given
-        run(shell, [wrapper.as_os_str()], Some(&repo))?
-    } else if let Some(files) = files {
-        if files.is_empty() {
-            bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
-        }
-        let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
-        args.push(wrapper.as_os_str());
-        for f in &files {
-            args.push(f.as_os_str());
-        }
-        run(shell, args, Some(&repo))?
-    } else {
-        bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
-    }
-    Ok(())
+fn diagrams(_all: bool, _files: Option<Vec<PathBuf>>) -> Result<()> {
+    bail!("Use 'scripts/diagrams.sh --all' or 'scripts/diagrams.sh <files...>' (or 'make diagrams'). xtask focuses on Rust-based workflows.")
 }
 
 fn schemas() -> Result<()> {
@@ -362,7 +342,7 @@ fn lint_one(s: &str) -> (String, usize) {
                 issues += 1;
             }
             // Emit list block and ensure trailing blank after the block
-            while i < norm.len() && list_re.is_match(norm[i].trim()) {
+            while i < norm.len() && list_re.is_match(&norm[i]) {
                 out.push(norm[i].clone());
                 i += 1;
             }

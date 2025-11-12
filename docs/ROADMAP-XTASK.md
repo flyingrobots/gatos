@@ -21,7 +21,7 @@ Status: living document. Tracks phases, decisions, and next steps for repo tooli
 
 - Extract a reusable “puppeteer install” composite Action; add a “CI doctor” step (print versions, paths).
 - Decide policy for diagrams: commit SVGs vs verify-only.
-- Retire legacy scripts routed through Makefile; rely on `xtask` directly.
+- Finalize split of responsibilities: keep a thin shell wrapper (`scripts/diagrams.sh`) for Mermaid (Node/Docker), and use `xtask` for Rust-based workflows (schemas, linkcheck, markdown).
 
 ## Backlog
 

@@ -117,10 +117,9 @@ xtask:
 	@cargo run -p xtask -- $(ARGS)
 
 # CI-parity shims
-# ci-diagrams: Generate all Mermaid diagrams. This target sets MERMAID_MAX_PARALLEL
-# for faster local/CI runs; other targets do not use parallelism env vars.
+# ci-diagrams: Generate all Mermaid diagrams via the shell wrapper.
 ci-diagrams:
-	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} cargo run -p xtask -- diagrams --all
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash -lc 'bash ./scripts/diagrams.sh --all'
 
 # ci-schemas: Validate and compile all JSON Schemas and example payloads.
 # No special env vars required; xtask handles Node/AJV invocation.
@@ -139,7 +138,7 @@ ci-linkcheck:
 # help: list available xtask-related targets for quick discovery
 help:
 	@echo "xtask shims:"; \
-	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — passthrough to xtask (e.g., diagrams --all, links, schemas)"; \
+	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — passthrough to xtask (e.g., links, schemas, md)"; \
 	echo "  make ci-diagrams                       — generate all Mermaid diagrams (MERMAID_MAX_PARALLEL honored)"; \
 	echo "  make ci-schemas                        — validate and compile all schemas/examples"; \
 	echo "  make ci-linkcheck                      — run Markdown link checks"; \
