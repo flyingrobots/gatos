@@ -277,13 +277,11 @@ fn lint_one(s: &str) -> (String, usize) {
                     ll.truncate(ll.len() - 2); // drop ' ' before \n
                     ll.push('\n');
                     issues += 1;
-                } else if spaces >= 2 {
-                    if spaces != 2 {
-                        let keep_until = ll.len() - (spaces + 1); // exclude run + \n
-                        ll.truncate(keep_until);
-                        ll.push_str("  \n");
-                        issues += 1;
-                    }
+                } else if spaces > 2 {
+                    let keep_until = ll.len() - (spaces + 1); // exclude run + \n
+                    ll.truncate(keep_until);
+                    ll.push_str("  \n");
+                    issues += 1;
                 }
             } else if ll.ends_with(' ') {
                 ll = ll.trim_end().to_string();
