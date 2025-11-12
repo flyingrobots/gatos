@@ -17,7 +17,9 @@ in [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and protocol details in
 
 - Asynchronous messaging: non-blocking publish/subscribe operations.
 - Commit-backed durability: persisted messages with auditability and exactly-once when combined
+
   with acks/commitments.
+
 - Topic-based routing: logical message organization and filtering.
 - Sharding: horizontal scalability via topic partitioning.
 - QoS guarantees: at-most-once, at-least-once, exactly-once.

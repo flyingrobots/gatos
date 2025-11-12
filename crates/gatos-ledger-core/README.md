@@ -6,7 +6,7 @@ It defines the `ObjectStore` trait, which acts as a "port" for storage backends 
 
 For more details on the overall architecture, see the main [GATOS Technical Specification](../../docs/TECH-SPEC.md).
 
-## Example: Content ID and Detached Signatures (ADR‑0001)
+## Example: Content ID and Detached Signatures (ADR-0001)
 
 ```rust
 use blake3;

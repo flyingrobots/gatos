@@ -45,11 +45,20 @@ case "$backend" in
         node:20 \
         node scripts/mermaid/generate.mjs "$@"
     else
+      # Enumerate tracked Markdown files on the host to avoid requiring git inside the container
+      if ! command -v git >/dev/null 2>&1; then
+        echo "git is required to enumerate Markdown files (for --all)" >&2; exit 1
+      fi
+      # Read NUL-delimited list safely into an array
+      mapfile -d '' -t FILES < <(git ls-files -z -- '*.md')
+      if [ ${#FILES[@]} -eq 0 ]; then
+        echo "No tracked Markdown files found"; exit 0
+      fi
       docker run --rm \
         -e MERMAID_MAX_PARALLEL="$CONC" \
         -v "$PWD:/work" -w /work $VOLS \
         node:20 \
-        node scripts/mermaid/generate.mjs --all
+        node scripts/mermaid/generate.mjs "${FILES[@]}"
     fi
     ;;
   node)

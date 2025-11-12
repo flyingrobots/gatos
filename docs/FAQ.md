@@ -2,7 +2,7 @@
 
 Yes. Holy shit indeed.
 
-Let’s lock it in with clear answers to your questions, call out any missing pieces, and tighten a few bolts so the implementation path is zero‑ambiguity.
+Let’s lock it in with clear answers to your questions, call out any missing pieces, and tighten a few bolts so the implementation path is zero-ambiguity.
 
 ---
 
@@ -10,13 +10,13 @@ Direct answers to your 5 previous questions:
 
 ## 1) Fold compilation — interpreted YAML or compiled?
 
-**Decision**: Compile the fold spec to a deterministic bytecode (“RMG‑IR”), then run it on the Echo engine.
+**Decision**: Compile the fold spec to a deterministic bytecode (“RMG-IR”), then run it on the Echo engine.
 
-**Source**: `folds/*.yaml` remains the human‑authored DSL (stable, declarative).
+**Source**: `folds/*.yaml` remains the human-authored DSL (stable, declarative).
 
 **Compiler output**: `folds/*.rgf` (RMG Fold) canonical CBOR/MsgPack; `hash = fold_root` (e.g., sha256:…).
 
-**Runtime**: Echo’s fold engine executes the compiled IR. No dynamic I/O. No wall‑clock. Pure.
+**Runtime**: Echo’s fold engine executes the compiled IR. No dynamic I/O. No wall-clock. Pure.
 
 **Binding**: Every checkpoint and decision should record both policy_root and fold_root. If either changes, audits are explicit.
 
@@ -63,11 +63,11 @@ Why compiled?
 
 **Yes**. Session merges must be governed by the fold’s declared join lattice (for counters, sets, maps) and DPO rewrites (for typed graphs).
 
-Per‑fold merge contract:
+Per-fold merge contract:
 
 - **Scalars**: define lww or min/max explicitly.
-- **Sets**: OR‑set or 2P‑set (declared).
-- **Counters**: G‑counter/PN‑counter.
+- **Sets**: OR-set or 2P-set (declared).
+- **Counters**: G-counter/PN-counter.
 - **Graphs**: DPO with canonical match order (Echo provides).
 - **Conflict classes**: anything not covered by a lattice or DPO rule becomes a governance conflict (record an event: `governance.conflict` with precise paths and rule ids).
 
@@ -79,7 +79,7 @@ This makes gatos session merge a deterministic math operation, not a string diff
 
 ### Phase plan
 
-#### v1 (day‑one)
+#### v1 (day-one)
 
 - Commitment proofs (cheap, universal).
 - We record `inputs_root`, `output_root`, `policy_root`, `fold_root` and a `signature → proof.fairness`.
@@ -92,15 +92,15 @@ This makes gatos session merge a deterministic math operation, not a string diff
 
 ### Trait
 
-Prover/Verifier with backends (Plonky2/Halo2/Risc0/STARKy). We don’t hard‑bind to a library.
+Prover/Verifier with backends (Plonky2/Halo2/Risc0/STARKy). We don’t hard-bind to a library.
 
-Start with small circuits (map‑join‑lww, counters, set membership) to prove no forbidden branch was taken.
+Start with small circuits (map-join-lww, counters, set membership) to prove no forbidden branch was taken.
 
-Support proof aggregation (multi‑step chain → one proof) later.
+Support proof aggregation (multi-step chain → one proof) later.
 
 ### Spec tweak
 
-Add `fold_root` to proof envelope and make proof field type‑tagged:
+Add `fold_root` to proof envelope and make proof field type-tagged:
 
 ```json
 { "proof": { "kind":"commitment", "bytes":"..." } }
@@ -110,7 +110,7 @@ Add `fold_root` to proof envelope and make proof field type‑tagged:
 
 ## 4) Message bus scaling — changing shard count
 
-Use a versioned shard map + dual‑write migration.
+Use a versioned shard map + dual-write migration.
 
 - Store topic config at `refs/gatos/mbus-config/<topic>.json`:
 
@@ -127,14 +127,14 @@ Use a versioned shard map + dual‑write migration.
 
 Consistent hashing keeps most keys stable when shards changes.
 
-Dual‑write window:
+Dual-write window:
 
 - Publishers write to both old and new shard maps for a configurable epoch.
 - Consumers subscribe to both maps; dedupe by (topic, ulid).
 
 When ack lag on the old map is zero for N minutes, flip the active version and retire the old.
 
-This gives smooth resharding with exactly‑once semantics intact.
+This gives smooth resharding with exactly-once semantics intact.
 
 ---
 
@@ -168,7 +168,7 @@ audit: true
 
 ### Compilation
 
-`.rgs` → `.rgc` (CBOR), policy_root = SHA‑256 of `.rgc`.
+`.rgs` → `.rgc` (CBOR), policy_root = SHA-256 of `.rgc`.
 
 ### Library
 
@@ -197,8 +197,8 @@ We added `fold_root` above — make it mandatory anywhere `policy_root` is manda
 ### 2. **Canonical JSON rules**
 
 - Call out key sorting,
-- UTF‑8 normalization,
-- and number encoding explicitly (`u64`/`s128`/`fixed‑point`) so hashes are cross‑platform bit‑exact.
+- UTF-8 normalization,
+- and number encoding explicitly (`u64`/`s128`/`fixed-point`) so hashes are cross-platform bit-exact.
 
 ### 3. Error code taxonomy (for JSONL)
 
@@ -227,45 +227,45 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 > [!faq] “Are we missing any big pieces?” (Short list)
 
-**Docs for profiles** (`local` / `push‑gate` / `SaaS`) with defaults (who enforces what, where).
+**Docs for profiles** (`local` / `push-gate` / `SaaS`) with defaults (who enforces what, where).
 
-**Doctor + Metrics**: implementation **MUST** ship `/healthz`, `/readyz`, `/metrics` and `gatos doctor`. (We wrote it in `TECH‑SPEC`; surface it in `SPEC`’s normative section with metric names.)
+**Doctor + Metrics**: implementation **MUST** ship `/healthz`, `/readyz`, `/metrics` and `gatos doctor`. (We wrote it in `TECH-SPEC`; surface it in `SPEC`’s normative section with metric names.)
 
-**KV & Graph facades**: optional subcommands that expose familiar semantics on top of journals/folds (gatos kv, gatos graph query). Makes first‑contact easier.
+**KV & Graph facades**: optional subcommands that expose familiar semantics on top of journals/folds (gatos kv, gatos graph query). Makes first-contact easier.
 
-**Resilience helpers**: an out‑of‑the‑box repair tool to re‑stitch epochs, roll caches, and heal broken refs.
+**Resilience helpers**: an out-of-the-box repair tool to re-stitch epochs, roll caches, and heal broken refs.
 
 ---
 
-## Top 5 use‑cases (and if we meet them)
+## Top 5 use-cases (and if we meet them)
 
 ### 1.Regulated config / feature flags
 
 - Needs: signed appends, RLS, RYW, bounded history.
-- We meet: journals + policy gate + epochs + (optional) push‑gate.
-- Add: canned policy templates + gatos doctor for GC/epoch sanity → ✅ production‑grade.
+- We meet: journals + policy gate + epochs + (optional) push-gate.
+- Add: canned policy templates + gatos doctor for GC/epoch sanity → ✅ production-grade.
 
-### 2.Supply‑chain / deploy attestation
+### 2.Supply-chain / deploy attestation
 
-- Needs: signed events, multi‑sig policy changes, human/JSON logs, offline verify.
+- Needs: signed events, multi-sig policy changes, human/JSON logs, offline verify.
 - We meet: Shiplog DNA + proof envelopes v1.
-- Add: “evidence pack” command that bundles logs + proof → ✅ audit‑ready.
+- Add: “evidence pack” command that bundles logs + proof → ✅ audit-ready.
 
-### 3.Air‑gapped ML registry
+### 3.Air-gapped ML registry
 
 - Needs: huge blobs, provenance, selective export, encrypted storage.
 - We meet: opaque pointers + CAS + epochs.
 - Add: rekey tool + export policies → ✅.
 
-### 4.LLM multi‑agent orchestration
+### 4.LLM multi-agent orchestration
 
-- Needs: pub/sub, exactly‑once, backpressure, capability tokens.
+- Needs: pub/sub, exactly-once, backpressure, capability tokens.
 - We meet: bus QoS + caps + acks/commit.
-- Add: shard‑map/versioning + subscription windows → ✅ at scale.
+- Add: shard-map/versioning + subscription windows → ✅ at scale.
 
-### 5.Cross‑app data sharing (RLS‑gated state)
+### 5.Cross-app data sharing (RLS-gated state)
 
-- Needs: stable materialized views, policy‑consistent reads across repos.
+- Needs: stable materialized views, policy-consistent reads across repos.
 - We meet: refs/gatos/state/** as public contract + shared policy bundles.
 - Add: Wesley target that emits both fold + RLS bundle → ✅ smooth.
 
@@ -275,8 +275,8 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 ### Kafka / EventStoreDB — event logs at scale
 
-- not offline‑first;
-- no built‑in deterministic fold proofs;
+- not offline-first;
+- no built-in deterministic fold proofs;
 - no Git audit trail.
   
 #### GATOS
@@ -285,9 +285,9 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 - higher assurance,
 - portable,
 - auditable,
-- Git‑native.
+- Git-native.
 
-### Dolt / LakeFS  — data versioning with Git‑like semantics
+### Dolt / LakeFS  — data versioning with Git-like semantics
 
 #### GATOS
 
@@ -324,12 +324,12 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 ## New features this meditation suggests
 
 1. `fold_root` binding across checkpoints and proofs (spec update).
-2. Versioned shard maps and dual‑write migration for the bus.
+2. Versioned shard maps and dual-write migration for the bus.
 3. Proof envelopes v1 as a hard requirement for “privileged” folds; ZK optional.
 4. Wesley→GATOS target to generate `*.rgf` and `.rgc` bundles, plus schema manifests.
-5. KV and Graph facades as on‑ramps: `gatos kv`, `gatos graph`.
+5. KV and Graph facades as on-ramps: `gatos kv`, `gatos graph`.
 6. Policy templates: `gatos policy init --template minimal|regulated|airgapped`.
-7. Doctor is mandatory (not “nice‑to‑have”).
+7. Doctor is mandatory (not “nice-to-have”).
 
 ---
 
@@ -345,7 +345,7 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
   - finalize `.rgs` grammar + deterministic interpreter;
   - emit rule ids in Deny.
 - **Bus**:
-  - `mbus-config/<topic>.json` with versioned shard maps + dual‑write migration.
+  - `mbus-config/<topic>.json` with versioned shard maps + dual-write migration.
 - **Proofs**:
   - implement commitment proofs today;
   - leave ZK behind a trait.
@@ -362,7 +362,7 @@ Ship those, and this stops being “just” a gorgeous spec and becomes an opera
 > [!faq] Could the deterministic byte code just be Lua running on an echo-Lua VM w/echo's deterministic floats etc?
 
 **Short answer**: Yes — with constraints.
-You can absolutely make the “deterministic bytecode” be Lua on an Echo‑Lua VM if you run a restricted, deterministic profile and you do not rely on stock Lua bytecode for portability. Treat Lua as the authoring language, compile it to a portable, canonical IR, and execute it on a VM that enforces Echo’s determinism rules.
+You can absolutely make the “deterministic bytecode” be Lua on an Echo-Lua VM if you run a restricted, deterministic profile and you do not rely on stock Lua bytecode for portability. Treat Lua as the authoring language, compile it to a portable, canonical IR, and execute it on a VM that enforces Echo’s determinism rules.
 
 Below is the concrete plan.
 
@@ -370,7 +370,7 @@ Below is the concrete plan.
 
 ### ✅ What works (and what does not)
 
-Use Lua as the source, not the on‑disk bytecode
+Use Lua as the source, not the on-disk bytecode
 
 - Do: Parse Lua source → canonical AST → Echo Lua IR (call it ELC), serialize to CBOR/MsgPack, and hash that (`fold_root`).
 - Don’t: Ship stock Lua precompiled chunks (luac). They’re not portable across Lua versions/architectures (endianness, ints/floats, build flags). We need a portable, stable compiled form.
@@ -383,15 +383,15 @@ You’ll run the IR on a small VM with a deterministic standard library and a pu
 | :--- | :--- | :--- |
 | **Time/OS** | os.clock, os.time, io.* | Removed (forbidden) |
 | **Random** | math.random (MT) | Replaced with deterministic PRNG (e.g., PCG/Xoroshiro) seeded from {inputs_root, policy_root, fold_root} |
-| **Floats** | IEEE‑754 via host FPU | Software float or fixed‑point with defined rounding + NaN canonicalization (or integer/fixed‑point only) |
+| **Floats** | IEEE-754 via host FPU | Software float or fixed-point with defined rounding + NaN canonicalization (or integer/fixed-point only) |
 | **Iteration order** | pairs() order unspecified | pairs shadowed by dpairs() that sorts keys deterministically; ipairs allowed for arrays |
 | **Tables & hashing** | Hash seed randomized per process | Fixed hash seed inside VM; but you still must not rely on hash order |
 | **Coroutines** | Arbitrary yields | Disallowed (folds are pure; no scheduler) |
-| **Metamethods (__gc)** | Finalizer order GC‑dependent | Disallowed; GC visible effects forbidden |
-| **FFI/dynamic load** | possible via add‑ons | Forbidden |
-| **Math (exp/log/sin)** | Host‑lib accuracy varies | Deterministic math lib (CR‑libm‑style or pure integer/decimal path) |
+| **Metamethods (__gc)** | Finalizer order GC-dependent | Disallowed; GC visible effects forbidden |
+| **FFI/dynamic load** | possible via add-ons | Forbidden |
+| **Math (exp/log/sin)** | Host-lib accuracy varies | Deterministic math lib (CR-libm-style or pure integer/decimal path) |
 
-**TL;DR**: fold execution must be pure, total, side‑effect free. Same inputs ⇒ same bytes.
+**TL;DR**: fold execution must be pure, total, side-effect free. Same inputs ⇒ same bytes.
 
 ---
 
@@ -413,16 +413,16 @@ Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lu
 
 The EchoLua VM interprets ELC with:
 
-- A pure deterministic math layer (either fixed‑point or software floats; pick one and lock rounding mode).
-- Canonical JSON emission (UTF‑8 normalized, sorted keys, fixed number encoding).
+- A pure deterministic math layer (either fixed-point or software floats; pick one and lock rounding mode).
+- Canonical JSON emission (UTF-8 normalized, sorted keys, fixed number encoding).
 - Deterministic PRNG only if you explicitly allow it in a fold (most folds shouldn’t use it).
 
 ### 3) Standard library (deterministic subset)
 
 - `table`: `dkeys`, `dvalues`, `dsort`, `dpairs(t)` (sorted iteration).
 - `json`: `encode_canonical`, `decode_strict`.
-- `math`: `add`/`sub`/`mul`/`div` (deterministic), optional `exp`/`log`/`sin`/`cos` via a fixed, correctly rounded library. If you can, prefer fixed‑point/integers in folds for simplicity and speed.
-- `set`, `counter`: OR‑Set/2P‑Set primitives; G/PN counters; deterministic lattice joins.
+- `math`: `add`/`sub`/`mul`/`div` (deterministic), optional `exp`/`log`/`sin`/`cos` via a fixed, correctly rounded library. If you can, prefer fixed-point/integers in folds for simplicity and speed.
+- `set`, `counter`: OR-Set/2P-Set primitives; G/PN counters; deterministic lattice joins.
 - No debug, package, io, os.
 
 ---
@@ -431,9 +431,9 @@ The EchoLua VM interprets ELC with:
 
 ### 1.Floating point drift
 
-- Use software float (e.g., SoftFloat‑style) or fixed‑point (e.g., Q32.32) for all math in folds.
-- Canonicalize NaNs and rounding to ties‑to‑even.
-- If you need transcendental functions, ship a deterministic math lib (CR‑libm‑like) and pin versions.
+- Use software float (e.g., SoftFloat-style) or fixed-point (e.g., Q32.32) for all math in folds.
+- Canonicalize NaNs and rounding to ties-to-even.
+- If you need transcendental functions, ship a deterministic math lib (CR-libm-like) and pin versions.
 
 ### 2.Table iteration order
 
@@ -454,7 +454,7 @@ The EchoLua VM interprets ELC with:
 
 ### 6.String hashing / locales
 
-- VM sets fixed hash seed internally; string compare uses pure bytewise lexicographic (UTF‑8), locale‑independent.
+- VM sets fixed hash seed internally; string compare uses pure bytewise lexicographic (UTF-8), locale-independent.
 
 ---
 
@@ -468,23 +468,23 @@ The EchoLua VM interprets ELC with:
 
 ## Spec deltas to support EchoLua
 
-### Add these to `SPEC/TECH‑SPEC`
+### Add these to `SPEC/TECH-SPEC`
 
 1.Fold compilation outputs
 
-- fold_root (SHA‑256 of ELC bytes) MUST be recorded anywhere policy_root is recorded (events, checkpoints, proofs).
+- fold_root (SHA-256 of ELC bytes) MUST be recorded anywhere policy_root is recorded (events, checkpoints, proofs).
 
 2.Canonical JSON rules
 
-- Keys sorted lexicographically; UTF‑8 NFC; numeric encoding fixed (decimals or integers only); no trailing zeros; set a single representation for -0.
+- Keys sorted lexicographically; UTF-8 NFC; numeric encoding fixed (decimals or integers only); no trailing zeros; set a single representation for -0.
 
 3.Deterministic VM profile
 
-- Define the forbidden modules (io, os, debug, package) and replaced functions (pairs→dpairs, math.random→rng), plus the float/fixed‑point policy.
+- Define the forbidden modules (io, os, debug, package) and replaced functions (pairs→dpairs, math.random→rng), plus the float/fixed-point policy.
 
-4.Linter rules (build‑time)
+4.Linter rules (build-time)
 
-- Hard fail on: pairs, coroutines, metamethods __gc/__pairs, any import outside allowed stdlib, and any non‑canonical numeric literal.
+- Hard fail on: pairs, coroutines, metamethods __gc/__pairs, any import outside allowed stdlib, and any non-canonical numeric literal.
 
 5.Proof envelopes
 
@@ -536,8 +536,8 @@ gatos foldc folds/invoices.lua -o folds/invoices.rgf
 ## Performance notes
 
 - Interpreted Lua is plenty for control + small reductions;
-- heavy math should be in Echo’s native reducers (map-joins, counters, OR‑sets) callable from Lua as intrinsics.
-- Keep the VM single‑threaded per fold;
+- heavy math should be in Echo’s native reducers (map-joins, counters, OR-sets) callable from Lua as intrinsics.
+- Keep the VM single-threaded per fold;
 - parallelize across partitions upstream (multiple sessions/namespaces) to preserve determinism without scheduler complexity.
 
 ---
@@ -545,7 +545,7 @@ gatos foldc folds/invoices.lua -o folds/invoices.rgf
 ## Test matrix (lock this down)
 
 - Golden vectors across: Linux (glibc & musl), macOS ARM, Windows, WASM.
-- Folds using integers, fixed‑point, (optional) software floats with transcendental functions.
+- Folds using integers, fixed-point, (optional) software floats with transcendental functions.
 - Lints catching pairs, time/random, coroutines.
 - Poison tests: NaN propagation, signed zero, hash collisions, iteration order.
 
@@ -553,7 +553,7 @@ gatos foldc folds/invoices.lua -o folds/invoices.rgf
 
 ## Bottom line
 
-Yes: make the deterministic “bytecode” Lua‑authored, Echo‑compiled, and VM‑enforced.
+Yes: make the deterministic “bytecode” Lua-authored, Echo-compiled, and VM-enforced.
 No: don’t trust raw Lua bytecode or the stock standard library.
 
 Do it as EchoLua:
@@ -562,6 +562,6 @@ Do it as EchoLua:
 - Echo for determinism,
 - ELC for portable compiled form,
 - A tiny, pure stdlib,
-- And a linter that turns foot‑guns into build errors.
+- And a linter that turns foot-guns into build errors.
 
-We get a friendly developer experience and the bit‑for‑bit guarantees GATOS demands.
+We get a friendly developer experience and the bit-for-bit guarantees GATOS demands.

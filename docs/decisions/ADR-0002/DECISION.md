@@ -7,8 +7,10 @@ Requires: [ADR-0001]
 Related: [ADR-0003]
 Tags: [Job Plane, Compute, PoE]
 Schemas:
+
   - schemas/v1/job/job_manifest.schema.json
   - schemas/v1/job/proof_of_execution_envelope.schema.json
+
 Supersedes: []
 Superseded-By: []
 ---
@@ -35,7 +37,7 @@ This ADR defines a system within GATOS for scheduling, executing, and recording 
 3. When a **Job** commit is created, the **Ledger Service** (e.g., `gatosd`) **MUST** publish a corresponding message to a topic on the Message Plane (e.g., `gatos/jobs/pending`) for discovery by workers. Publication is an automatic system behavior on commit acceptance.
 4. The job lifecycle **MUST** be represented entirely through Git objects:
    - **Job:** A commit whose tree contains a `job.yaml` manifest. The manifest **MUST** include `command`, `args`, and `timeout` fields, and **SHOULD** include `policy_root` and an `inputs` array for deterministic attestation. See schema: [`schemas/v1/job/job_manifest.schema.json`](../../../schemas/v1/job/job_manifest.schema.json).
-   - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare‑and‑swap) to prevent race conditions.
+   - **Claim:** A ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`. This ref **MUST** be created atomically (compare-and-swap) to prevent race conditions.
    - **Result:** A commit referencing the original job commit, containing output artifacts (as pointers) and a `Proof-Of-Execution`.
 5. The **Proof-Of-Execution** **MUST** sign the job’s `content_id` and **MAY** include an attestation envelope with hashes of the runner binary and environment. See envelope schema: [`schemas/v1/job/proof_of_execution_envelope.schema.json`](../../../schemas/v1/job/proof_of_execution_envelope.schema.json).
 6. Each `Result` commit **MUST** include trailers for discoverability:
@@ -58,24 +60,24 @@ ULIDs MAY be used as human-friendly aliases in messages (for deduplication, sort
 
 The job manifest is stored as `job.yaml` but the authoritative form for hashing and `content_id` computation is Canonical JSON.
 
-- Serialization for hashing: Canonical JSON (UTF‑8, sorted keys, no insignificant whitespace, lowercase hex where applicable).
+- Serialization for hashing: Canonical JSON (UTF-8, sorted keys, no insignificant whitespace, lowercase hex where applicable).
 - Conversion: YAML authorship is allowed; prior to hashing, `job.yaml` MUST be converted to JSON with field order ignored and then canonicalized.
 - Required fields and types:
   - `command: array<string>` — executable and arguments (e.g., `["/usr/bin/env", "bash", "-lc"]`).
   - `args: array<string>` — additional arguments appended to `command` (may be empty). If omitted, treated as `[]`.
-  - `timeout: integer` — seconds (non‑negative). Implementations MAY also accept ISO‑8601 duration strings at authoring time but MUST normalize to integer seconds in Canonical JSON.
+  - `timeout: integer` — seconds (non-negative). Implementations MAY also accept ISO-8601 duration strings at authoring time but MUST normalize to integer seconds in Canonical JSON.
 - Optional fields:
-  - `env: object` — map<string,string>; keys unique; values UTF‑8 strings.
+  - `env: object` — map<string,string>; keys unique; values UTF-8 strings.
   - `cwd: string` — working directory.
   - `inputs: array<object>` — opaque pointers or references to inputs (e.g., `{ "kind":"blobptr", "algo":"blake3", "hash":"<hex>", "size":123 }`).
   - `policy_root: string` — `sha256:<hex>` of policy bundle used.
-  - `ulid: string` — human‑friendly identifier; not used for hashing.
+  - `ulid: string` — human-friendly identifier; not used for hashing.
 
 Canonicalization rules for `content_id`:
 
 1. Build a JSON object with the fields above, omitting absent optional fields.
 2. Sort keys lexicographically; arrays preserve order.
-3. Encode as UTF‑8 without insignificant whitespace; booleans and numbers use standard JSON encoding; all hex encodings are lowercase.
+3. Encode as UTF-8 without insignificant whitespace; booleans and numbers use standard JSON encoding; all hex encodings are lowercase.
 4. Compute `content_id = blake3(canonical_bytes)`.
 
 Examples
@@ -101,7 +103,7 @@ Claim creation MUST use Git’s reference update protocol with an expected old o
 
 - To create `refs/gatos/jobs/<job-id>/claims/<worker-id>`, the client MUST request an atomic update with expected old = `0000000000000000000000000000000000000000` (zero OID).
 - If the reference already exists or the expected old does not match, the server MUST reject the update with a deterministic conflict error. The worker MUST treat this as a lost race and enter the retry/backoff loop.
-- Deployments MUST designate a single authoritative push endpoint (leader) for claim creation to guarantee atomicity across replicas. Retrying against non‑authoritative replicas MUST converge via eventual consistency.
+- Deployments MUST designate a single authoritative push endpoint (leader) for claim creation to guarantee atomicity across replicas. Retrying against non-authoritative replicas MUST converge via eventual consistency.
 - Workers SHOULD use exponential backoff with jitter on CAS failures.
 
 ### Trailer Encoding (Result Commit)
@@ -181,5 +183,5 @@ sequenceDiagram
 
 ## Terminology and References
 
-- `content_id`: The BLAKE3 hash of the canonical serialization of the unsigned job core. This mirrors the definition used for commits in ADR‑0001 and applies here to the job manifest’s canonical form. See ADR‑0001 for canonical serialization rules and the `CommitCore` pattern.
-- `unsigned job core`: The canonical, serialized job content used for hashing and signatures; derived from the job manifest (e.g., `job.yaml`) and fixed fields, excluding any signatures, claims, or result artifacts. This parallels ADR‑0001’s "unsigned commit core" concept.
+- `content_id`: The BLAKE3 hash of the canonical serialization of the unsigned job core. This mirrors the definition used for commits in ADR-0001 and applies here to the job manifest’s canonical form. See ADR-0001 for canonical serialization rules and the `CommitCore` pattern.
+- `unsigned job core`: The canonical, serialized job content used for hashing and signatures; derived from the job manifest (e.g., `job.yaml`) and fixed fields, excluding any signatures, claims, or result artifacts. This parallels ADR-0001’s "unsigned commit core" concept.

@@ -211,7 +211,7 @@ fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
         }
         let orig =
             std::fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
-        let (mut updated, issues) = lint_one(&orig);
+        let (updated, issues) = lint_one(&orig);
         if issues > 0 {
             total_issues += issues;
             eprintln!(

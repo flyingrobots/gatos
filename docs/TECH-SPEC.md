@@ -115,7 +115,7 @@ graph TD
 
 Note on policy rule naming
 
-- Governance actions are referenced as `governance.<action>`; `action` tokens use dot‑notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
+- Governance actions are referenced as `governance.<action>`; `action` tokens use dot-notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
 
 The Fold Engine consumes canonicalized events to produce a canonical state tree.
 
@@ -180,7 +180,7 @@ sequenceDiagram
 
 ## 7. JSONL Protocol
 
-Communication with `gatosd` occurs over a JSONL RPC protocol. Long‑running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
+Communication with `gatosd` occurs over a JSONL RPC protocol. Long-running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
 
 ```mermaid
 sequenceDiagram
@@ -222,7 +222,7 @@ graph TD
 
 ---
 
-## 9. CI & Cross‑Platform Determinism
+## 9. CI & Cross-Platform Determinism
 
 A CI matrix ensures determinism across platforms and runs specialized test suites.
 
@@ -344,7 +344,7 @@ classDiagram
 
 ## 15. Compute Engine (Job Runner)
 
-See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+See also: [ADR-0002](./decisions/ADR-0002/DECISION.md).
 
 The `gatos-compute` crate provides the GATOS worker process.
 
@@ -377,14 +377,14 @@ sequenceDiagram
 
 ## 16. Governance Engine
 
-See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+See also: [ADR-0003](./decisions/ADR-0003/DECISION.md).
 
 ### Engine Responsibilities
 
 - Watchers: a service in `gatos-policy` watches `refs/gatos/proposals/**` and `refs/gatos/approvals/**`.
 - Verification: for each new Approval, verify signature and eligibility using the trust graph.
 - Quorum check: evaluate the policy rule (`governance.<action>`) to determine if quorum is satisfied.
-- Grant creation: when quorum is met, create a Grant commit with a canonical Proof‑Of‑Consensus envelope and update `refs/gatos/grants/...`.
+- Grant creation: when quorum is met, create a Grant commit with a canonical Proof-Of-Consensus envelope and update `refs/gatos/grants/...`.
 - Gate enforcement: the Policy Gate checks for a valid Grant before allowing any governed action.
 
 ### CLI Skeleton (This defines the normative CLI user interface; stub behavior acceptable initially)
@@ -401,7 +401,7 @@ Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads
 
 Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
 
-### End‑to‑End Flow
+### End-to-End Flow
 
 ```mermaid
 sequenceDiagram
