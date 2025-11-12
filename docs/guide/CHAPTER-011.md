@@ -112,14 +112,3 @@ GATOS is designed for both correctness and performance. It achieves high perform
 
 This combination allows GATOS to serve as both a high-integrity transactional system and a high-performance analytical backend, without compromising on its core principles.
 
-
----
-
-**Next**: [Chapter 12–The GATOS Vision](./CHAPTER-012.md)
-
-**Prev**: [Chapter 10–Proofs, Attestation, and Privacy](./CHAPTER-010.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

@@ -84,14 +84,3 @@ When a client sends a command to `gatosd`, the following happens in the Ledger P
 ## Summary
 
 The Ledger Plane is the immutable foundation of GATOS. By using Git's own robust, distributed, and cryptographically secure data structures, `gatos-ledger` provides a powerful and elegant solution for creating a complete and verifiable history of every action in the system. This auditable log is the essential input for all other planes, enabling the deterministic state folds and governance checks that make GATOS a truly trustworthy operating surface.
-
----
-
-**Next**: [Chapter 3–The State Plane: Deterministic Folds](./CHAPTER-003.md)
-
-**Prev**: [Chapter 1–The GATOS System Model](./CHAPTER-001.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

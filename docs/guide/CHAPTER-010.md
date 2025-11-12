@@ -95,14 +95,3 @@ GATOS provides a sophisticated, multi-layered approach to trust, verification, a
 *   **Attestation and Proof-of-Execution** provide verifiable evidence of computation.
 *   **Opaque Pointers** allow the system to manage and compute on private, off-chain data without sacrificing determinism.
 *   The future integration of **Zero-Knowledge Proofs** will provide even stronger privacy guarantees, enabling a new class of applications that are both fully private and fully verifiable.
-
----
-
-**Next**: [Chapter 11–Performance: Partial Folds, Caching, and Exploration](./CHAPTER-011.md)
-
-**Prev**: [Chapter 9–The GATOS Morphology Calculus](./CHAPTER-009.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

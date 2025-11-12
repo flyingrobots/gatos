@@ -85,14 +85,3 @@ Schema Manifest (correspondences):
 Resulting AB shape merges the two into a single entity with a consistent id/email. `Proof‑of‑Meld = blake3(root(Shape A) || root(Shape B) || root(Schema))`.
 
 Schemas are versioned and signed under `refs/gatos/schemas/<ns>` and distributed like other state. See ADR‑0012 (Federation/Mounts) and ADR‑0011 (Exporter) for normative storage and export rules.
-
----
-
-**Next**: [Chapter 8–Interfaces & Integration](./CHAPTER-008.md)
-
-**Prev**: [Chapter 6–The Message & Job Planes: Distributed Workflows](./CHAPTER-006.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

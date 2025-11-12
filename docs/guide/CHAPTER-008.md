@@ -138,14 +138,3 @@ Because GATOS is Git-native, it integrates seamlessly with platforms like **GitH
 ## Summary
 
 GATOS provides a layered approach to integration. At the lowest level, the JSONL RPC protocol offers a simple, powerful, and language-agnostic way to communicate with the `gatosd` daemon. On top of this, the `git gatos` CLI provides a convenient interface for humans and shell scripts. Finally, the Git-native nature of the system allows for deep and powerful integrations with platforms like GitHub, turning them into user interfaces for the GATOS operating surface.
-
----
-
-**Next**: [Chapter 9–The GATOS Morphology Calculus](./CHAPTER-009.md)
-
-**Prev**: [Chapter 7–Federation & Mind-Melds: Cross-Repo Operations](./CHAPTER-007.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

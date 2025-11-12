@@ -109,14 +109,3 @@ Grant trailers include: `Proposal-Id`, `Grant-Id`, `Proof-Of-Consensus: blake3(e
 ## Summary
 
 The Policy Plane is the brain of GATOS. It transforms the system from a simple event log into a true governance platform. By evaluating every action against a set of version-controlled rules and managing a capability-based security model, `gatos-policy` ensures that the GATOS operating surface is not just deterministic and auditable, but also secure and compliant with the defined rules of the system.
-
----
-
-**Next**: [Chapter 5–Project Stargate: Local Enforcement & Magic Mirrors](./CHAPTER-005.md)
-
-**Prev**: [Chapter 3–The State Plane: Deterministic Folds](./CHAPTER-003.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025

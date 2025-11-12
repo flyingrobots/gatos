@@ -87,12 +87,3 @@ Welcome to the GATOS multiverse.
 **FINALLY.** Git As The Operating Surface™.
 
 _Now you Git it._
-
----
-
-**Prev**: [Chapter 11–Performance: Partial Folds, Caching, and Exploration](./CHAPTER-011.md)
-
----
-
-**GATOS–_Git As The Operating Surface™_**  
-James Ross / [Flying • Robots](https://github.com/flyingrobots) © 2025
