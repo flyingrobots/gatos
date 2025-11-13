@@ -42,7 +42,7 @@ The GATOS architecture is divided into five conceptual planes, each with a disti
 
 1.  **The Ledger Plane:** The immutable source of truth. An append-only journal of all signed events.
 2.  **The State Plane:** The deterministic state of the world. A verifiable "shape" created by folding the event history from the ledger.
-3.  **The Policy Plane:** The governance layer. Enforces rules, capabilities, and consensus before actions are permitted.
+3.  **The Policy/Trust Plane:** The governance layer. Enforces rules, capabilities, and consensus before actions are permitted.
 4.  **The Message Plane:** The communication backbone. A commit-backed, asynchronous pub/sub message bus.
 5.  **The Job Plane:** The execution engine. A system for scheduling, running, and recording the results of distributed, asynchronous jobs.
 
@@ -53,20 +53,20 @@ graph TD
         SDK("Client SDK")
     end
 
-    subgraph "GATOS System"
+        subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
         subgraph "Ledger Plane"
             Ledger("gatos-ledger");
         end
 
+        subgraph "Policy/Trust Plane"
+            Policy("gatos-policy");
+        end
+
         subgraph "State Plane"
             Echo("gatos-echo");
             KV("gatos-kv");
-        end
-
-        subgraph "Policy/Trust Plane"
-            Policy("gatos-policy");
         end
 
         subgraph "Message Plane"

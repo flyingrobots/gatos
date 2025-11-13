@@ -23,13 +23,13 @@ graph TD
             Ledger("gatos-ledger");
         end
 
+        subgraph "Policy/Trust Plane"
+            Policy("gatos-policy");
+        end
+
         subgraph "State Plane"
             Echo("gatos-echo");
             KV("gatos-kv");
-        end
-
-        subgraph "Policy/Trust Plane"
-            Policy("gatos-policy");
         end
 
         subgraph "Message Plane"
@@ -72,7 +72,7 @@ graph TD
 2.  **The State Plane (`gatos-echo`, `gatos-kv`)**
     This plane is responsible for computing the current "state" of the system. It performs a **fold**—a pure, deterministic function that processes the event stream from the Ledger Plane to produce a canonical state snapshot. Like folding a piece of paper in origami, each fold transforms the surface, creating a new, verifiable **shape** (represented by a `state root` hash). Because the fold is deterministic, any node can independently replay the ledger and arrive at the exact same shape, ensuring consistency without a central coordinator.
 
-3.  **The Policy Plane (`gatos-policy`)**
+3.  **The Policy/Trust Plane (`gatos-policy`)**
     This is the governance and security layer. Before any event is written to the ledger, it must pass through the Policy Plane. This plane evaluates a set of rules, also stored in the Git repository, to determine if an action is allowed. It can enforce complex rules, such as requiring N-of-M signatures from a group of maintainers before a critical operation (like a production deployment) is permitted.
 
 4.  **The Message Plane (`gatos-mind`)**
