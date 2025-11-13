@@ -71,6 +71,7 @@ graph TD
 
 2.  **The Policy/Trust Plane (`gatos-policy`)**
     This is the governance and security layer. Before any event is written to the ledger, it must pass through the Policy/Trust Plane.
+    See [Deterministic Lua](../deterministic-lua.md) for the execution profile used by the policy engine (stub).
 
 3.  **The State Plane (`gatos-echo`, `gatos-kv`)**
     This plane is responsible for computing the current "state" of the system. It performs a **fold**—a pure, deterministic function that processes the event stream from the Ledger Plane to produce a canonical state snapshot. Like folding a piece of paper in origami, each fold transforms the surface, creating a new, verifiable **shape** (represented by a `state root` hash). Because the fold is deterministic, any node can independently replay the ledger and arrive at the exact same shape, ensuring consistency without a central coordinator.
