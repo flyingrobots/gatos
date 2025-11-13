@@ -128,6 +128,8 @@ graph TD
     style Compute fill:#f96,stroke:#333,stroke-width:2px
 ```
 
+Note: “Policy/Trust Plane” includes the policy engine and trust artifacts (keys, groups, grants, revocations) governed alongside policies.
+
 ### Crate Summary
 <a id="crate-summary"></a>
 
