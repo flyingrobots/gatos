@@ -107,7 +107,7 @@ graph TD
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
+        subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
         end
 
@@ -348,6 +348,21 @@ These trailers enable portable verification and reproducible builds of state acr
 > - TECH‑SPEC fold/verification references these trailers.
 > - Walkthrough usage: [HELLO-OPS](./guide/HELLO-OPS.md#2-fold-to-state-and-inspect).
 
+### 5.4 Proof‑of‑Fold (PoF)
+<a id="5.4"></a><a id="54"></a><a id="5"></a><a id="5.4-proof-of-fold"></a>
+
+A **Proof‑of‑Fold (PoF)** binds a state checkpoint to the exact ledger window and fold definition used to derive it.
+
+At minimum, a PoF MUST commit to:
+
+- `Ledger-Start` and `Ledger-End` commit OIDs (inclusive window),
+- `Policy-Root` (or policy digest) used for gate decisions affecting the fold,
+- `Fold-Id` (stable identifier or digest of the fold function/spec),
+- `State-Root` (content hash of the resulting checkpoint),
+- Signatures of the folding actor(s) when required by policy.
+
+Implementations MAY embed PoF in commit trailers or attach a sidecar manifest. Verifiers MUST recompute the fold over the declared window and compare the resulting `State-Root`.
+
 ---
 
 ## 6. Policy & Decision Audit
@@ -379,6 +394,9 @@ sequenceDiagram
 ```
 
 On **DENY**, the gate **MUST** append an audit decision to `refs/gatos/audit/policy`.
+
+> [!IMPORTANT]
+> DENY is always logged under audit. Each decision MUST include the policy rule identifier (`Policy-Rule`), a reproducible reason, and sufficient context (actor, target, refs) for independent verification.
 
 ---
 
@@ -810,3 +828,14 @@ Revoked-By: <actor>
 <a id="20.6"></a><a id="206"></a><a id="20"></a><a id="20.6-bus-topics-recommended"></a>
 
 `gatos.governance.proposal.created`, `gatos.governance.approval.created`, `gatos.governance.grant.created`, `gatos.governance.grant.revoked`.
+
+---
+
+## Glossary
+<a id="glossary"></a>
+
+- PoF — Proof‑of‑Fold. Evidence that a state root was derived deterministically from a specific ledger window under a specific fold/policy root.
+- PoE — Proof‑of‑Execution. Signed attestation that a worker executed a job (who/what/where/inputs/outputs).
+- PoC — Proof‑of‑Consensus. Evidence that a governance action met its quorum/approval rules.
+- PoX — Proof‑of‑Experiment. Bundle tying inputs → program → outputs for scientific reproducibility.
+- ULID — Lexicographically sortable identifier used as an idempotency key for messages.
