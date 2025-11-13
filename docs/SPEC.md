@@ -612,6 +612,16 @@ graph TD
     C -- Prunes --> D(Unreferenced Blobs in Epoch N);
 ```
 
+### 15.1 Exports and Explorer‑Root (Normative)
+
+Exporters that materialize state to external formats (e.g., Parquet, SQLite) **MUST** emit an `Explorer-Root` checksum:
+
+```
+Explorer-Root = blake3(ledger_head || policy_root || extractor_version)
+```
+
+The `gatos export verify` command **MUST** recompute `Explorer-Root` against the repository and report mismatches.
+
 ---
 
 ## 16.  Compliance & Tests (Normative)
