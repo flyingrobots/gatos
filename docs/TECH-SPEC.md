@@ -171,6 +171,27 @@ See also:
 - Checkpoint trailers (normative) in SPEC: [State Checkpoint Trailers](./SPEC.md#53-state-checkpoint-trailers-normative)
 - Walkthrough: [HELLO-OPS](./guide/HELLO-OPS.md#2-fold-to-state-and-inspect)
 
+### EchoLua Compiler & VM
+<a id="echolua"></a>
+
+EchoLua provides deterministic folds and policy evaluation:
+
+- Compiler: Lua source → normalized AST → Echo Lua IR (ELC); ELC serialized as DAG‑CBOR; `fold_root = sha256(ELC_bytes)`.
+- Runtime: Q32.32 fixed‑point math (ties‑to‑even); canonical JSON emission; no OS/RNG/time; no coroutines/FFI.
+- Stdlib: `dpairs`, `dkeys`, `dsort`, `encode_canonical`, `decode_strict`.
+- RNG: `rng(seed_bytes)` only; no ambient global state.
+- Linter: fail on `pairs`, `coroutine`, `__gc`, `__pairs`, `math.random`, `os.*`, `io.*`, `debug.*`, `package.*`.
+- Fuel/step limits to guarantee termination.
+
+Artifacts:
+
+- Record `Fold-Root: sha256:<hex>` in state trailers (SPEC §5.3) and PoF (SPEC §5.4).
+- Record `Fold-Engine: echo@<semver>` including deterministic math lib id.
+
+Testing:
+
+- Golden vectors across linux/macos/windows/wasm; integer and fixed‑point cases; poison tests for NaNs/signed zero/table iteration.
+
 ---
 
 ## 4. Index & Cache

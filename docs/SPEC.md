@@ -80,7 +80,9 @@ graph TD
 
 **Git** refers to any conformant implementation supporting refs, commits, trees, blobs, notes, and atomic ref updates.
 
-**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`. JSON structures that are publicly exchanged (e.g., public pointers) SHOULD use RFC 8785 JCS.
+**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`. JSON structures that are publicly exchanged (e.g., public pointers) SHOULD use RFC 8785 JCS (sorted keys; UTF‑8 NFC; no `-0`).
+
+**Fold IR** (Echo Lua IR, ELC) is serialized as DAG‑CBOR and identified by `fold_root = sha256(ELC_bytes)`. Stock Lua bytecode (luac) is NOT portable and MUST NOT be used.
 
 **Signatures** include an explicit `sig_alg` and use domain separation with context string `GATOS/v0`.
 
@@ -323,7 +325,7 @@ For identical inputs, and the same `policy_root`, the byte sequence of `state_ro
 ### 5.2 Fold Spec & Checkpoints
 <a id="5.2"></a><a id="52"></a><a id="5"></a><a id="5.2-fold-spec-checkpoints"></a>
 
-A Fold is defined by a `.yaml` spec. Its output, a **State Checkpoint**, is a commit on `refs/gatos/state/<ns>` whose tree contains the materialized state artifacts.
+A Fold is defined by a `.yaml` spec and a compiled EchoLua program (ELC). The EchoLua source is compiled to ELC (serialized DAG‑CBOR); `fold_root = sha256(ELC_bytes)`. Its output, a **State Checkpoint**, is a commit on `refs/gatos/state/<ns>` whose tree contains the materialized state artifacts.
 
 > See also
 >
@@ -339,7 +341,8 @@ Every state checkpoint commit under `refs/gatos/state/<ns>` **MUST** include the
 State-Root: blake3:<hex>          # lowercase hex digest of canonical state
 Ledger-Head: <commit-oid>         # last ledger commit included in this fold
 Policy-Root: <commit-oid>         # commit/digest that identifies the effective policy
-Fold-Engine: echo@<semver>        # fold engine identity and version
+Fold-Engine: echo@<semver>        # fold engine identity and version (incl. math lib id)
+Fold-Root: sha256:<hex>           # hash of EchoLua IR bytes (ELC)
 Fold-Version: <schema-version>     # application/shape schema version
 ```
 
@@ -360,6 +363,7 @@ At minimum, a PoF MUST commit to:
 - `Ledger-Start` and `Ledger-End` commit OIDs (inclusive window),
 - `Policy-Root` (or policy digest) used for gate decisions affecting the fold,
 - `Fold-Id` (stable identifier or digest of the fold function/spec),
+- `Fold-Root` (sha256 of ELC bytes),
 - `State-Root` (content hash of the resulting checkpoint),
 - Signatures of the folding actor(s) when required by policy.
 
@@ -373,7 +377,7 @@ Implementations MAY embed PoF in commit trailers or attach a sidecar manifest. V
 ### 6.1 Gate Contract
 <a id="6.1"></a><a id="61"></a><a id="6"></a><a id="6.1-gate-contract"></a>
 
-All events are evaluated by a Policy Gate before being accepted.
+All events are evaluated by a Policy Gate before being accepted. Gates that execute policy code MUST adhere to the [Deterministic Lua (EchoLua)](./deterministic-lua.md) runtime profile.
 $Decision = Gate.evaluate(intent, context) -> {Allow | Deny(reason)}$
 
 Note: A deterministic execution profile for Lua will be documented (see [Deterministic Lua](./deterministic-lua.md)); policy engines **SHOULD** adhere to that profile to ensure portable verification.

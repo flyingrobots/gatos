@@ -1,16 +1,78 @@
 ---
-title: Deterministic Lua (stub)
+title: Deterministic Lua (EchoLua Profile)
 ---
 
-# Deterministic Lua (stub)
+# Deterministic Lua (EchoLua Profile)
 
-GATOS will document a deterministic execution profile for Lua used in policies and (optionally) folds. This section is a placeholder pending finalized constraints. Target properties:
+EchoLua defines a deterministic execution profile for Lua used in GATOS policies and folds. It locks down semantics so the same inputs yield the same bytes across platforms.
 
-- Stable numeric semantics (no platform‑dependent float idiosyncrasies).
-- Pure FFI boundaries; no ambient I/O; explicit capability invocation.
-- Seeded RNG banned in deterministic mode; time/syscalls gated by policy.
-- Fixed iteration order for tables where applicable; canonical serializers.
-- Resource caps: step limits / fuel counters to ensure termination.
+This document is normative where called out by SPEC and TECH‑SPEC; elsewhere it is strongly RECOMMENDED.
 
-Once finalized, SPEC/TECH‑SPEC will reference this profile normatively.
+## Goals
+
+- Pure, total, side‑effect free fold execution.
+- Cross‑platform bit‑for‑bit deterministic results.
+- Portable compiled form for long‑term verification.
+
+## Compilation Pipeline
+
+```text
+Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lua IR)
+                                         │
+                                         └─► DAG‑CBOR bytes  (fold_root = sha256(ELC_bytes))
+```
+
+- Normalize: remove syntactic sugar, canonical constant folding, resolve upvalues.
+- Lower: emit a small, explicitly typed IR + minimal VM op set.
+- Serialize: ELC encoded as DAG‑CBOR; `fold_root = sha256(ELC_bytes)`.
+- Prohibition: Stock Lua bytecode (luac) is NOT portable and MUST NOT be used on disk or for signing.
+
+## Deterministic Runtime Profile
+
+| Area | Default Lua | EchoLua profile (deterministic) |
+| :--- | :--- | :--- |
+| Time/OS | os.clock, os.time, io.* | Removed (forbidden) |
+| Random | math.random (MT) | rng(seed) intrinsic only; no global state |
+| Numbers | Host IEEE‑754 | Fixed‑point Q32.32 with ties‑to‑even; canonical NaN handling (N/A) |
+| Iteration | pairs() unspecified | dpairs(t) sorts keys; ipairs allowed |
+| Table hashing | Randomized seed | Fixed seed; do not rely on hash order |
+| Coroutines | yield anywhere | Disallowed in folds/policy eval |
+| Metamethods | __gc etc | __gc and __pairs forbidden; compile‑time error |
+| FFI/dlopen | via add‑ons | Forbidden |
+| Math lib | Host‑lib variance | Deterministic lib; exp/log/sin/cos pinned or disallowed |
+
+Additional invariants:
+
+- Canonical JSON: UTF‑8 NFC; lexicographic key sort; fixed number encoding (no `-0`, no trailing zeros).
+- Resource caps: fuel/step counters (MUST terminate within limits).
+
+## Standard Library (Deterministic Subset)
+
+- `table`: `dkeys`, `dvalues`, `dsort`, `dpairs(t)` (sorted iteration).
+- `json`: `encode_canonical`, `decode_strict`.
+- `math`: +, −, ×, ÷ in Q32.32; optional trig/exp/log only via pinned deterministic lib.
+- `set`, `counter`: deterministic CRDT‑style helpers for folds.
+- No `debug`, `package`, `io`, `os` modules.
+
+## RNG
+
+- No ambient RNG. Provide `rng(seed_bytes)` which expands a user‑supplied seed into a deterministic stream (e.g., Xoroshiro/PCG implementation pinned by version).
+- Use discouraged in folds; if used, caller MUST pass explicit seed material.
+
+## Linter / Compiler Rules
+
+Hard‑fail on:
+
+- use of `pairs`, `coroutine`, `__gc`, `__pairs`, `math.random`, `os.*`, `io.*`, `debug.*`, `package.*`.
+- non‑canonical numeric literals; non‑deterministic table traversal.
+
+## Proof / Trailer Integration
+
+- State checkpoints MUST include `Fold-Root: sha256:<hex>` trailers.
+- PoF envelopes SHOULD include `fold_root` and verifiers MUST recompute from ELC bytes when present.
+
+## Open Implementation Notes
+
+- Transcendentals: when required, ship a pinned deterministic math library and record its version in `Fold-Engine`.
+- Performance: heavy data operators should be implemented as deterministic native intrinsics, invoked from EchoLua.
 

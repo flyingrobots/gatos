@@ -14,6 +14,7 @@ See SPEC: §5.4.
 - `Policy-Root` — policy in effect
 - `Fold-Id` — fold function/spec identifier
 - `State-Root` — content hash of resulting checkpoint
+- `Fold-Root` — sha256 of EchoLua IR bytes (ELC)
 - Signatures as required by policy
 
 PoF may be embedded in trailers or attached as a sidecar manifest.
@@ -27,4 +28,3 @@ git gatos fold verify <state-ref>
 # Verify a PoF envelope explicitly
 git gatos verify proof --id <pof-id>
 ```
-
