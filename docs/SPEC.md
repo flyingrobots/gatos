@@ -376,6 +376,8 @@ Implementations MAY embed PoF in commit trailers or attach a sidecar manifest. V
 All events are evaluated by a Policy Gate before being accepted.
 $Decision = Gate.evaluate(intent, context) -> {Allow | Deny(reason)}$
 
+Note: A deterministic execution profile for Lua will be documented (see [Deterministic Lua](./deterministic-lua.md)); policy engines **SHOULD** adhere to that profile to ensure portable verification.
+
 ```mermaid
 sequenceDiagram
     participant Client
