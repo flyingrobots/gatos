@@ -27,6 +27,10 @@ If there's more you want to know, follow the links below:
 > **GATOS** is the evolution of my earlier work ([`git-mind`](https://github.com/neuroglyph/git-mind), [Echo](https://github.com/flyingrobots/echo), [Ledger Kernel](https://github.com/flyingrobots/ledger-kernel), etc.) into a single, unified system. I've just started working on this project. If you're interested, star the repo, watch, and follow along.
 > *- flyingrobots*
 
+<details>
+  <summary>ASCII art</summary>
+
+  
 ```bash
 
 8""""8 8""""8 ""8"" 8"""88 8""""8 
@@ -38,6 +42,8 @@ If there's more you want to know, follow the links below:
  
   Git As The Operating Surface™  
 ```
+
+</details>
 
 ## Git As The Operating Surface
 
@@ -91,7 +97,7 @@ Architecture Decision Records (ADRs) aren't just documentation; they are ***exec
 git push
 # ❌ Remote: Error: Policy Violation (ADR-0042)
 # ❌ Remote: "API breaking changes require 2-of-3 quorum"
-# ❌ Remote: See refs/gatos/audit/policy/deny/<id>
+# ❌ Remote: See refs/gatos/audit/policy/deny/<id> (DENY is logged under audit)
 ```
 
 ### 3. Privacy with Proofs (Opaque Pointers)
@@ -178,6 +184,8 @@ cargo install gatos
   gatos reproduce <pox-id>
   # ✅ bit-for-bit identical outputs (or a precise reason for drift)
   ```
+
+Research Profile defaults: PoF required on state pushes; `refs/gatos/policies/**`, `refs/gatos/state/**`, and `refs/gatos/audit/**` are fast‑forward only; message bus rotates shards at ~100k msgs or ~192 MB with 30‑day TTL; audit proofs + latest state are GC anchors; opaque pointers publish commitments while private bytes live behind a policy‑gated resolver. See [docs/research-profile.md](./docs/research-profile.md).
 
 ### 🛡️ For DevOps (The Ultimate Audit)
 
