@@ -11,9 +11,9 @@ Heuristics:
 - Only links patterns of the form /\b[Cc]hapter\s+([1-9]|1[0-2])\b/.
 
 Usage:
-  python scripts/linkify_chapters.py --check   # exits non-zero if changes needed
-  python scripts/linkify_chapters.py --write   # applies changes in-place
-  python scripts/linkify_chapters.py           # dry-run report
+  python scripts/linkify_chapters.py --check                 # exits non-zero if changes needed
+  python scripts/linkify_chapters.py --write                 # applies changes in-place (docs/guide)
+  python scripts/linkify_chapters.py --write --paths docs/guide docs/HELLO-OPS.md  # explicit targets
 """
 import argparse
 import pathlib
@@ -72,17 +72,24 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
         out_lines.append(new_line)
     return changed, "".join(out_lines)
 
+def iter_markdown(paths: list[pathlib.Path]):
+    for p in paths:
+        if p.is_file() and p.suffix == ".md":
+            yield p
+        elif p.is_dir():
+            for md in p.rglob("*.md"):
+                yield md
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="apply changes in-place")
     ap.add_argument("--check", action="store_true", help="exit non-zero if changes required")
+    ap.add_argument("--paths", nargs="*", default=[str(GUIDE_DIR)], help="files/dirs to process")
     args = ap.parse_args()
 
     changed_any = False
-    for md in sorted(GUIDE_DIR.glob("*.md")):
-        if md.name.startswith("CHAPTER-") or md.name in {"README.md", "HELLO-OPS.md", "HELLO-PRIVACY.md"}:
-            # Still process chapters; they may reference other chapters in prose
-            pass
+    targets = [pathlib.Path(p) for p in args.paths]
+    for md in iter_markdown(targets):
         chg, new_text = process_file(md)
         if chg:
             changed_any = True
@@ -96,4 +103,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
