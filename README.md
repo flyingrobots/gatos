@@ -2,9 +2,9 @@
 
 ## TL;DR
 
-**GATOS** generalizes Git’s content-addressed DAG into a complete computational substrate: a programmable operating surface unifying history, policy, and computation within a deterministic, verifiable feedback loop. 
+**GATOS** generalizes Git’s content-addressed DAG into a complete computational substrate: a programmable operating surface unifying history, policy, and computation within a deterministic, verifiable feedback loop.
 
-It turns Git from a version-control system into a self-governing compute fabric. Commits aren't just records of change, but executable events in a cryptographically auditable state machine. Policies, data, and computation all live in the same history, producing provable behavior and automatic governance without centralized infrastructure. 
+It turns Git from a version-control system into a self-governing compute fabric. Commits aren't just records of change, but executable events in a cryptographically auditable state machine. Policies, data, and computation all live in the same history, producing provable behavior and automatic governance without centralized infrastructure.
 
 **The Result**: A platform that’s offline-first, federated, and mathematically deterministic — a new foundation for verifiable infrastructure, trustworthy automation, distributed AI, and time-travel computing.
 
