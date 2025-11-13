@@ -1,5 +1,7 @@
+import { defineConfig } from 'vitepress'
 import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
+import fsp from 'node:fs/promises'
 import path from 'node:path'
 
 // Site base for GitHub Pages. For project pages at
@@ -8,19 +10,31 @@ import path from 'node:path'
 // e.g. '/gatos/pr-preview/pr-123/'.
 const SITE_BASE = (process.env.DOCS_BASE || '/gatos/').replace(/([^/])$/, '$1/')
 
-function chapterItems(): { text: string; link: string }[] {
+async function chapterItemsSafe(): Promise<{ text: string; link: string }[]> {
   const guideDir = path.join(process.cwd(), 'docs', 'guide')
-  const files = fs
-    .readdirSync(guideDir)
-    .filter((f) => /^CHAPTER-\d{3}\.md$/.test(f))
-    .sort()
-  return files.map((f) => {
-    const p = path.join(guideDir, f)
-    const md = fs.readFileSync(p, 'utf-8')
-    const m = md.match(/^#\s+(.+)$/m)
-    const title = m ? m[1] : f.replace(/\.md$/, '')
-    return { text: title, link: `/guide/${f.replace(/\.md$/, '')}` }
-  })
+  try {
+    if (!fs.existsSync(guideDir)) return []
+    const entries = await fsp.readdir(guideDir)
+    const files = entries.filter((f) => /^CHAPTER-\d{3}\.md$/.test(f)).sort()
+    const items: { text: string; link: string }[] = []
+    for (const f of files) {
+      const p = path.join(guideDir, f)
+      let title = f.replace(/\.md$/, '')
+      try {
+        const md = await fsp.readFile(p, 'utf-8')
+        const m = md.match(/^#\s+(.+)$/m)
+        if (m && m[1]) title = m[1]
+      } catch (e) {
+        // Non-fatal: skip or use fallback title
+      }
+      items.push({ text: title, link: `/guide/${f.replace(/\.md$/, '')}` })
+    }
+    return items
+  } catch (err) {
+    // Non-fatal: log once and continue with empty sidebar
+    console.warn('[vitepress] chapterItemsSafe: unable to enumerate docs/guide:', err && (err as any).message || err)
+    return []
+  }
 }
 
 function mermaidToImg(md: any) {
@@ -58,7 +72,7 @@ function mermaidToImg(md: any) {
   }
 }
 
-export default {
+export default async () => defineConfig({
   title: 'GATOS',
   description: 'Git As The Operating Surface',
   base: SITE_BASE,
@@ -72,7 +86,7 @@ export default {
     ],
     sidebar: {
       '/guide/': [
-        { text: 'The GATOS Book', items: chapterItems() }
+        { text: 'The GATOS Book', items: await chapterItemsSafe() }
       ],
       '/': [
         {
@@ -102,4 +116,4 @@ export default {
       }) as any
     ]
   }
-}
+})

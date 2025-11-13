@@ -36,12 +36,13 @@ def linkify(text: str) -> tuple[bool, str]:
 def process_file(path: pathlib.Path) -> tuple[bool, str]:
     text = path.read_text(encoding="utf-8")
     # Avoid code fences
-    parts = re.split(r"(^```.*$)", text, flags=re.M)
+    # Accept up to 3 leading spaces before a fence to match indented blocks
+    parts = re.split(r"(^\s{0,3}```.*$)", text, flags=re.M)
     out_parts = []
     changed_any = False
     in_code = False
     for part in parts:
-        if part.startswith("```"):
+        if part.lstrip().startswith("```"):
             in_code = not in_code
             out_parts.append(part)
             continue
