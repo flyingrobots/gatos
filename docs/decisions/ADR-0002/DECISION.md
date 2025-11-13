@@ -7,6 +7,7 @@ Requires: [ADR-0001]
 Related: [ADR-0003]
 Tags: [Job Plane, Compute, PoE]
 Schemas:
+
   - schemas/v1/job/job_manifest.schema.json
   - schemas/v1/job/proof_of_execution_envelope.schema.json
 
