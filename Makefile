@@ -32,28 +32,28 @@ schema-compile:
 	@bash -lc 'set -euo pipefail; \
 	 if ! command -v node >/dev/null 2>&1; then \
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json'
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv compile --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json'
 
 schema-validate:
 	@bash -lc 'set -euo pipefail; \
 	 if ! command -v node >/dev/null 2>&1; then \
 	   echo "Node.js required (or run in CI)" >&2; exit 1; fi; \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
-	npx -y ajv-cli@5 validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json'
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/job_manifest.schema.json -d examples/v1/job/manifest_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/job/proof_of_execution_envelope.schema.json -d examples/v1/job/poe_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proposal.schema.json -d examples/v1/governance/proposal_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/approval.schema.json -d examples/v1/governance/approval_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/grant.schema.json -d examples/v1/governance/grant_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/revocation.schema.json -d examples/v1/governance/revocation_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/governance/proof_of_consensus_envelope.schema.json -d examples/v1/governance/poc_envelope_min.json -r schemas/v1/common/ids.schema.json && \
+	npx -y -p ajv-cli@5 -p ajv-formats@3 ajv validate --spec=draft2020 --strict=true -c ajv-formats -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json'
 
 schema-negative:
 	@bash -lc 'set -euo pipefail; \
@@ -121,7 +121,7 @@ pre-commit:
 	       | xargs -0 node scripts/mermaid/generate.mjs; \
 	   elif command -v docker >/dev/null 2>&1; then \
 	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node:20 \
+	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
 	           node scripts/mermaid/generate.mjs \"{}\"; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
 	   if [ -d docs/diagrams/generated ]; then git add -- docs/diagrams/generated; fi; \
@@ -172,7 +172,8 @@ help:
 	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — run Rust-only tasks (schemas, links, md)"; \
 	echo "  make ci-schemas                        — validate and compile all schemas/examples (xtask)"; \
 	echo "  make ci-linkcheck                      — run Markdown link checks (xtask)"; \
-	echo "Notes: diagrams are not handled by xtask; set MERMAID_MAX_PARALLEL for scripts/diagrams.sh only.";
+	echo "Notes: diagrams are not handled by xtask; set MERMAID_MAX_PARALLEL for scripts/diagrams.sh only."; \
+	echo "  make setup-dev                         — install repo-local hooks and tools (one-time)";
 # One-step developer setup: install hooks and recommended CLI tools
 setup-dev:
 	@bash -lc 'bash ./scripts/setup-dev.sh'
