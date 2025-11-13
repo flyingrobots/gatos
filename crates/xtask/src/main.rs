@@ -264,8 +264,7 @@ fn debug_report(s: &str) -> Vec<String> {
         if in_fence {
             continue;
         }
-        if l.ends_with('\n') {
-            let body = &l[..l.len() - 1];
+        if let Some(body) = l.strip_suffix('\n') {
             if body.ends_with(' ') {
                 // count spaces
                 let mut n = 0usize;
@@ -295,13 +294,13 @@ fn debug_report(s: &str) -> Vec<String> {
             continue;
         }
         if heading_re.is_match(l) {
-            if i > 0 && lines[i - 1].trim().len() != 0 {
+            if i > 0 && !lines[i - 1].trim().is_empty() {
                 out.push(format!(
                     "line {}: missing blank line before heading (MD022)",
                     i + 1
                 ));
             }
-            if i + 1 < lines.len() && lines[i + 1].trim().len() != 0 {
+            if i + 1 < lines.len() && !lines[i + 1].trim().is_empty() {
                 out.push(format!(
                     "line {}: missing blank line after heading (MD022)",
                     i + 1
@@ -323,7 +322,7 @@ fn debug_report(s: &str) -> Vec<String> {
             continue;
         }
         if list_re.is_match(l) {
-            if i > 0 && lines[i - 1].trim().len() != 0 {
+            if i > 0 && !lines[i - 1].trim().is_empty() {
                 out.push(format!(
                     "line {}: missing blank line before list (MD032)",
                     i + 1
@@ -333,7 +332,7 @@ fn debug_report(s: &str) -> Vec<String> {
             while j < lines.len() && list_re.is_match(lines[j]) {
                 j += 1;
             }
-            if j < lines.len() && lines[j].trim().len() != 0 {
+            if j < lines.len() && !lines[j].trim().is_empty() {
                 out.push(format!("line {}: missing blank line after list (MD032)", j));
             }
             i = j;
