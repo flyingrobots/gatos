@@ -32,7 +32,6 @@ If there's more you want to know, follow the links below:
 <details>
   <summary>ASCII art</summary>
 
-  
 ```bash
 
 8""""8 8""""8 ""8"" 8"""88 8""""8
@@ -104,7 +103,7 @@ git push
 
 ### 3. Privacy with Proofs (Opaque Pointers)
 
-Store sensitive data (PII, large datasets) in private stores, but commit their **cryptographic commitments** to the public graph — public commitments; private bytes behind a policy‑gated resolver. ***Verify the integrity of the computation without revealing the raw bytes***.
+Store sensitive data (PII, large datasets) in private stores, but commit their **cryptographic commitments** to the public graph — public commitments; private bytes behind a policy-gated resolver. ***Verify the integrity of the computation without revealing the raw bytes***.
 
 -----
 
@@ -145,6 +144,7 @@ cargo install gatos
   ```
 
 2.  **Define a State Model (The Fold):**
+
   *Create a simple reducer that sums numbers.*
 
   ```lua
@@ -181,13 +181,14 @@ cargo install gatos
 * **Pre-registration:** Commit your analysis plan as a **Policy**. The system prevents p-hacking by rejecting analysis jobs that deviate from the plan.
 * **Proof-of-Experiment (PoX):** Publish a PoX bundle that ties **inputs → program → outputs** with signatures.
 * ***Exact* Replay:** Re-run an experiment from 5 years ago:
+
   ```bash
   gatos verify <pox-id>
   gatos reproduce <pox-id>
   # ✅ bit-for-bit identical outputs (or a precise reason for drift)
   ```
 
-Research Profile defaults: PoF required on state pushes; `refs/gatos/policies/**`, `refs/gatos/state/**`, and `refs/gatos/audit/**` are fast‑forward only; message bus rotates shards at ~100k msgs or ~192 MB with 30‑day TTL; audit proofs + latest state are GC anchors; opaque pointers publish commitments while private bytes live behind a policy‑gated resolver. See [docs/research-profile.md](./docs/research-profile.md).
+Research Profile defaults: PoF required on state pushes; `refs/gatos/policies/**`, `refs/gatos/state/**`, and `refs/gatos/audit/**` are fast-forward only; message bus rotates shards at ~100k msgs or ~192 MB with 30-day TTL; audit proofs + latest state are GC anchors; opaque pointers publish commitments while private bytes live behind a policy-gated resolver. See [docs/research-profile.md](./docs/research-profile.md).
 
 ### 🛡️ For DevOps (The Ultimate Audit)
 
@@ -214,6 +215,7 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./ROADMAP.md). 🗺️
 
 **Currently Working On:** Conceptualization & Planning Phase
+
 - `█░░░░░░░░░` ⏳ **Whitepaper:** *Enforcing Reproducibility Through Cryptographic Governance*
 - `████████░░` ⏳[SPEC.md](./docs/SPEC.md)
 - `███░░░░░░░` ⏳[TECH-SPEC.md](./docs/TECH-SPEC.md)
@@ -221,11 +223,13 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 - `█░░░░░░░░░`⏳Milestones & Roadmap
 
 **Up Next:** Proof-of-Concept
+
 - **Toy Demo A:** Deterministic folds (Integration with [echo-rmg](https://github.com/flyingrobots/echo))
 - **Toy Demo B:** Deterministic Lua runtime
 - **Toy Demo C:** Git-as-ledger (Rust implementation of [Ledger-Kernel](https://github.com/flyingrobots/ledger-kernel))
 
 **On the Horizon:** MVP
+
 - **Demo A:** Bisect State
 - **Demo B:** ADR-as-policy
 - **Demo C:** Time-travel reproduce
@@ -250,4 +254,4 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 ## FAQ
 
 - Is this a blockchain?
-  - No. It’s just Git + signatures and deterministic folds over an append‑only history.
+  - No. It’s just Git + signatures and deterministic folds over an append-only history.

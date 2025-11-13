@@ -1,9 +1,11 @@
 # 🐈‍⬛ GATOS ROADMAP
+
 **Git As The Operating Surface — A Truth Machine for Distributed Systems & Science**
 
 This roadmap outlines the path from **0 lines of code** to the **first reproducible scientific experiment** verified end-to-end with GATOS.
 
 It follows a strict **proof-first** philosophy:
+
 - **Proof-of-Fold (PoF)** — state is verifiably derived from history.
 - **Proof-of-Execution (PoE)** — jobs are verifiably executed.
 - **Proof-of-Experiment (PoX)** — experiments are verifiably reproducible.
@@ -29,6 +31,7 @@ These are explicit non-goals until after the core truth machine is working:
 - A replacement for **Kafka** or high-throughput brokers.
 - A hosted “GATOS Cloud” product.
 - Strong isolation / capability-based sandboxing beyond basic VM guarantees
+
   (initial focus is determinism and correctness, not perfect sandbox security).
 
 ---
@@ -58,6 +61,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** A clean project structure and decision process with no implementation yet.
 
 **Deliverables:**
+
 - Rust workspace layout:
   - `crates/gatos-core` — deterministic engine & types
   - `crates/gatosd` — daemon
@@ -83,6 +87,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Deterministic folds from events → state, with verifiable proofs.
 
 **Deliverables:**
+
 - `gatos-core`:
   - EchoLua interpreter (deterministic subset).
   - `dpairs()` / sorted iteration, forbidden patterns, numeric model.
@@ -102,6 +107,7 @@ These are explicit non-goals until after the core truth machine is working:
   - `git gatos fold verify <state-ref>`
 
 **Done when:**
+
 - Same journal + same policy → identical `state_root` on two machines.
 - PoF verification succeeds across platforms.
 
@@ -112,6 +118,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Governance at the boundary of history; policies as executable law.
 
 **Deliverables:**
+
 - Push-gate (Stargate):
   - FF-only enforcement for `refs/gatos/policies/**`, `refs/gatos/state/**`, `refs/gatos/audit/**`.
   - PoF-required checks on state refs.
@@ -125,6 +132,7 @@ These are explicit non-goals until after the core truth machine is working:
   - Grants bound to `policy_root`.
 
 **Done when:**
+
 - Rewriting policy history via rebase is impossible.
 - Violating commits produce DENY entries with links back to the responsible ADR/policy.
 - Policy rules can enforce e.g. “no API changes without 2-of-3 quorum”.
@@ -136,6 +144,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** A usable event bus that lives in Git without melting Git.
 
 **Deliverables:**
+
 - Namespaced mbus:
   - `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<ulid>`
 - QoS:
@@ -152,6 +161,7 @@ These are explicit non-goals until after the core truth machine is working:
   - Metrics: messages per segment, pack sizes, TTL age, rotation suggestions.
 
 **Done when:**
+
 - Duplicate messages do not cause duplicate effects if consumers obey idempotency.
 - Git repos remain manageable under expected message load.
 
@@ -162,6 +172,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Off-repo compute with verifiable provenance.
 
 **Deliverables:**
+
 - Job claims:
   - Exclusive CAS lock ref `refs/gatos/jobs/<job-id>/claim`.
 - Worker:
@@ -175,6 +186,7 @@ These are explicit non-goals until after the core truth machine is working:
   - PoE recorded under `refs/gatos/audit/jobs/<job-id>`.
 
 **Done when:**
+
 - Race between multiple workers → exactly one claim wins.
 - PoE verification reproducibly ties inputs, program, and outputs together.
 
@@ -185,6 +197,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Publicly verifiable state with private data.
 
 **Deliverables:**
+
 - Public pointer schema:
   - Commitments and ciphertext digests.
   - Bucketed sizes (e.g., 1k/4k/16k/64k).
@@ -199,6 +212,7 @@ These are explicit non-goals until after the core truth machine is working:
   - Projection is deterministic across platforms.
 
 **Done when:**
+
 - Public state cannot leak PII or sensitive details via pointer metadata.
 - Pointer resolution is policy-controlled and auditable.
 
@@ -209,6 +223,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Heavy analytics off-chain but still provable.
 
 **Deliverables:**
+
 - Export:
   - CLI: `git gatos export parquet|sqlite --state <ref>`.
   - Writes Parquet/SQLite plus metadata.
@@ -218,6 +233,7 @@ These are explicit non-goals until after the core truth machine is working:
   - CLI: `git gatos export verify <path>` checks Explorer-Root.
 
 **Done when:**
+
 - Exports verify on clean machines.
 - Tampering with an export causes verification to fail.
 
@@ -228,6 +244,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Make experiments machine-checkable.
 
 **Deliverables:**
+
 - PoX envelope:
   - Ties together `inputs_root`, `program_id`, `policy_root`, `policy_code_root`, `outputs_root`, PoF, and PoE.
   - Stored under `refs/gatos/audit/proofs/experiments/<ulid>`.
@@ -240,6 +257,7 @@ These are explicit non-goals until after the core truth machine is working:
   - Compare outputs + PoF.
 
 **Done when:**
+
 - Reproduce yields bit-for-bit identical results in a “clean-room” setting.
 - If not, verify explains exactly where/why it diverged.
 
@@ -250,6 +268,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Show, don’t tell.
 
 **Deliverables:**
+
 - `examples/adr-as-policy/` — ADR → policy → DENY/ALLOW behavior.
 - `examples/bisect-for-state/` — state regression + git gatos bisect.
 - `examples/pox-research/` — synthetic experiment → PoX → reproduce.
@@ -259,6 +278,7 @@ These are explicit non-goals until after the core truth machine is working:
   - PoX verification.
 
 **Done when:**
+
 - Each example runs with a single scripted command.
 - GIFs are README-ready.
 
@@ -269,6 +289,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Turn correctness into automation.
 
 **Deliverables:**
+
 - Conformance tests:
   - QoS (at-least-once + dedupe).
   - Exclusive job claim.
@@ -285,6 +306,7 @@ These are explicit non-goals until after the core truth machine is working:
     - export consistency.
 
 **Done when:**
+
 - CI runs conformance suite on every change.
 - `doctor` reliably flags misconfigurations.
 
@@ -295,6 +317,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Move from “works” to “safe to trust.”
 
 **Deliverables:**
+
 - Threat models for all planes.
 - Fuzzing harnesses for:
   - DAG-CBOR parsing,
@@ -316,6 +339,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Turn GATOS into a living project.
 
 **Deliverables:**
+
 - Documentation site (mdBook or similar).
 - “For Scientists” documentation section.
 - Launch blog post: “GATOS: Git As The Operating Surface — A Reproducibility OS”.
@@ -330,6 +354,7 @@ These are explicit non-goals until after the core truth machine is working:
 **Goal:** Make GATOS pleasant to program against.
 
 **Deliverables:**
+
 - `wesley build --target gatos`:
   - generates fold specs,
   - schemas,
