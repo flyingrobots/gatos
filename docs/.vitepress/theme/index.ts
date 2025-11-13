@@ -1,7 +1,9 @@
 import DefaultTheme from 'vitepress/theme'
+import type { Theme } from 'vitepress'
 import './vars.css'
 
-export default {
+const theme: Theme = {
   extends: DefaultTheme
 }
 
+export default theme

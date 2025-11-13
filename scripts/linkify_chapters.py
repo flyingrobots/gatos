@@ -23,7 +23,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 GUIDE_DIR = ROOT / "docs" / "guide"
 
-CHAPTER_FILE = lambda n: f"CHAPTER-{int(n):03d}.md"
+def chapter_file(n: int) -> str:
+    return f"CHAPTER-{int(n):03d}.md"
 
 CHAPTER_RE = re.compile(r"\b[Cc]hapter\s+([1-9]|1[0-2])\b")
 
@@ -43,12 +44,17 @@ def linkify_line(line: str) -> str:
 
     def repl(m: re.Match) -> str:
         num = int(m.group(1))
-        target = CHAPTER_FILE(num)
-        # Rough guard: avoid replacing when already inside [..]
-        start = m.start()
-        if "[" in line[:start] and "]" in line[:start]:
-            # There's a prior [] pair on this line; be conservative and skip
-            return m.group(0)
+        target = chapter_file(num)
+        # Avoid replacements inside existing Markdown links
+        start, end = m.span()
+        left = line.rfind('[', 0, start)
+        right = line.find(')', start)
+        close = line.find(']', 0, start)
+        # If we have a '[' before and a ']' after the start and then a '(' soon after ']', assume link context
+        if left != -1 and close != -1 and close > left:
+            paren = line.find('(', close)
+            if paren != -1 and paren < end:
+                return m.group(0)
         return f"[Chapter {num}](./{target})"
 
     return CHAPTER_RE.sub(repl, line)

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "docs:dev": "vitepress dev docs",
-    "docs:build": "python3 scripts/linkify_chapters.py --write --paths docs/guide && python3 scripts/linkify_refs.py --write --paths docs && python3 scripts/anchors_and_toc.py --write --paths docs && vitepress build docs",
+    "docs:build": "bash -euo pipefail -c 'python3 scripts/linkify_chapters.py --write --paths docs/guide && python3 scripts/linkify_refs.py --write --paths docs && python3 scripts/anchors_and_toc.py --write --paths docs && vitepress build docs'",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {

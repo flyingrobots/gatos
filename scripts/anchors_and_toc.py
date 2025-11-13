@@ -56,7 +56,7 @@ def make_anchor_line(text: str) -> str:
     if m:
         num = m.group("num")
         anchors.append(num)
-        anchors.append(num.replace(".", ""))
+        # Include only the top-level numeric section to reduce collisions
         anchors.append(num.split(".")[0])
     slug = slugify_github(text)
     if slug:
@@ -157,8 +157,7 @@ def iter_markdown(paths: list[pathlib.Path]):
         if p.is_file() and p.suffix == ".md":
             yield p
         elif p.is_dir():
-            for md in p.rglob("*.md"):
-                yield md
+            yield from p.rglob("*.md")
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -183,4 +182,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

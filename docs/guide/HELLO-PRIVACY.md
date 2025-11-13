@@ -85,7 +85,7 @@ git gatos fold --ns privacy
 
 ---
 
-Troubleshooting
+## Troubleshooting
 
 - Ensure storage backends provide a Blob Availability Attestation (BAA): `{ blob, store, retain_until, sig }`.
 - Policy can require a valid BAA before accepting pointers.

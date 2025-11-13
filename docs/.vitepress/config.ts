@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { createHash } from 'node:crypto'
 import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
@@ -47,25 +48,31 @@ function mermaidToImg(md: any) {
       const rel = (env.relativePath || env.path || 'unknown') as string
       const count = (counters.get(rel) || 0) + 1
       counters.set(rel, count)
-      const safe = rel.replace(/\\/g, '/').replace(/\.md$/, '').replace(/\//g, '__')
-      // Filesystem-relative base (under docs/)
-      const fsBase = `diagrams/generated/${safe}__mermaid_${count}`
+      const relPosix = `docs/${rel.replace(/\\/g, '/')}`
+      const safeStem = relPosix.replace(/\.md$/i, '').replace(/[^A-Za-z0-9._-]/g, '_')
+      const hash = createHash('sha256').update(relPosix).digest('hex').slice(0, 10)
+      // Prefer hashed scheme; fall back to legacy (no hash) while transitioning
+      const hashedBase = `diagrams/generated/${safeStem.split('/').join('__')}__${hash}__mermaid_${count}`
+      const legacyBase = `diagrams/generated/${rel.replace(/\\/g, '/').replace(/\.md$/i, '').split('/').join('__')}__mermaid_${count}`
       const abs = (p: string) => path.join(process.cwd(), 'docs', p)
-      const fsLight = `${fsBase}-light.svg`
-      const fsDark = `${fsBase}-dark.svg`
-      const fsPlain = `${fsBase}.svg`
-      const hasLight = fs.existsSync(abs(fsLight))
-      const hasDark = fs.existsSync(abs(fsDark))
-      const hasPlain = fs.existsSync(abs(fsPlain))
+      const candidates = [hashedBase, legacyBase]
+      let chosenBase = ''
+      let pair = false
+      for (const base of candidates) {
+        const light = `${base}-light.svg`
+        const dark = `${base}-dark.svg`
+        const plain = `${base}.svg`
+        if (fs.existsSync(abs(light)) && fs.existsSync(abs(dark))) { chosenBase = base; pair = true; break }
+        if (fs.existsSync(abs(plain))) { chosenBase = base; pair = false; break }
+      }
       // Public URLs must honor the site base for GitHub Pages subpaths
       const url = (p: string) => `${SITE_BASE.replace(/\/$/, '')}/${p}`.replace(/([^:]\/)\/+/g, '$1')
-      const hrefLight = url(fsLight)
-      const hrefDark = url(fsDark)
-      const hrefPlain = url(fsPlain)
-      if (hasLight && hasDark) {
-        return `<figure><picture><source srcset="${hrefDark}" media="(prefers-color-scheme: dark)"><img src="${hrefLight}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
-      } else if (hasPlain) {
-        return `<figure><img src="${hrefPlain}" alt="diagram ${count}" loading="lazy"/></figure>\n`
+      if (chosenBase) {
+        if (pair) {
+          return `<figure><picture><source srcset="${url(chosenBase + '-dark.svg')}" media="(prefers-color-scheme: dark)"><img src="${url(chosenBase + '-light.svg')}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
+        } else {
+          return `<figure><img src="${url(chosenBase + '.svg')}" alt="diagram ${count}" loading="lazy"/></figure>\n`
+        }
       }
     }
     return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options)
