@@ -102,12 +102,16 @@ A **GATOS node** is a Git repository with a disciplined layout of refs, notes, a
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
+
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
+        end
 
         subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
@@ -124,10 +128,6 @@ graph TD
 
         subgraph "Job Plane"
             Compute("gatos-compute");
-        end
-
-        subgraph "Ledger Plane"
-            Ledger("gatos-ledger");
         end
 
         Daemon --> Policy;
@@ -446,7 +446,7 @@ sequenceDiagram
     GATOS->>GATOS: Create gmb.commit Event
 ```
 
-Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. Delivery is **at‑least‑once**; consumers **SHOULD** dedupe on read using the message `ULID` as an idempotency key and **MAY** write `ack`s to `refs/gatos/mbus-ack/`.
+Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. Delivery is **at‑least‑once**; consumers **MUST** dedupe on read using the message `ULID` (or content hash) as an idempotency key and **MAY** write `ack`s to `refs/gatos/mbus-ack/`. Producers **SHOULD** set idempotency keys.
 
 Retention and compaction:
 
@@ -626,8 +626,10 @@ graph TD
     B --> D(At-Least-Once + Idempotency);
     B --> E(Offline Reconcile);
     B --> F(Deny Audit);
-    B --> G(Blob Integrity);
+    B --> G(Blob Integrity & Pointer Privacy);
     B --> H(Consensus Integrity);
+    B --> I(Exclusive Job Claim);
+    B --> J(Explorer-Root on Exports);
 ```
 
 ### 16.1 Consensus Integrity (Normative)
@@ -635,6 +637,14 @@ graph TD
 
 - An action gated by a `2-of-3` quorum policy MUST be denied with 1 approval and MUST be allowed with 2 approvals.
 - A revoked grant MUST NOT be usable.
+
+### 16.2 Additional Checks (Normative)
+
+- PoF required: state pushes to `refs/gatos/state/**` MUST include a verifiable Proof‑of‑Fold.
+- Policies FF‑only: `refs/gatos/policies/**` MUST be fast‑forward only.
+- Exclusive job claim: exactly one worker MUST succeed in creating `refs/gatos/jobs/<job-id>/claim` via compare‑and‑swap.
+- Pointer privacy: public pointers for low‑entropy classes MUST NOT expose plaintext digests; ciphertext digest present; sizes bucketed.
+- Exports: exporters MUST emit `Explorer-Root = blake3(ledger_head || policy_root || extractor_version)` and `gatos export verify` MUST validate it.
 
 ---
 

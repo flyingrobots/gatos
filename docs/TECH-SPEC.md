@@ -76,12 +76,16 @@ GATOS follows a "Ports and Adapters" architecture. The core logic is pure and po
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
+
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
+        end
 
         subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
@@ -98,10 +102,6 @@ graph TD
 
         subgraph "Job Plane"
             Compute("gatos-compute");
-        end
-
-        subgraph "Ledger Plane"
-            Ledger("gatos-ledger");
         end
 
         Daemon --> Policy;
