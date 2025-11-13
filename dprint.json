@@ -8,8 +8,6 @@
   "includes": ["**/*.json", "**/*.yml", "**/*.yaml"],
   "excludes": ["target/**", ".git/**", "node_modules/**"],
   "json": {
-    "indentWidth": 2,
-    "trailingCommas": "none"
-  },
-  
+    "indentWidth": 2
+  }
 }
