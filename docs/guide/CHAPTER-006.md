@@ -96,9 +96,11 @@ Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the resul
 
 <a id="bus-retention-compaction-guidance"></a>
 
-- Segment topics: `refs/gatos/mbus/<topic>/0001`, `0002`, ... to bound ref sizes.
-- Snapshot consumer offsets and prune old segments once all consumers are past them.
-- Enable `fetch.writeCommitGraph=true`, `repack.writeBitmaps=true`, and consider partial clone/promisor remotes for `refs/gatos/mbus/*` on busy installations.
+- Segment topics: `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` (or numeric `0001`, `0002`, …) to bound ref sizes.
+- Rotation thresholds (defaults): rotate at 100k messages or ~192 MB per segment (whichever comes first).
+- TTL: retain segments for 30 days, then prune; write a summary commit (counts, Merkle root, last offsets) when pruning to preserve verifiability.
+- Offsets: snapshot consumer offsets; prune only segments older than the minimum acknowledged offset across active consumers.
+- Git optimization: enable `fetch.writeCommitGraph=true`, `repack.writeBitmaps=true`; consider partial clone/promisor remotes for `refs/gatos/mbus/*` on busy installations.
 
 ## Summary
 
