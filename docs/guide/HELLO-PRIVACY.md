@@ -42,7 +42,7 @@ git gatos event add --ns privacy --type demo.pointer --payload @pointers/secret.
 git gatos fold --ns privacy
 ```
 
-`State-Root` is computed deterministically from the public shape. Authorized workers can decrypt and verify the plaintext commitment from `encrypted_meta` off‑chain as needed.
+`State-Root` is computed deterministically from the public shape. Authorized workers can decrypt and verify the plaintext commitment from `encrypted_meta` outside the repository as needed.
 
 ## 2. Rekey the Blob
 
@@ -57,7 +57,7 @@ Fold again; the public state’s `State-Root` remains stable if the high‑level
 
 ```bash
 git gatos fold --ns privacy
-``;
+```
 
 ## 3. Determinism Notes
 
