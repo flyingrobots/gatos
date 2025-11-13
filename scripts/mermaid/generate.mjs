@@ -385,7 +385,19 @@ async function main() {
     return;
   }
 
-  const mmdcPath = binPath('mmdc');
+  // Warm up a local mmdc to avoid repeated concurrent npx executions which can
+  // occasionally fail under CI with exit 126 due to cache races. When the
+  // local binary is present we always prefer it; otherwise we fall back to npx.
+  let mmdcPath = binPath('mmdc');
+  try {
+    const cliVer = await resolveMermaidCliVersion();
+    if (!(await hasLocal(mmdcPath))) {
+      await run('npm', ['i', '--no-save', `@mermaid-js/mermaid-cli@${cliVer}`], { cwd: repoRoot }, 300000);
+    }
+  } catch (e) {
+    // Do not fail generation if warmup install fails; we'll fall back to npx.
+  }
+  mmdcPath = binPath('mmdc');
   if (verifyOnly) {
     const errors = await verifyTasks(tasks);
     if (errors.length) {
