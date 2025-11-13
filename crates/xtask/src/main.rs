@@ -189,6 +189,7 @@ where
 
 fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
     let repo = repo_root()?;
+    let debug = std::env::var("XTASK_MD_DEBUG").ok().map(|v| v != "0").unwrap_or(false);
     // Collect files: use provided or git ls-files
     let md_files: Vec<PathBuf> = if files.is_empty() {
         let out = Command::new("git")
@@ -219,6 +220,11 @@ fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
                 path.strip_prefix(&repo).unwrap_or(&path).display(),
                 issues
             );
+            if debug && !fix {
+                for diag in debug_report(&orig) {
+                    eprintln!("[md][DBG] {}", diag);
+                }
+            }
             if fix {
                 // Apply safe fixes: trailing spaces (MD009), multiple blanks (MD012), blanks around headings (MD022), lists (MD032), non-ASCII hyphens
                 // updated already contains fixes for these rules
@@ -237,6 +243,58 @@ fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
         );
     }
     Ok(())
+}
+
+fn debug_report(s: &str) -> Vec<String> {
+    use regex::Regex;
+    let mut out = Vec::new();
+    let fence_re = Regex::new(r"^\s*(```|~~~)").unwrap();
+    let heading_re = Regex::new(r"^\s*#{1,6}\s+\S").unwrap();
+    let list_re = Regex::new(r"^\s*([-*+]\s+|\d+\.\s+)\S").unwrap();
+    let lines: Vec<&str> = s.split_inclusive('\n').collect();
+    let mut in_fence = false;
+    // Trailing single spaces
+    for (i, l) in lines.iter().enumerate() {
+        if fence_re.is_match(l) { in_fence = !in_fence; }
+        if in_fence { continue; }
+        if l.ends_with('\n') {
+            let body = &l[..l.len()-1];
+            if body.ends_with(' ') {
+                // count spaces
+                let mut n = 0usize;
+                for ch in body.chars().rev() { if ch == ' ' { n+=1; } else { break; } }
+                if n == 1 {
+                    out.push(format!("line {}: trailing 1 space before newline (MD009)", i+1));
+                }
+            }
+        }
+    }
+    // Headings blank around & lists
+    in_fence = false;
+    for (i, l) in lines.iter().enumerate() {
+        if fence_re.is_match(l) { in_fence = !in_fence; }
+        if in_fence { continue; }
+        if heading_re.is_match(l) {
+            if i>0 && lines[i-1].trim().len() != 0 { out.push(format!("line {}: missing blank line before heading (MD022)", i+1)); }
+            if i+1 < lines.len() && lines[i+1].trim().len() != 0 { out.push(format!("line {}: missing blank line after heading (MD022)", i+1)); }
+        }
+    }
+    in_fence = false;
+    let mut i = 0usize;
+    while i < lines.len() {
+        let l = lines[i];
+        if fence_re.is_match(l) { in_fence = !in_fence; i+=1; continue; }
+        if in_fence { i+=1; continue; }
+        if list_re.is_match(l) {
+            if i>0 && lines[i-1].trim().len()!=0 { out.push(format!("line {}: missing blank line before list (MD032)", i+1)); }
+            let mut j = i;
+            while j < lines.len() && list_re.is_match(lines[j]) { j+=1; }
+            if j < lines.len() && lines[j].trim().len()!=0 { out.push(format!("line {}: missing blank line after list (MD032)", j)); }
+            i = j; continue;
+        }
+        i+=1;
+    }
+    out
 }
 
 fn lint_one(s: &str) -> (String, usize) {
