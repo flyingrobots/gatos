@@ -111,7 +111,7 @@ jobs:
       - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
       - name: markdownlint via xtask (no Node)
         env:
-          XTASK_MD_DEBUG: '1'
+          XTASK_MD_DEBUG: "1"
         run: cargo run -p xtask -- md
 
   schemas:
