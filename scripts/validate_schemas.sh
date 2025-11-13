@@ -14,8 +14,25 @@ run_ajv() {
     npx -y -p ajv-cli@5 -p ajv-formats@3 ajv "$subcmd" --spec=draft2020 --strict=true -c ajv-formats "$@"
 }
 
+# Subset selection
+DO_COMPILE=1; DO_VALIDATE=1; DO_NEGATIVE=1
+for a in "$@"; do
+  case "$a" in
+    --compile-only) DO_VALIDATE=0; DO_NEGATIVE=0;;
+    --validate-only) DO_COMPILE=0; DO_NEGATIVE=0;;
+    --negative-only) DO_COMPILE=0; DO_VALIDATE=0;;
+    -h|--help)
+      cat <<'USAGE'
+Usage: bash ./scripts/validate_schemas.sh [--compile-only|--validate-only|--negative-only]
+Runs AJV compile/validate and negative tests in a Dockerized Node environment.
+USAGE
+      exit 0;;
+  esac
+done
+
 AJV_COMMON_REF="schemas/v1/common/ids.schema.json"
 
+if [ "$DO_COMPILE" -eq 1 ]; then
 echo "[schemas] Compiling JSON Schemas (v1)…"
 SCHEMAS=(
   "schemas/v1/common/ids.schema.json"
@@ -37,7 +54,9 @@ for schema in "${SCHEMAS[@]}"; do
     run_ajv compile -s "$schema" -r "$AJV_COMMON_REF"
   fi
 done
+fi
 
+if [ "$DO_VALIDATE" -eq 1 ]; then
 echo "[schemas] Validating example documents (v1)…"
 declare -A EXAMPLES=(
   ["schemas/v1/job/job_manifest.schema.json"]="examples/v1/job/manifest_min.json"
@@ -61,7 +80,9 @@ done
 
 echo "  - ajv validate: examples/v1/policy/governance_min.json against schemas/v1/policy/governance_policy.schema.json"
 run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
+fi
 
+if [ "$DO_VALIDATE" -eq 1 ] || [ "$DO_NEGATIVE" -eq 1 ]; then
 echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
 # Create temporary schemas within the repository workdir so the container can access them via the bind mount
 TMPDIR_HOST="$(mktemp -d -p "$PWD" .ajvtmp.XXXXXX)"
@@ -96,6 +117,9 @@ if run_ajv validate -s "$TMPDIR_REL/ed25519Sig.schema.json" -d "$TMPDIR_REL/sig_
   echo "[FAIL] Unexpected acceptance of bad sig length (88 without '==')" >&2; exit 1
 fi
 
+fi
+
+if [ "$DO_NEGATIVE" -eq 1 ]; then
 echo "[schemas] Negative tests (invalid ISO8601 durations)…"
 echo '{"governance":{"x":{"ttl":"P"}}}' > "$TMPDIR_HOST/bad1.json"
 echo '{"governance":{"x":{"ttl":"PT"}}}' > "$TMPDIR_HOST/bad2.json"
@@ -108,6 +132,7 @@ if run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d "$TMPD
   echo "[FAIL] Unexpected success: ttl=PT should be rejected" >&2; exit 1
 else
   echo "  - rejected ttl=PT as expected"
+fi
 fi
 
 echo "[schemas] All schema checks passed."
