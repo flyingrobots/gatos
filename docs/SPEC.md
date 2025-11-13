@@ -92,10 +92,10 @@ A **GATOS node** is a Git repository with a disciplined layout of refs, notes, a
 **GATOS** defines five planes:
 
 1) **Ledger plane** — append‑only journals (**events**).  
-2) **State plane** — deterministic folds (**state roots**).  
-3) **Policy/Trust plane** — enforceable rules, grants, and multi‑party consensus governance.  
-4) **Message plane** — a commit‑backed pub/sub bus.
-5) **Job plane** — Distributed, verifiable job execution.
+2) **Policy/Trust plane** — enforceable rules, grants, and multi‑party consensus governance.  
+3) **State plane** — deterministic folds (**state roots**).  
+4) **Message plane** — a commit‑backed pub/sub bus.  
+5) **Job plane** — distributed, verifiable job execution.
 
 ```mermaid
 graph TD
@@ -180,6 +180,7 @@ graph TD
         A1 --> B6(audit)
         A1 --> B7(cache)
         A1 --> B8(epoch)
+        A1 --> B9(policies)
         C(notes) --> C1(gatos)
     end
     subgraph Workspace
@@ -213,6 +214,7 @@ The normative layout is as follows:
 │       ├── audit/
 │       ├── cache/
 │       └── epoch/
+│       └── policies/
 └── gatos/
     ├── policies/
     ├── schema/
@@ -221,6 +223,8 @@ The normative layout is as follows:
     ├── objects/
     └── config/
 ```
+
+Active policy bundles and their lineage SHOULD be recorded under `refs/gatos/policies/`. Implementations MAY track an `active` pointer (e.g., `refs/gatos/policies/active`) to select the effective policy root used for gate evaluation.
 
 ---
 
