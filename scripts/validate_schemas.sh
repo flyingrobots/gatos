@@ -61,33 +61,34 @@ echo "  - ajv validate: examples/v1/policy/governance_min.json against schemas/v
 run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d examples/v1/policy/governance_min.json
 
 echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
-# Root schemas that reference defs using the canonical $id for proper resolution
-printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > /tmp/ed25519Key.schema.json
-printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
+# Create temporary schemas within the repository workdir so the container can access them via the bind mount
+TMPDIR_HOST="$(mktemp -d -p "$PWD" .ajvtmp.XXXXXX)"
+printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > "$TMPDIR_HOST/ed25519Key.schema.json"
+printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > "$TMPDIR_HOST/ed25519Sig.schema.json"
 
 # Generate canonical base64url encodings from actual byte lengths using Node (in container)
 KEY_B64URL=$(docker run --rm "$AJV_NODE_IMAGE" node -e "process.stdout.write(Buffer.alloc(32).toString('base64url'))")
 SIG_B64URL=$(docker run --rm "$AJV_NODE_IMAGE" node -e "process.stdout.write(Buffer.alloc(64).toString('base64url'))")
 
 echo "  - positive: base64url unpadded key ($(echo -n "$KEY_B64URL" | wc -c) chars)"
-printf '"ed25519:%s"' "$KEY_B64URL" > /tmp/key_b64url_unpadded.json
-run_ajv validate -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_unpadded.json -r "$AJV_COMMON_REF"
+printf '"ed25519:%s"' "$KEY_B64URL" > "$TMPDIR_HOST/key_b64url_unpadded.json"
+run_ajv validate -s "$TMPDIR_HOST/ed25519Key.schema.json" -d "$TMPDIR_HOST/key_b64url_unpadded.json" -r "$AJV_COMMON_REF"
 
 echo "  - positive: base64url unpadded sig ($(echo -n "$SIG_B64URL" | wc -c) chars)"
-printf '"ed25519:%s"' "$SIG_B64URL" > /tmp/sig_b64url_unpadded.json
-run_ajv validate -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_unpadded.json -r "$AJV_COMMON_REF"
+printf '"ed25519:%s"' "$SIG_B64URL" > "$TMPDIR_HOST/sig_b64url_unpadded.json"
+run_ajv validate -s "$TMPDIR_HOST/ed25519Sig.schema.json" -d "$TMPDIR_HOST/sig_b64url_unpadded.json" -r "$AJV_COMMON_REF"
 
 echo "  - negative: 44-char base64url key without '=' should be rejected"
 KEY_BADLEN="${KEY_B64URL}A" # 43 -> 44 (no '=')
-printf '"ed25519:%s"' "$KEY_BADLEN" > /tmp/key_b64url_badlen.json
-if run_ajv validate -s /tmp/ed25519Key.schema.json -d /tmp/key_b64url_badlen.json -r "$AJV_COMMON_REF"; then
+printf '"ed25519:%s"' "$KEY_BADLEN" > "$TMPDIR_HOST/key_b64url_badlen.json"
+if run_ajv validate -s "$TMPDIR_HOST/ed25519Key.schema.json" -d "$TMPDIR_HOST/key_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
   echo "[FAIL] Unexpected acceptance of bad key length (44 without '=')" >&2; exit 1
 fi
 
 echo "  - negative: 88-char base64url sig without '==' should be rejected"
 SIG_BADLEN="${SIG_B64URL}AA" # 86 -> 88 (no '==')
-printf '"ed25519:%s"' "$SIG_BADLEN" > /tmp/sig_b64url_badlen.json
-if run_ajv validate -s /tmp/ed25519Sig.schema.json -d /tmp/sig_b64url_badlen.json -r "$AJV_COMMON_REF"; then
+printf '"ed25519:%s"' "$SIG_BADLEN" > "$TMPDIR_HOST/sig_b64url_badlen.json"
+if run_ajv validate -s "$TMPDIR_HOST/ed25519Sig.schema.json" -d "$TMPDIR_HOST/sig_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
   echo "[FAIL] Unexpected acceptance of bad sig length (88 without '==')" >&2; exit 1
 fi
 
@@ -106,3 +107,5 @@ else
 fi
 
 echo "[schemas] All schema checks passed."
+# Cleanup temporary files created in the repository workdir
+rm -rf -- "$TMPDIR_HOST"

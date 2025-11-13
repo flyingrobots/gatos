@@ -56,17 +56,26 @@ backend=$(pick_backend)
 
 case "$backend" in
   docker)
-    # Build ARGS array: use provided args; otherwise enumerate tracked Markdown on host to avoid needing git inside the container
-    if [ "$#" -gt 0 ]; then
-      ARGS=("$@")
-    else
+    # If args include --all, enumerate files on host (avoid git inside container); preserve --verify if provided.
+    ALL_FLAG=0; VERIFY_FLAG=0
+    for a in "$@"; do
+      [ "$a" = "--all" ] && ALL_FLAG=1
+      [ "$a" = "--verify" ] && VERIFY_FLAG=1
+    done
+    if [ "$ALL_FLAG" -eq 1 ]; then
       if ! command -v git >/dev/null 2>&1; then
         echo "git is required to enumerate Markdown files (for --all)" >&2; exit 1
       fi
-      mapfile -d '' -t ARGS < <(git ls-files -z -- '*.md')
-      if [ ${#ARGS[@]} -eq 0 ]; then
+      mapfile -d '' -t FILES < <(git ls-files -z -- '*.md')
+      if [ ${#FILES[@]} -eq 0 ]; then
         echo "No tracked Markdown files found"; exit 0
       fi
+      ARGS=()
+      [ "$VERIFY_FLAG" -eq 1 ] && ARGS+=("--verify")
+      ARGS+=("${FILES[@]}")
+    else
+      # Use provided args as-is
+      ARGS=("$@")
     fi
     docker run --rm \
       -e MERMAID_MAX_PARALLEL="$CONC" \
