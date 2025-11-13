@@ -1,5 +1,7 @@
 # 🐈‍⬛ **GATOS**
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE) [![Status: Tech Preview](https://img.shields.io/badge/status-tech_preview-orange)](#)
+
 ## TL;DR
 
 **GATOS** generalizes Git’s content-addressed DAG into a complete computational substrate: a programmable operating surface unifying history, policy, and computation within a deterministic, verifiable feedback loop.
@@ -10,10 +12,10 @@ It turns Git from a version-control system into a self-governing compute fabric.
 
 ### Read More
 
-Read the book, check the spec; learn the tech.   
-If there's more you want to know,  follow the the links below:
+Read the book, check the spec; learn the tech.  
+If there's more you want to know, follow the links below:
 
-[The Book](./docs/guide/README.md) • [SPEC.md](./docs/SPEC.md) • [TECH-SPEC.md](./docs/TECH-SPEC.md)
+[The Book](./docs/guide/README.md) • [SPEC](./docs/SPEC.md) • [TECH-SPEC](./docs/TECH-SPEC.md)
 
 *Now you Git it.*
 
@@ -36,8 +38,6 @@ If there's more you want to know,  follow the the links below:
  
   Git As The Operating Surface™  
 ```
-
-# GATOS 🐈‍⬛
 
 ## Git As The Operating Surface
 
@@ -64,7 +64,8 @@ GATOS collapses the stack into the graph.
 ✍️ **Events:** Every action is a signed commit.  
 🪭 **State:** Your "database" is a deterministic fold of those events.  
 🏛️ **Policy:** Governance rules are code, versioned alongside the data they protect.  
-🔗 **Compute:** Jobs run off-chain, but their *proofs of execution* (PoE) are recorded on-chain (*NOTE: GATOS IS NOT A BLOCKCHAIN!*).  
+🔗 **Compute:** Jobs run off-chain, but their *Proofs-of-Execution (PoE)* are recorded **in the repository’s history**  
+   (*Not a blockchain; just Git + signatures*).
 
 ---
 
@@ -95,21 +96,22 @@ git push
 
 ### 3. Privacy with Proofs (Opaque Pointers)
 
-Store sensitive data (PII, huge datasets) in private stores, but commit their **cryptographic commitments** to the public graph. ***Verify the integrity of the computation without revealing the raw bytes***.
+Store sensitive data (PII, large datasets) in private stores, but commit their **cryptographic commitments** to the public graph — public commitments; private bytes behind a policy‑gated resolver. ***Verify the integrity of the computation without revealing the raw bytes***.
 
 -----
 
 ## How it Works: The 5 Planes
 
-GATOS organizes the repository into five distinct "Planes" using standard Git references (`refs/gatos/*`).
+GATOS organizes the repository into five distinct planes using standard Git references (`refs/gatos/*`).
 
 | Plane | Ref Namespace | Function |
 | :--- | :--- | :--- |
-| **1. Ledger** | `refs/gatos/journal/*` | Append-only event logs. The source of truth. |
-| **2. Policy** | `refs/gatos/policy/*` | Lua/WASM logic that gates writes and grants permissions. |
-| **3. State** | `refs/gatos/state/*` | Deterministic projections (checkpoints) derived from the Ledger. |
-| **4. Job** | `refs/gatos/jobs/*` | Computation requests and **Proofs of Execution (PoE)**. |
-| **5. Trust** | `refs/gatos/trust/*` | Key management, identity, and quorum grants. |
+| **1. Ledger**       | `refs/gatos/journal/*`   | Append-only event logs. The source of truth. |
+| **2. Policy/Trust** | `refs/gatos/policies/*`  | Executable policy (Lua/WASM), capabilities, quorum; **deny-audit** on violations. |
+|                     | `refs/gatos/trust/*`     | Keys, groups, grants, revocations. |
+| **3. State**        | `refs/gatos/state/*`     | Deterministic checkpoints derived from the ledger (**Proof-of-Fold**). |
+| **4. Message**      | `refs/gatos/mbus/*`      | Commit-backed pub/sub (at-least-once + idempotency). |
+| **5. Job**          | `refs/gatos/jobs/*`      | Jobs and **Proofs-of-Execution (PoE)**; exclusive claim via CAS. |
 
 -----
 
@@ -118,11 +120,13 @@ GATOS organizes the repository into five distinct "Planes" using standard Git re
 ### Installation
 
 ```bash
-# Install the CLI and Daemon
+# Install the CLI/daemon (provides the `git-gatos` shim so you can run `git gatos ...`)
 cargo install gatos
+# If your shell doesn't pick up the shim, you can alias:
+# alias "git gatos"="git-gatos"
 ```
 
-### Hola, GATOS (*Hello, World* The GATOS Way)
+### Hello, GATOS (Hello, World the GATOS way)
 
 1.  **Initialize a repo:**
 
@@ -167,7 +171,13 @@ cargo install gatos
 **Eliminate the "Replication Crisis."**
 
 * **Pre-registration:** Commit your analysis plan as a **Policy**. The system prevents p-hacking by rejecting analysis jobs that deviate from the plan.
-* ***Exact* Replay:** Re-run an experiment from 5 years ago. If the input refs and container hash match, the result *must* be identical.
+* **Proof-of-Experiment (PoX):** Publish a PoX bundle that ties **inputs → program → outputs** with signatures.
+* ***Exact* Replay:** Re-run an experiment from 5 years ago:
+  ```bash
+  gatos verify <pox-id>
+  gatos reproduce <pox-id>
+  # ✅ bit-for-bit identical outputs (or a precise reason for drift)
+  ```
 
 ### 🛡️ For DevOps (The Ultimate Audit)
 
@@ -180,9 +190,10 @@ cargo install gatos
 
 ## Philosophy
 
-* **Offline First:** Local reasoning is paramount. If you can't verify it on an airplane, it's broken.
-* **Math > Magic:** GATOS uses Merkle DAGs and Pushouts, not black-box SaaS logic.
-* **At-Least-Once:** We respect the laws of physics. Messages are delivered at-least-once; idempotency handles the rest.
+* **Offline First:** If you can't verify it on an airplane, it's broken.
+* **Math > Magic:** Merkle DAGs and pushouts, not black-box SaaS logic.
+* **Proof-first Design:** Every claim is verifiable from first principles — **PoF** (state), **PoE** (jobs), signed governance.
+* **At-Least-Once + Idempotency:** We respect physics. Delivery is at-least-once; consumers dedupe by idempotency keys.
 
 ---
 
@@ -190,7 +201,7 @@ cargo install gatos
 
 🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./docs/ROADMAP.md). 🗺️
 
-**Currently Wroking On:** Conceptualization & Planning Phase
+**Currently Working On:** Conceptualization & Planning Phase
 - `█░░░░░░░░░` ⏳ **Whitepaper:** *Enforcing Reproducibility Through Cryptographic Governance*
 - `████████░░` ⏳[SPEC.md](./docs/SPEC.md)
 - `███░░░░░░░` ⏳[TECH-SPEC.md](./docs/TECH-SPEC.md)
@@ -203,7 +214,7 @@ cargo install gatos
 - **Toy Demo C:** Git-as-ledger (Rust implementation of [Ledger-Kernel](https://github.com/flyingrobots/ledger-kernel))
 
 **On the Horizon:** MVP
-- **Demo A:** Biscet State
+- **Demo A:** Bisect State
 - **Demo B:** ADR-as-policy
 - **Demo C:** Time-travel reproduce
 
@@ -221,3 +232,10 @@ cargo install gatos
 [Apache 2.0](./LICENSE)
 
 *© J. Kirby Ross <james@flyingrobots.dev> [flyingrobots](https://github.com/flyingrobots)*
+
+---
+
+## FAQ
+
+- Is this a blockchain?
+  - No. It’s just Git + signatures and deterministic folds over an append‑only history.
