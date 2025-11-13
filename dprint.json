@@ -11,7 +11,5 @@
     "indentWidth": 2,
     "trailingCommas": "none"
   },
-  "yaml": {
-    "lineWidth": 100
-  }
+  
 }
