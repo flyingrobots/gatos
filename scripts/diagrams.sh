@@ -5,7 +5,20 @@ set -euo pipefail
 CONC="${MERMAID_MAX_PARALLEL:-6}"
 # Intentionally unquoted to allow multiple -v segments. This is CI-controlled (see .github/workflows/ci.yml).
 # If paths with spaces are ever required, refactor to build an array and append -v entries explicitly.
-VOLS="${MERMAID_DOCKER_VOLUMES:-}"
+VOLS_STR="${MERMAID_DOCKER_VOLUMES:-}"
+# Build a safe volumes array from MERMAID_DOCKER_VOLUMES. Accept either raw
+# "host:container" lines or lines that start with "-v " / "--volume ". Split on newlines.
+VOLS_ARR=()
+if [ -n "$VOLS_STR" ]; then
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    case "$line" in
+      -v\ *|--volume\ *)
+        flag="${line%% *}"; val="${line#* }"; VOLS_ARR+=("$flag" "$val");;
+      *) VOLS_ARR+=("-v" "$line");;
+    esac
+  done <<< "$VOLS_STR"
+fi
 # Pin Node image for Docker runs (digest corresponds to node:20)
 IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a"
 IMAGE="${MERMAID_NODE_IMAGE:-$IMAGE_DEFAULT}"
@@ -43,41 +56,31 @@ backend=$(pick_backend)
 
 case "$backend" in
   docker)
+    # Build ARGS array: use provided args; otherwise enumerate tracked Markdown on host to avoid needing git inside the container
     if [ "$#" -gt 0 ]; then
-      # shellcheck disable=SC2086  # VOLS intentionally unquoted (see note above)
-      docker run --rm \
-        -e MERMAID_MAX_PARALLEL="$CONC" \
-        -v "$PWD:/work" -w /work $VOLS \
-        "$IMAGE" \
-        node scripts/mermaid/generate.mjs "$@"
+      ARGS=("$@")
     else
-      # Enumerate tracked Markdown files on the host to avoid requiring git inside the container
       if ! command -v git >/dev/null 2>&1; then
         echo "git is required to enumerate Markdown files (for --all)" >&2; exit 1
       fi
-      # Read NUL-delimited list safely into an array
-      mapfile -d '' -t FILES < <(git ls-files -z -- '*.md')
-      if [ ${#FILES[@]} -eq 0 ]; then
+      mapfile -d '' -t ARGS < <(git ls-files -z -- '*.md')
+      if [ ${#ARGS[@]} -eq 0 ]; then
         echo "No tracked Markdown files found"; exit 0
       fi
-      # shellcheck disable=SC2086  # VOLS intentionally unquoted (see note above)
-      docker run --rm \
-        -e MERMAID_MAX_PARALLEL="$CONC" \
-        -v "$PWD:/work" -w /work $VOLS \
-        "$IMAGE" \
-        node scripts/mermaid/generate.mjs "${FILES[@]}"
     fi
+    docker run --rm \
+      -e MERMAID_MAX_PARALLEL="$CONC" \
+      -v "$PWD:/work" -w /work "${VOLS_ARR[@]}" \
+      "$IMAGE" \
+      node scripts/mermaid/generate.mjs "${ARGS[@]}"
     ;;
   node)
     if ! command -v node >/dev/null 2>&1; then
       echo "Node.js is required for MERMAID_BACKEND=node (or when running inside a container without Docker)." >&2
       exit 1
     fi
-    if [ "$#" -gt 0 ]; then
-      MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "$@"
-    else
-      MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs --all
-    fi
+    if [ "$#" -gt 0 ]; then ARGS=("$@"); else ARGS=(--all); fi
+    MERMAID_MAX_PARALLEL="$CONC" node scripts/mermaid/generate.mjs "${ARGS[@]}"
     ;;
   none|*)
     echo "Need Node.js or Docker to render Mermaid diagrams (set MERMAID_BACKEND=node to force Node in containerized CI)." >&2
