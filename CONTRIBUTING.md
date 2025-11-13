@@ -49,6 +49,7 @@ node scripts/mermaid/generate.mjs --all
 ```
 
 - CI inside containers: set `MERMAID_BACKEND=node` to avoid nested Docker. Ensure Node 20 is present and, for deterministic runs, pin Chromium and pass `PUPPETEER_EXECUTABLE_PATH` (see `.github/workflows/ci.yml`).
+  - Backend selection notes: `MERMAID_BACKEND` accepts `docker|node|auto` (default). Inside containers, the script prefers Node and will not auto-attempt Docker unless explicitly requested. You can override detection with `DIAGRAMS_IN_CONTAINER=1|0`.
 
 - Faster Docker runs in CI: mount caches into the container by exporting `MERMAID_DOCKER_VOLUMES`, for example in GitHub Actions:
 

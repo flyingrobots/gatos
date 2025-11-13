@@ -11,7 +11,7 @@ test:
 
 # Generate Mermaid diagrams for the entire repo (one-liner; script handles Node/Docker + defaults)
 diagrams:
-	@bash -c 'bash ./scripts/diagrams.sh'
+	@bash -eu -o pipefail ./scripts/diagrams.sh
 
 
 # Markdown lint via xtask (no Node required)
@@ -69,7 +69,7 @@ schema-negative:
 schemas: schema-compile schema-validate schema-negative
 
 pre-commit:
-	@bash -lc 'set -euo pipefail; \
+	@bash -c 'set -euo pipefail; \
 	 echo "[make pre-commit] markdown lint (prefer rumdl, then xtask md --fix)…"; \
 	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
 	   if command -v rumdl >/dev/null 2>&1; then rumdl check . --fix; \
@@ -176,4 +176,4 @@ help:
 	echo "  make setup-dev                         — install repo-local hooks and tools (one-time)";
 # One-step developer setup: install hooks and recommended CLI tools
 setup-dev:
-	@bash -lc 'bash ./scripts/setup-dev.sh'
+	@bash -eu -o pipefail ./scripts/setup-dev.sh
