@@ -2,7 +2,7 @@
         xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev lint-all
 
 # Pinned Node image used for ad-hoc Docker invocations (keep in sync with scripts)
-NODE_IMAGE_DIGEST ?= $(shell bash -lc '. ./scripts/pins.sh 2>/dev/null || true; printf "%s" "$$NODE_IMAGE_DIGEST" | sed -e "s/^$/node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a/"')
+NODE_IMAGE_DIGEST ?= $(shell bash -c '. ./scripts/pins.sh 2>/dev/null || true; printf "%s" "$$NODE_IMAGE_DIGEST" | sed -e "s/^$/node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a/"')
 
 all: schemas lint-md link-check
 

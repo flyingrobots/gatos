@@ -66,6 +66,7 @@ echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
 # Create temporary schemas within the repository workdir so the container can access them via the bind mount
 TMPDIR_HOST="$(mktemp -d -p "$PWD" .ajvtmp.XXXXXX)"
 TMPDIR_REL="$(basename "$TMPDIR_HOST")"
+trap 'rm -rf -- "$TMPDIR_HOST"' EXIT
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > "$TMPDIR_HOST/ed25519Key.schema.json"
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > "$TMPDIR_HOST/ed25519Sig.schema.json"
 
@@ -96,19 +97,17 @@ if run_ajv validate -s "$TMPDIR_REL/ed25519Sig.schema.json" -d "$TMPDIR_REL/sig_
 fi
 
 echo "[schemas] Negative tests (invalid ISO8601 durations)…"
-echo '{"governance":{"x":{"ttl":"P"}}}' > /tmp/bad1.json
-echo '{"governance":{"x":{"ttl":"PT"}}}' > /tmp/bad2.json
-if run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad1.json; then
+echo '{"governance":{"x":{"ttl":"P"}}}' > "$TMPDIR_HOST/bad1.json"
+echo '{"governance":{"x":{"ttl":"PT"}}}' > "$TMPDIR_HOST/bad2.json"
+if run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d "$TMPDIR_REL/bad1.json"; then
   echo "[FAIL] Unexpected success: ttl=P should be rejected" >&2; exit 1
 else
   echo "  - rejected ttl=P as expected"
 fi
-if run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d /tmp/bad2.json; then
+if run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d "$TMPDIR_REL/bad2.json"; then
   echo "[FAIL] Unexpected success: ttl=PT should be rejected" >&2; exit 1
 else
   echo "  - rejected ttl=PT as expected"
 fi
 
 echo "[schemas] All schema checks passed."
-# Cleanup temporary files created in the repository workdir
-rm -rf -- "$TMPDIR_HOST"

@@ -43,7 +43,7 @@ if [ -n "$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "
           ;;
         *)
           echo "OK… but you should REALLY consider installing them." >&2
-          echo "You can do so with:  make setup-dev\n\nContinuing… but grumbling." >&2
+          printf '%s\n\n%s\n' 'You can do so with:  make setup-dev' 'Continuing… but grumbling.' >&2
           ;;
       esac
     else
@@ -76,12 +76,11 @@ if [ -n "$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then
       | xargs -0 lychee --no-progress --config .lychee.toml --
   elif command -v docker >/dev/null 2>&1; then
     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-      | xargs -0 -I{} docker run --rm -v "$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest \
-          --no-progress --config .lychee.toml "{}"
+      | xargs -0 docker run --rm -v "$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest \
+          --no-progress --config .lychee.toml
   else
     echo "[pre-commit][WARN] lychee not found and Docker unavailable; skipping link check" >&2
   fi
 fi
 
 echo "[pre-commit] Done."
-

@@ -10,11 +10,12 @@ VOLS_STR="${MERMAID_DOCKER_VOLUMES:-}"
 # "host:container" lines or lines that start with "-v " / "--volume ". Split on newlines.
 VOLS_ARR=()
 if [ -n "$VOLS_STR" ]; then
+  # Parse newline-separated volume specs. Each line is either "-v host:ctr" or "host:ctr".
+  # We append the entire "-v host:ctr" token or prepend -v for bare specs.
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     case "$line" in
-      -v\ *|--volume\ *)
-        flag="${line%% *}"; val="${line#* }"; VOLS_ARR+=("$flag" "$val");;
+      -v\ *|--volume\ *) VOLS_ARR+=("$line");;
       *) VOLS_ARR+=("-v" "$line");;
     esac
   done <<< "$VOLS_STR"
