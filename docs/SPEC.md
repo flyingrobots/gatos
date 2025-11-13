@@ -80,7 +80,9 @@ graph TD
 
 **Git** refers to any conformant implementation supporting refs, commits, trees, blobs, notes, and atomic ref updates.
 
-**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`.
+**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`. JSON structures that are publicly exchanged (e.g., public pointers) SHOULD use RFC 8785 JCS.
+
+**Signatures** include an explicit `sig_alg` and use domain separation with context string `GATOS/v0`.
 
 ---
 
@@ -205,7 +207,7 @@ The normative layout is as follows:
 │       ├── mbus-ack/
 │       ├── jobs/
 │       │   └── <job-id>/
-│       │       └── claims/<worker-id>
+│       │       └── claim
 │       ├── proposals/
 │       ├── approvals/
 │       ├── grants/
@@ -421,7 +423,7 @@ classDiagram
     }
 ```
 
-Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git. Public pointers MUST NOT reveal a raw plaintext hash; if a commitment is required, use a hiding commitment scheme and keep the plaintext hash inside `encrypted_meta`.
+Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git. Public pointers in low‑entropy classes **MUST NOT** reveal a plaintext digest; they **MUST** include a ciphertext digest. Pointer `size` **SHOULD** be bucketed (e.g., 1 KB/4 KB/16 KB/64 KB). If a plaintext commitment is required, use a hiding commitment and store it inside `encrypted_meta`.
 
 ---
 
@@ -448,7 +450,8 @@ Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. Delivery is **at‑l
 
 Retention and compaction:
 
-- Segment topics (e.g., `<topic>/0001`, `<topic>/0002`) and prune segments once all consumer checkpoints have advanced beyond them.
+- Segment topics by date and ULID (e.g., `<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>`) and rotate when either a message or size threshold is reached (defaults: 100k messages or ~192 MB).
+- Apply TTL to old segments (default: 30 days) and write a summary commit per pruned window (counts + Merkle root of message bodies + last offsets) to preserve verifiable history.
 - Deployments **SHOULD** enable `fetch.writeCommitGraph=true` and `repack.writeBitmaps=true` for busy topics.
 
 ---
@@ -497,6 +500,19 @@ classDiagram
 
 Proofs **MUST** be stored under `refs/gatos/audit/proofs/<ns>`.
 
+### 10.x Proof‑of‑Experiment (PoX)
+<a id="10.x"></a>
+
+A **PoX** envelope ties together a scientific artifact’s inputs, program, policy, and outputs:
+
+- `inputs_root` — commitment to input datasets/pointers
+- `program_id` — canonical hash of the analysis program/container
+- `policy_root` — policy in effect
+- `outputs_root` — commitment to results
+- Links to associated PoE (jobs) and PoF (state) where applicable
+
+PoX envelopes **MUST** be stored under `refs/gatos/audit/proofs/experiments/<ulid>`.
+
 ---
 
 ## 11. Offline Authority Protocol (OAP)
@@ -533,6 +549,21 @@ graph TD
 ```
 
 Nodes **MUST** discover the active profile via `gatos/config/profile.yaml`.
+
+### 12.1 Research Profile (Strict)
+<a id="12.1"></a>
+
+Profile id: `research`.
+
+Defaults (normative for this profile):
+
+- Proof‑of‑Fold required on state pushes: pre‑receive MUST verify PoF for updates to `refs/gatos/state/**`.
+- Fast‑forward‑only refs: `refs/gatos/policies/**`, `refs/gatos/state/**`, and `refs/gatos/audit/**`.
+- GC anchors: `refs/gatos/audit/**` and the latest `refs/gatos/state/**` checkpoints.
+- Message bus segmentation and TTL: rotate segments at 100k messages or ~192 MB; TTL 30 days; write summary commits for pruned windows.
+- Public pointer hardening: low‑entropy classes MUST NOT expose plaintext digests; public pointers MUST include a ciphertext digest; sizes SHOULD be bucketed (e.g., 1 KB, 4 KB, 16 KB, 64 KB).
+
+Nodes advertising the `research` profile MUST expose diagnostics for the above and SHOULD surface violations in `gatos doctor`.
 
 ---
 
@@ -592,7 +623,7 @@ Implementations **MUST** pass a six-point certification inspection.
 graph TD
     A(GATOS Implementation) --> B(Certification);
     B --> C(Deterministic Fold);
-    B --> D(Exactly-Once Delivery);
+    B --> D(At-Least-Once + Idempotency);
     B --> E(Offline Reconcile);
     B --> F(Deny Audit);
     B --> G(Blob Integrity);

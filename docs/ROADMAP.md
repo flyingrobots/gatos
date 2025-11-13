@@ -19,7 +19,7 @@
 ## Phase 2 — Sessions + Bus QoS (Weeks 4–5)
 
 - [ ] session start/undo/fork/merge
-- [ ] mbus QoS (`at_least_once`, `exactly_once`),
+- [ ] mbus QoS (at_least_once + idempotency + acks),
 - [ ] acks/commitments
 - [ ] Tests: F5
 
