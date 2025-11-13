@@ -1,5 +1,5 @@
 .PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit \
-        xtask ci-diagrams ci-schemas ci-linkcheck help
+        xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev
 
 all: schemas lint-md link-check
 
@@ -76,12 +76,41 @@ pre-commit:
 	   else cargo run -p xtask -- md --fix; fi; \
 	   git diff --cached --name-only -z --diff-filter=ACM -- "*.md" | xargs -0 git add --; \
 	 fi; \
-	 echo "[make pre-commit] Prettier JSON/YAML…"; \
+	 echo "[make pre-commit] JSON/YAML formatting (dprint)…"; \
 	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "*.yaml")" ]; then \
 	   if command -v dprint >/dev/null 2>&1; then \
 	     dprint fmt; \
 	   else \
-	     echo "dprint not found; install with: cargo install dprint" >&2; exit 1; \
+	     # Interactive prompt if possible; otherwise emit a stern warning and continue
+	     if [ -t 1 ]; then \
+	       echo "Looks like you haven't installed the required development workflow tools yet." >&2; \
+	       printf "Do you want to install them now? [Yes/no] " >&2; \
+	       read -r REPLY; REPLY=$${REPLY:-Yes}; \
+	       case "$${REPLY}" in \
+	         y|Y|yes|Yes|YES) \
+	           echo "[pre-commit] Installing tools and hooks…" >&2; \
+	           bash ./scripts/setup-dev.sh || true; \
+	           if command -v dprint >/dev/null 2>&1; then \
+	             echo "[pre-commit] dprint installed; formatting staged JSON/YAML…" >&2; \
+	             dprint fmt; \
+	           else \
+	             echo "[pre-commit][WARN] dprint still not available after install; continuing." >&2; \
+	           fi \
+	           ;; \
+	         *) \
+	           echo "OK… but you should REALLY consider installing them." >&2; \
+	           echo "You can do so with:  make setup-dev\n\nContinuing… but grumbling." >&2; \
+	           ;; \
+	       esac; \
+	     else \
+	       echo "" >&2; \
+	       echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2; \
+	       echo "[pre-commit][WARN][MISSING DPRINT] Skipping JSON/YAML formatting for staged files." >&2; \
+
+	       echo "Install our hooks and tools with:  make setup-dev   (or: bash scripts/setup-dev.sh)" >&2; \
+	       echo "CI will fail formatting if this is not fixed." >&2; \
+	       echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2; \
+	     fi; \
 	   fi; \
 	   git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" | xargs -0 git add --; \
 	 fi; \
@@ -137,9 +166,13 @@ ci-linkcheck:
 
 # help: list available xtask-related targets for quick discovery
 help:
-	@echo "xtask shims:"; \
-	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — passthrough to xtask (e.g., links, schemas, md)"; \
-	echo "  make ci-diagrams                       — generate all Mermaid diagrams (MERMAID_MAX_PARALLEL honored)"; \
-	echo "  make ci-schemas                        — validate and compile all schemas/examples"; \
-	echo "  make ci-linkcheck                      — run Markdown link checks"; \
-	echo "Env: MERMAID_MAX_PARALLEL overrides diagram concurrency (default 6 here)";
+	@echo "Tooling entrypoints:"; \
+	echo "  make diagrams                          — render all diagrams via scripts/diagrams.sh (Docker/Node autodetect)"; \
+	echo "  make ci-diagrams                       — same, explicit full-scan; honors MERMAID_MAX_PARALLEL (script handles concurrency)"; \
+	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — run Rust-only tasks (schemas, links, md)"; \
+	echo "  make ci-schemas                        — validate and compile all schemas/examples (xtask)"; \
+	echo "  make ci-linkcheck                      — run Markdown link checks (xtask)"; \
+	echo "Notes: diagrams are not handled by xtask; set MERMAID_MAX_PARALLEL for scripts/diagrams.sh only.";
+# One-step developer setup: install hooks and recommended CLI tools
+setup-dev:
+	@bash -lc 'bash ./scripts/setup-dev.sh'

@@ -90,3 +90,38 @@ Common commands
 Diagrams are intentionally outside xtask. Use `make diagrams` or `bash ./scripts/diagrams.sh`.
 
 Tip: `make help` lists handy shims (`ci-diagrams`, `ci-schemas`, `ci-linkcheck`) that mirror CI. For ad-hoc invocations, use `make xtask ARGS="<subcommand> [opts]"` for Rust-based flows.
+
+## One-time Setup (recommended)
+
+Run this once after cloning to install repo-local hooks and recommended tools:
+
+```bash
+make setup-dev
+# or
+bash ./scripts/setup-dev.sh
+```
+
+What it does:
+
+- Installs pre-commit and pre-push hooks into this repo only.
+- Installs `dprint` and `lychee` via cargo if available (pinned versions matching CI); otherwise prints next steps.
+
+
+### JSON/YAML formatting (dprint)
+
+- CI enforces formatting via `dprint check` (plugins pinned in `dprint.json`).
+- Pre-commit: if `dprint` is installed locally, it will format staged `*.json`/`*.yml`/`*.yaml`. If not installed, the hook will skip with a warning (CI will still enforce).
+
+Install locally (recommended):
+
+```bash
+cargo install dprint --locked
+dprint --version
+```
+
+Run checks manually:
+
+```bash
+dprint check    # verify only
+dprint fmt      # format in place
+```
