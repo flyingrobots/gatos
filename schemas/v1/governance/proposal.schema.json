@@ -42,7 +42,11 @@
       ]
     },
     "expire_at": { "type": "string", "format": "date-time" },
-    "policy_rule": { "type": "string", "pattern": "^[a-z0-9_.-]+$", "description": "Policy rule identifier (dot-notation)" },
+    "policy_rule": {
+      "type": "string",
+      "pattern": "^[a-z0-9_.-]+$",
+      "description": "Policy rule identifier (dot-notation)"
+    },
     "created_by": { "$ref": "../common/ids.schema.json#/$defs/actorId" }
   }
 }

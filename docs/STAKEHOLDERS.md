@@ -35,14 +35,14 @@
 
 - debug incidents,
 - maintain SLAs,
-- post‑mortems.
+- post-mortems.
   
 ### Data/ML Engineer (DML)
 
 — manage large artifacts,
 
 - track lineage,
-- reproduce results across air‑gapped nodes.
+- reproduce results across air-gapped nodes.
   
 ### Auditor / GRC (AUD)
 

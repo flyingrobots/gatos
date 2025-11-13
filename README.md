@@ -6,7 +6,7 @@
 
 **GATOS** generalizes Git’s content-addressed DAG into a complete computational substrate: a programmable operating surface unifying history, policy, and computation within a deterministic, verifiable feedback loop.
 
-It turns Git from a version-control system into a self-governing compute fabric. Commits aren't just records of change, but executable events in a cryptographically auditable state machine. Policies, data, and computation all live in the same history, producing provable behavior and automatic governance without centralized infrastructure. 
+It turns Git from a version-control system into a self-governing compute fabric. Commits aren't just records of change, but executable events in a cryptographically auditable state machine. Policies, data, and computation all live in the same history, producing provable behavior and automatic governance without centralized infrastructure.
 
 **The Result**: A platform that’s offline-first, federated, and mathematically deterministic — a new foundation for verifiable infrastructure, trustworthy automation, distributed AI, and time-travel computing. ***GATOS is a truth machine.***
 
@@ -26,6 +26,8 @@ If there's more you want to know, follow the links below:
 > [!WARNING]
 > **GATOS** is the evolution of my earlier work ([`git-mind`](https://github.com/neuroglyph/git-mind), [Echo](https://github.com/flyingrobots/echo), [Ledger Kernel](https://github.com/flyingrobots/ledger-kernel), etc.) into a single, unified system. I've just started working on this project. If you're interested, star the repo, watch, and follow along.
 > *- flyingrobots*
+>
+> *a little category theory joke... Eh, maybe you had to be there...*
 
 <details>
   <summary>ASCII art</summary>
@@ -33,13 +35,13 @@ If there's more you want to know, follow the links below:
   
 ```bash
 
-8""""8 8""""8 ""8"" 8"""88 8""""8 
+8""""8 8""""8 ""8"" 8"""88 8""""8
 8    " 8    8   8   8    8 8      
-8e     8eeee8   8e  8    8 8eeeee 
-88  ee 88   8   88  8    8     88 
-88   8 88   8   88  8    8 e   88 
-88eee8 88   8   88  8eeee8 8eee88 
- 
+8e     8eeee8   8e  8    8 8eeeee
+88  ee 88   8   88  8    8     88
+88   8 88   8   88  8    8 e   88
+88eee8 88   8   88  8eeee8 8eee88
+
   Git As The Operating Surface™  
 ```
 

@@ -154,7 +154,7 @@ Note: “Policy/Trust Plane” includes the policy engine and trust artifacts (k
 
 Note on policy rule naming
 
-- Governance actions are referenced as `governance.<action>`; `action` tokens use dot‑notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
+- Governance actions are referenced as `governance.<action>`; `action` tokens use dot-notation (e.g., `publish.artifact`). Policy evaluation resolves these against the governance policy map defined in `schemas/v1/policy/governance_policy.schema.json`.
 
 The Fold Engine consumes canonicalized events to produce a canonical state tree.
 
@@ -261,7 +261,7 @@ Resolver authentication (normative default): Bearer JWT. Required claims: `sub`,
 ## 7. JSONL Protocol
 <a id="7"></a><a id="7.-jsonl-protocol"></a>
 
-Communication with `gatosd` occurs over a JSONL RPC protocol. Long‑running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
+Communication with `gatosd` occurs over a JSONL RPC protocol. Long-running operations MUST quickly return an `{ "ack": true }` and stream progress lines keyed by id.
 
 ```mermaid
 sequenceDiagram
@@ -317,7 +317,7 @@ graph TD
 
 ---
 
-## 9. CI & Cross‑Platform Determinism
+## 9. CI & Cross-Platform Determinism
 <a id="9"></a><a id="9.-ci-crossplatform-determinism"></a>
 
 A CI matrix ensures determinism across platforms and runs specialized test suites.
@@ -439,7 +439,7 @@ To ensure hash stability, GATOS uses canonical encodings:
 ## 15. Compute Engine (Job Runner)
 <a id="15"></a><a id="15.-compute-engine-job-runner"></a>
 
-See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+See also: [ADR-0002](./decisions/ADR-0002/DECISION.md).
 
 The `gatos-compute` crate provides the GATOS worker process.
 
@@ -482,7 +482,7 @@ sequenceDiagram
 ## 16. Governance Engine
 <a id="16"></a><a id="16.-governance-engine"></a>
 
-See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+See also: [ADR-0003](./decisions/ADR-0003/DECISION.md).
 
 ### Engine Responsibilities
 <a id="engine-responsibilities"></a>
@@ -490,7 +490,7 @@ See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
 - Watchers: a service in `gatos-policy` watches `refs/gatos/proposals/**` and `refs/gatos/approvals/**`.
 - Verification: for each new Approval, verify signature and eligibility using the trust graph.
 - Quorum check: evaluate the policy rule (`governance.<action>`) to determine if quorum is satisfied.
-- Grant creation: when quorum is met, create a Grant commit with a canonical Proof‑Of‑Consensus envelope and update `refs/gatos/grants/...`.
+- Grant creation: when quorum is met, create a Grant commit with a canonical Proof-Of-Consensus envelope and update `refs/gatos/grants/...`.
 - Gate enforcement: the Policy Gate checks for a valid Grant before allowing any governed action.
 
 ### CLI Skeleton (This defines the normative CLI user interface; stub behavior acceptable initially)
@@ -510,7 +510,7 @@ Governance evaluator MUST resolve groups declared in policy (e.g., `group: leads
 
 Revocations MUST be surfaced to dependent systems (e.g., Job Plane). Implementations SHOULD emit `gatos.policy.grant.revoked` and deny actions gated by revoked grants.
 
-### End‑to‑End Flow
+### End-to-End Flow
 <a id="endtoend-flow"></a>
 
 ```mermaid

@@ -19,8 +19,7 @@
       "pattern": "^ed25519:(?:[0-9a-f]{128}|[A-Za-z0-9+/]{86}==|[A-Za-z0-9_-]{86}|[A-Za-z0-9_-]{86}==)$",
       "description": "Ed25519 signature (64 bytes) encoded as: lowercase hex (128 chars), standard base64 with '==' padding (88 chars), or base64url unpadded (86 chars) or with '==' padding (88 chars); all prefixed with 'ed25519:'."
     },
-    "uri": { "type": "string", "format": "uri" }
-    ,
+    "uri": { "type": "string", "format": "uri" },
     "actorId": {
       "type": "string",
       "pattern": "^(user|agent|service):[A-Za-z0-9._-]+$",

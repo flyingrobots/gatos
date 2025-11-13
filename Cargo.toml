@@ -24,6 +24,9 @@ documentation = "https://github.com/flyingrobots/gatos/blob/main/README.md"
 homepage = "https://github.com/flyingrobots/gatos"
 rust-version = "1.81"
 
+# Workspace dependency policy:
+# - Use tilde requirements (~) to allow patch/minor updates within a compatible series
+#   while avoiding surprise major bumps (e.g., "~1.11.0").
 [workspace.dependencies]
 blake3 = { version = "1.8.2", default-features = false }
 bincode = { version = "2.0.1", default-features = false }
@@ -37,3 +40,5 @@ serde_with = { version = "~3.15.1", default-features = false, features = ["macro
 wasm-bindgen = "0.2.104"
 anyhow = "~1.0.100"
 smallvec = { version = "1.13.2", default-features = false }
+regex = "~1.11.0"
+jsonschema = "~0.17.1"

@@ -80,13 +80,7 @@ graph TD
 
 **Git** refers to any conformant implementation supporting refs, commits, trees, blobs, notes, and atomic ref updates.
 
-**Hash** defaults to BLAKE3 for content hashes and SHA‑256 for policy bundle digests unless otherwise stated. Canonical event encoding is **DAG‑CBOR**; where content‑addressing is required, use `cidv1(dag-cbor, blake3(bytes))`. JSON structures that are publicly exchanged (e.g., public pointers) SHOULD use RFC 8785 JCS (sorted keys; UTF‑8 NFC; no `-0`).
-
-**Fold IR** (Echo Lua IR, ELC) is serialized as DAG‑CBOR and identified by `fold_root = sha256(ELC_bytes)`. Stock Lua bytecode (luac) is NOT portable and MUST NOT be used.
-
-**Numeric Model (EchoLua, v1)** is normative: Q32.32 fixed‑point using signed 64‑bit representation. All arithmetic (+, −, ×, ÷) executes in Q32.32; division MUST round toward zero. Transcendental functions (sin, cos, exp, log, …) are not permitted in v1 folds and SHOULD be performed in jobs (PoE) instead.
-
-**Signatures** include an explicit `sig_alg` and use domain separation with context string `GATOS/v0`.
+**Hash** defaults to BLAKE3 for content hashes and SHA-256 for policy bundle digests unless otherwise stated.
 
 ---
 
@@ -97,11 +91,11 @@ A **GATOS node** is a Git repository with a disciplined layout of refs, notes, a
 
 **GATOS** defines five planes:
 
-1) **Ledger plane** — append‑only journals (**events**).  
-2) **Policy/Trust plane** — enforceable rules, grants, and multi‑party consensus governance.  
-3) **State plane** — deterministic folds (**state roots**).  
-4) **Message plane** — a commit‑backed pub/sub bus.  
-5) **Job plane** — distributed, verifiable job execution.
+1) **Ledger plane** — append-only journals (**events**).  
+2) **State plane** — deterministic folds (**state roots**).  
+3) **Policy/Trust plane** — enforceable rules, grants, and multi-party consensus governance.  
+4) **Message plane** — a commit-backed pub/sub bus.
+5) **Job plane** — Distributed, verifiable job execution.
 
 ```mermaid
 graph TD
@@ -161,14 +155,14 @@ graph TD
 ### Requirements
 <a id="requirements"></a>
 
-- Journals **MUST** be fast‑forward‑only.
+- Journals **MUST** be fast-forward-only.
 - State refs **MUST** be derivable from journals and policies.
 - Cache refs **MUST** be rebuildable and **MUST NOT** be authoritative.
 - Epochs **MUST** form a cryptographically-linked chain.
 
 ---
 
-## 2. On‑Disk Layout (Normative)
+## 2. On-Disk Layout (Normative)
 <a id="2"></a><a id="2.-ondisk-layout-normative"></a>
 
 The following diagram illustrates the primary locations for GATOS artifacts within the Git repository (`.git`) and the working tree.
@@ -439,7 +433,7 @@ Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque ob
 
 ---
 
-## 8. Message Bus (Commit‑Backed Pub/Sub)
+## 8. Message Bus (Commit-Backed Pub/Sub)
 <a id="8"></a><a id="8.-message-bus-commitbacked-pubsub"></a>
 
 The message bus provides a pub/sub system built on Git commits.
@@ -759,7 +753,7 @@ sequenceDiagram
 ## 19. Job Plane (Compute)
 <a id="19"></a><a id="19.-job-plane-compute"></a>
 
-See also: [ADR‑0002](./decisions/ADR-0002/DECISION.md).
+See also: [ADR-0002](./decisions/ADR-0002/DECISION.md).
 
 The Job Plane provides a system for scheduling, executing, and recording the results of distributed, asynchronous jobs.
 
@@ -788,7 +782,7 @@ stateDiagram-v2
 The lifecycle is represented entirely through Git objects:
 
 - **Job:** A commit whose tree contains a `job.yaml` manifest.
-- **Claim:** A single lock ref `refs/gatos/jobs/<job-id>/claim`. Workers perform an atomic `git update-ref 0000… <claim-oid>` (compare‑and‑swap). The winner writes its `worker_id` inside the claim object.
+- **Claim:** An atomic ref under `refs/gatos/jobs/<job-id>/claims/<worker-id>`, where `<job-id>` is the canonical BLAKE3 `content_id` of the job manifest (see ADR-0002 Canonical Job Identifier).
 - **Result:** A commit referencing the job commit, containing a `Proof-Of-Execution`.
 
 ### 19.2 Job Discovery
@@ -799,7 +793,7 @@ When a **Job** commit is created, a message **MUST** be published to a topic on 
 ### 19.3 Proof-Of-Execution
 <a id="19.3"></a><a id="193"></a><a id="19"></a><a id="19.3-proof-of-execution"></a>
 
-The **Proof‑Of‑Execution (PoE)** MUST sign the job’s canonical `content_id` (BLAKE3 of the canonical unsigned job core). Trailers MUST use canonical, prefixed encodings as follows:
+The **Proof-Of-Execution (PoE)** MUST sign the job’s canonical `content_id` (BLAKE3 of the canonical unsigned job core). Trailers MUST use canonical, prefixed encodings as follows:
 
 - `Job-Id: blake3:<hex>` — canonical job identifier (content_id)
 - `Proof-Of-Execution: blake3:<hex>` — digest of the PoE envelope
@@ -817,21 +811,21 @@ Attest-Program: blake3:<hex>
 Attest-Sig: ed25519:<sig>
 ```
 
-See ADR‑0002 for the normative PoE requirements and ADR‑0001 for the definition of `content_id` and canonical serialization.
+See ADR-0002 for the normative PoE requirements and ADR-0001 for the definition of `content_id` and canonical serialization.
 
 ---
 
 ## 20. Consensus Governance (Normative)
 <a id="20"></a><a id="20.-consensus-governance-normative"></a>
 
-See also: [ADR‑0003](./decisions/ADR-0003/DECISION.md).
+See also: [ADR-0003](./decisions/ADR-0003/DECISION.md).
 
-Governs gated actions via proposals, approvals, and grants. Governance artifacts are Git commits under dedicated refs (see on‑disk layout). All trailers MUST use canonical, prefixed encodings (`blake3:<hex>`, `ed25519:<pubkey>`).
+Governs gated actions via proposals, approvals, and grants. Governance artifacts are Git commits under dedicated refs (see on-disk layout). All trailers MUST use canonical, prefixed encodings (`blake3:<hex>`, `ed25519:<pubkey>`).
 
 ### 20.1 Workflow
 <a id="20.1"></a><a id="201"></a><a id="20"></a><a id="20.1-workflow"></a>
 
-Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MUST be defined in the trust graph (`gatos/trust/graph.json`).
+Proposal → Approvals (N-of-M) → Grant. Quorum groups (e.g., `@leads`) MUST be defined in the trust graph (`gatos/trust/graph.json`).
 
 ### 20.2 Commit Structures (Trailers)
 <a id="20.2"></a><a id="202"></a><a id="20"></a><a id="20.2-commit-structures-trailers"></a>
@@ -849,6 +843,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
   ```
 
   (Note: `gatos://` is the canonical URI scheme for addressing resources managed within the GATOS operating surface.)
+
 - Approval (at `refs/gatos/approvals/…`):
 
   ```text
@@ -866,7 +861,7 @@ Proposal → Approvals (N‑of‑M) → Grant. Quorum groups (e.g., `@leads`) MU
   Proof-Of-Consensus: blake3:<hex>
   ```
 
-### 20.3 Proof‑Of‑Consensus (PoC)
+### 20.3 Proof-Of-Consensus (PoC)
 <a id="20.3"></a><a id="203"></a><a id="20"></a><a id="20.3-proofofconsensus-poc"></a>
 
 `Proof-Of-Consensus` is the BLAKE3 of a canonical JSON envelope containing:
