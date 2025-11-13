@@ -1,6 +1,9 @@
 .PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit \
         xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev lint-all
 
+# Pinned Node image used for ad-hoc Docker invocations (keep in sync with scripts)
+NODE_IMAGE_DIGEST ?= node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a
+
 all: schemas lint-md link-check
 
 clean:
@@ -82,7 +85,7 @@ pre-commit:
 	     dprint fmt; \
 	   else \
 	     # Interactive prompt if possible; otherwise emit a stern warning and continue
-	     if [ -t 1 ]; then \
+	     if [ -t 1 ] && [ -z "$$CI" ]; then \
 	       echo "Looks like you haven't installed the required development workflow tools yet." >&2; \
 	       printf "Do you want to install them now? [Yes/no] " >&2; \
 	       read -r REPLY; REPLY=$${REPLY:-Yes}; \
@@ -121,8 +124,8 @@ pre-commit:
 	       | xargs -0 node scripts/mermaid/generate.mjs; \
 	   elif command -v docker >/dev/null 2>&1; then \
 	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
-	           node scripts/mermaid/generate.mjs \"{}\"; \
+	       | xargs -0 docker run --rm -v "$$PWD:/work" -w /work $(NODE_IMAGE_DIGEST) \
+	           node scripts/mermaid/generate.mjs; \
 	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
 	   if [ -d docs/diagrams/generated ]; then git add -- docs/diagrams/generated; fi; \
 	 fi; \
