@@ -61,7 +61,7 @@ ULIDs MAY be used as human-friendly aliases in messages (for deduplication, sort
 The job manifest is stored as `job.yaml` but the authoritative form for hashing and `content_id` computation is Canonical JSON.
 
 - Serialization for hashing: Canonical JSON (UTF-8, sorted keys, no insignificant whitespace, lowercase hex where applicable).
-- Conversion: YAML authorship is allowed; prior to hashing, `job.yaml` MUST be converted to JSON with field order ignored and then canonicalized.
+- Conversion: YAML authorship is allowed; before hashing, `job.yaml` MUST be converted to JSON with field order ignored and then canonicalized.
 - Required fields and types:
   - `command: array<string>` — executable and arguments (e.g., `["/usr/bin/env", "bash", "-lc"]`).
   - `args: array<string>` — additional arguments appended to `command` (may be empty). If omitted, treated as `[]`.
