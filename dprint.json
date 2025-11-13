@@ -2,7 +2,7 @@
   "$schema": "https://dprint.dev/schemas/v0.json",
   "projectType": "openSource",
   "plugins": [
-    "https://plugins.dprint.dev/json-0.17.4.wasm",
+    "https://plugins.dprint.dev/json-0.21.0.wasm",
     "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.5.1.wasm"
   ],
   "includes": ["**/*.json", "**/*.yml", "**/*.yaml"],
