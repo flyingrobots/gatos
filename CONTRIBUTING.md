@@ -60,6 +60,16 @@ node scripts/mermaid/generate.mjs --all
   run: MERMAID_MAX_PARALLEL=6 bash ./scripts/diagrams.sh --all
 ```
 
+Migration helper
+
+- If you see verify errors about "missing mermaid-meta comment" on legacy SVGs under `docs/diagrams/generated/`, run the one-time backfill to embed metadata without re-rendering:
+
+```bash
+node scripts/mermaid/backfill_meta.mjs --all
+```
+
+This updates existing committed SVGs to include the metadata that CI verifies (source file, block index, code hash, CLI version). It does not change diagram geometry; subsequent full regenerations can be done in CI or locally when networked rendering is available.
+
 ### Git Hooks
 
 Install the pre-commit hook (runs markdownlint fix + mermaid generation for staged files and stages results; uses Node if available, otherwise Docker with a Node 20 image):
