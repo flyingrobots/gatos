@@ -27,3 +27,12 @@ These are sensible, proof‑first defaults for scientific and high‑assurance s
 
 Adjust these with your IRB/compliance requirements; treat them as a starting point for a verifiable research workflow.
 
+## Enabling the Research Profile
+
+Create `gatos/config/profile.yaml` with:
+
+```yaml
+profile: research
+```
+
+Then restart `gatosd` (or re-run your commands). Gates will enforce the stricter invariants described above (PoF required on state pushes; FF‑only refs; mbus rotation/TTL; pointer privacy buckets; audit anchors).

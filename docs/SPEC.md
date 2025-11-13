@@ -673,9 +673,19 @@ graph TD
     A --> G(policy);
     A --> H(trust);
     A --> I(epoch);
-    A --> J(prove);
-    A --> K(doctor);
+    A --> J(verify);
+    A --> K(reproduce);
+    A --> L(bisect);
+    A --> M(export);
+    A --> N(doctor);
 ```
+
+Key verbs (non‑exhaustive):
+
+- `verify` — verify PoX/PoF/PoE signatures & ancestry.
+- `reproduce <pox-id>` — fetch pointers, run jobs (PoE), check PoF; report identical/diff.
+- `bisect --state=<ref> --good <ts|commit> --bad <ts|commit> --predicate <script|jq>` — binary search over checkpoints.
+- `export parquet|sqlite` — emit Explorer‑Root; `export verify <path>` compares it.
 
 ---
 

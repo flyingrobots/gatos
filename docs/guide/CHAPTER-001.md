@@ -69,11 +69,13 @@ graph TD
 1.  **The Ledger Plane (`gatos-ledger`)**
     This is the foundation of GATOS. It is an append-only, immutable journal of all **events** that occur in the system. Every action, from a user command to a job result, is recorded as a cryptographically signed commit. This provides a complete and verifiable audit trail, forming the single source of truth from which all other states are derived.
 
-2.  **The State Plane (`gatos-echo`, `gatos-kv`)**
+2.  **The Policy/Trust Plane (`gatos-policy`)**
+    This is the governance and security layer. Before any event is written to the ledger, it must pass through the Policy/Trust Plane.
+
+3.  **The State Plane (`gatos-echo`, `gatos-kv`)**
     This plane is responsible for computing the current "state" of the system. It performs a **fold**—a pure, deterministic function that processes the event stream from the Ledger Plane to produce a canonical state snapshot. Like folding a piece of paper in origami, each fold transforms the surface, creating a new, verifiable **shape** (represented by a `state root` hash). Because the fold is deterministic, any node can independently replay the ledger and arrive at the exact same shape, ensuring consistency without a central coordinator.
 
-3.  **The Policy/Trust Plane (`gatos-policy`)**
-    This is the governance and security layer. Before any event is written to the ledger, it must pass through the Policy Plane. This plane evaluates a set of rules, also stored in the Git repository, to determine if an action is allowed. It can enforce complex rules, such as requiring N-of-M signatures from a group of maintainers before a critical operation (like a production deployment) is permitted.
+    See [SPEC §5.4 — Proof‑of‑Fold (PoF)](../SPEC.md#5.4-proof-of-fold) for the formal verification link between ledger windows, policy roots, and state checkpoints.
 
 4.  **The Message Plane (`gatos-mind`)**
     This plane provides a commit-backed, asynchronous publish/subscribe message bus. It allows different parts of the GATOS system, as well as external agents, to communicate reliably. For example, when a new job is scheduled in the Job Plane, a message is published to a topic on the message bus, allowing available workers to discover and claim the job.

@@ -85,7 +85,7 @@ Since ***state is a deterministic function of history***, you can bisect your en
 # Find the exact commit that broke the production state
 git gatos bisect start --state=prod
 git gatos bisect run 'jq -e ".inventory.widgets < 0"'
-# Output: Culprit commit found. Proof-of-Fold verified.
+# Output: Culprit commit found. [Proof-of-Fold verified](./docs/SPEC.md#5.4-proof-of-fold).
 ```
 
 ### 2. Policy as Code (Really)

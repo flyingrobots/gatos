@@ -1,0 +1,49 @@
+---
+title: Proof‑of‑Experiment (PoX)
+---
+
+# Proof‑of‑Experiment (PoX)
+
+A PoX envelope ties together a scientific artifact’s inputs, program, policy, and outputs so others can verify and reproduce results.
+
+See SPEC: 10.x PoX and Glossary.
+
+## Envelope (canonical fields)
+
+```jsonc
+{
+  "type": "pox",
+  "ulid": "01J5…",
+  "inputs_root": "blake3:<hex>",
+  "program_id": "blake3:<hex>",
+  "policy_root": "<commit-oid>",
+  "outputs_root": "blake3:<hex>",
+  "links": {
+    "poe": ["blake3:<hex>", "…"],   // jobs/results used
+    "pof": ["blake3:<hex>"]         // state checkpoints backing figures/tables
+  },
+  "sig_alg": "ed25519",
+  "sig": "ed25519:<base64>"
+}
+```
+
+Storage: `refs/gatos/audit/proofs/experiments/<ulid>` (commit contains envelope as a tracked blob).
+
+## CLI
+
+```bash
+# Create a PoX bundle from inputs, program, and outputs roots
+git gatos pox create --inputs <ref|path> --program <digest> --outputs <ref|path> \
+  --link-poe <id> --link-pof <id> --out pox/<ulid>.json
+
+# Verify a PoX bundle (signatures, ancestry, referenced PoE/PoF)
+git gatos pox verify --id <ulid>
+
+# Reproduce an experiment end-to-end
+git gatos reproduce <ulid>
+```
+
+## Citing PoX in papers
+
+Include the PoX ULID and the repo commit (or DOI) in the Methods appendix. Provide a link to the public `refs/gatos/audit/proofs/experiments/<ulid>` if available.
+

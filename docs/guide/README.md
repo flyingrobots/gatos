@@ -121,10 +121,12 @@ graph TD
   - `git gatos init` → enable Stargate
   - `git gatos event add` (policy‑gated) → `git gatos fold`
   - Inspect state → `git gatos jobs enqueue` → observe PoE
+  - Enable strict research defaults (optional): create `gatos/config/profile.yaml` with `profile: research` (see [Research Profile](../research-profile.md)).
 
 - Data Privacy Path
   - Create Opaque Pointer → fold with private blob
   - Rekey the blob → verify determinism of public state
+  - Cite PoX and PoF in results; see [PoX](../proofs/proof-of-experiment.md) and [PoF](../proofs/proof-of-fold.md).
 
 See the full step‑by‑step guides:
 

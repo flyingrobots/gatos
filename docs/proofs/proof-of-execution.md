@@ -1,0 +1,32 @@
+---
+title: Proof‑of‑Execution (PoE)
+---
+
+# Proof‑of‑Execution (PoE)
+
+PoE is a signed attestation that a worker executed a specific job over specific inputs in a specific environment.
+
+See SPEC: §19.3.
+
+## Trailers (normative)
+
+```text
+Job-Id: blake3:<hex>
+Proof-Of-Execution: blake3:<hex>
+Worker-Id: ed25519:<pubkey>
+Attest-Program: blake3:<hex>   # RECOMMENDED
+Attest-Sig: ed25519:<sig>      # OPTIONAL
+```
+
+Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the result manifest and PoE envelope).
+
+## CLI
+
+```bash
+# Display PoE for a job
+git gatos jobs show --id <job-id> --poe
+
+# Verify PoE signatures and ancestry
+git gatos verify proof --id <poe-id>
+```
+
