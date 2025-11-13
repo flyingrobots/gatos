@@ -339,11 +339,14 @@ fn lint_one(s: &str) -> (String, usize) {
                 out.push("\n".to_string());
                 issues += 1;
             }
-            // Emit list block and ensure trailing blank after the block
+            // Option A: consume the already-matched current line, then subsequent list lines
+            out.push(line);
+            i += 1;
             while i < norm.len() && list_re.is_match(&norm[i]) {
                 out.push(norm[i].clone());
                 i += 1;
             }
+            // Ensure a blank after the list block when the next line is non-blank (and not EOF)
             let next = norm.get(i).cloned().unwrap_or_default();
             if !next.trim().is_empty() {
                 out.push("\n".to_string());
