@@ -20,7 +20,7 @@ jobs:
       - name: EditorConfig check
         uses: editorconfig-checker/action-editorconfig-checker@v2
         with:
-          version: '2.7.0'
+          version: "2.7.0"
 
   fmt:
     runs-on: ubuntu-latest
@@ -129,7 +129,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Validate schemas and examples (v1) via xtask
         run: cargo run -p xtask -- schemas
 
@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Mermaid Diagrams Generate + Verify
     env:
-      CHROMIUM_REVISION: '1108766'
+      CHROMIUM_REVISION: "1108766"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@v1
@@ -159,7 +159,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Install Chromium for Puppeteer (exact revision)
         shell: bash
         run: |
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Link Check (xtask links)
     env:
-      LYCHEE_VERSION: '0.21.0'
+      LYCHEE_VERSION: "0.21.0"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@v1

@@ -7,7 +7,7 @@ services:
     environment:
       MERMAID_MAX_PARALLEL: ${MERMAID_MAX_PARALLEL:-6}
       MERMAID_CLI_VERSION: ${MERMAID_CLI_VERSION:-10.9.0}
-      PUPPETEER_EXECUTABLE_PATH: ''
+      PUPPETEER_EXECUTABLE_PATH: ""
     command: ["node", "scripts/mermaid/generate.mjs", "--all"]
 
   ci-schemas:
@@ -22,4 +22,11 @@ services:
     working_dir: /work
     volumes:
       - .:/work
-    command: ["npx", "-y", "markdownlint-cli", "**/*.md", "--config", ".markdownlint.json"]
+    command: [
+      "npx",
+      "-y",
+      "markdownlint-cli",
+      "**/*.md",
+      "--config",
+      ".markdownlint.json",
+    ]
