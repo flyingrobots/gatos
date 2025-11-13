@@ -39,7 +39,8 @@ function usage() {
     '',
     'Environment:',
     '  MERMAID_MAX_PARALLEL   Concurrency (default: min(cpu, 8))',
-    '  MERMAID_CLI_VERSION    @mermaid-js/mermaid-cli version (default: 10.9.0)',
+    '  MERMAID_CLI_VERSION    @mermaid-js/mermaid-cli version (default: from scripts/pins.sh, else 10.9.0)',
+    '  MERMAID_CLI_PREV_ALLOW Allow this older CLI version in verify (transitional)',
     '  MERMAID_SVG_INTRINSIC_DIM  Set to 0 to disable SVG intrinsic-size normalization',
     '  MERMAID_CMD_TIMEOUT_MS Command timeout for mmdc/npx child processes (default: 120000)',
   ];
@@ -207,10 +208,8 @@ async function renderTask(task, mmdcPath) {
       throw new Error(`Puppeteer config not found: ${puppetCfg}`);
     }
     const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
-    // Pin to 10.9.0 for stable Mermaid syntax support and reproducible CI output.
-    // Override via MERMAID_CLI_VERSION env var; must match CI (.github/workflows/ci.yml)
-    // and docker-compose.yml (ci-diagrams service) for consistency.
-    const cliVer = process.env.MERMAID_CLI_VERSION || '10.9.0';
+    // Use MERMAID_CLI_VERSION from env or scripts/pins.sh (if present) for reproducibility.
+    const cliVer = await resolveMermaidCliVersion();
     const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
     // Parse and validate timeout from env (ms). Fall back to 120000 on any invalid value.
     const envTimeout = process.env.MERMAID_CMD_TIMEOUT_MS;
@@ -238,7 +237,7 @@ async function renderTask(task, mmdcPath) {
   if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
     await normalizeSvgIntrinsicSize(task.outFile);
   }
-  await embedMeta(task.outFile, task, process.env.MERMAID_CLI_VERSION || '10.9.0');
+  await embedMeta(task.outFile, task, await resolveMermaidCliVersion());
 }
 
 // Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
@@ -537,9 +536,12 @@ async function verifyTasks(tasks) {
         const truncated = (firstLines.length > 400 ? firstLines.slice(0, 400) + '…' : firstLines).replace(/\n/g, '\\n');
         errs.push(`${usedLegacy ? relLegacy : relHashed}: code hash mismatch (have ${meta.code_sha256}, want ${codeHash}) — snippet: ‹${truncated}›`);
       }
-      const wantCli = process.env.MERMAID_CLI_VERSION || '10.9.0';
+      const wantCli = await resolveMermaidCliVersion();
+      const prevAllow = process.env.MERMAID_CLI_PREV_ALLOW || '';
       if (meta.cli !== wantCli) {
-        errs.push(`${usedLegacy ? relLegacy : relHashed}: cli version mismatch (have ${meta.cli}, want ${wantCli})`);
+        if (!prevAllow || meta.cli !== prevAllow) {
+          errs.push(`${usedLegacy ? relLegacy : relHashed}: cli version mismatch (have ${meta.cli}, want ${wantCli}${prevAllow ? ` or ${prevAllow}` : ''})`);
+        }
       }
     } catch (e) {
       const msg = e && e.message ? e.message : String(e);
@@ -554,3 +556,17 @@ main().catch((err) => {
   console.error(err && err.stack ? err.stack : (err && err.message) || err);
   process.exit(1);
 });
+
+// Attempt to read MERMAID_CLI_VERSION default from scripts/pins.sh to avoid drift.
+async function resolveMermaidCliVersion() {
+  if (process.env.MERMAID_CLI_VERSION && process.env.MERMAID_CLI_VERSION.trim() !== '') {
+    return process.env.MERMAID_CLI_VERSION.trim();
+  }
+  try {
+    const pinsPath = path.join(repoRoot || (await findRepoRoot(process.cwd())) || process.cwd(), 'scripts', 'pins.sh');
+    const txt = await fs.readFile(pinsPath, 'utf8');
+    const m = txt.match(/MERMAID_CLI_VERSION\s*=\s*"([^"]+)"/);
+    if (m && m[1]) return m[1];
+  } catch {}
+  return '10.9.0';
+}
