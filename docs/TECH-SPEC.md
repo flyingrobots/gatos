@@ -83,7 +83,7 @@ graph TD
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
+        subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
         end
 
