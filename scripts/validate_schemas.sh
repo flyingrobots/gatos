@@ -2,10 +2,12 @@
 set -euo pipefail
 
 echo "[schemas] Using Dockerized AJV (no host Node required)…"
+AJV_NODE_IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a" # corresponds to node:20
+AJV_NODE_IMAGE="${AJV_NODE_IMAGE:-$AJV_NODE_IMAGE_DEFAULT}"
 
 run_ajv() {
   local subcmd="$1"; shift
-  docker run --rm -v "$PWD:/work" -w /work node:20 \
+  docker run --rm -v "$PWD:/work" -w /work "$AJV_NODE_IMAGE" \
     npx -y ajv-cli@5 "$subcmd" --spec=draft2020 --strict=true -c ajv-formats "$@"
 }
 

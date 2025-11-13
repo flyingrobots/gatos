@@ -4,6 +4,9 @@ set -euo pipefail
 # Default concurrency: 6 if not provided by caller/CI
 CONC="${MERMAID_MAX_PARALLEL:-6}"
 VOLS="${MERMAID_DOCKER_VOLUMES:-}"
+# Pin Node image for Docker runs (digest corresponds to node:20)
+IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a"
+IMAGE="${MERMAID_NODE_IMAGE:-$IMAGE_DEFAULT}"
 
 # Backend selection: auto (default), docker, or node.
 BACKEND="${MERMAID_BACKEND:-auto}"
@@ -42,7 +45,7 @@ case "$backend" in
       docker run --rm \
         -e MERMAID_MAX_PARALLEL="$CONC" \
         -v "$PWD:/work" -w /work $VOLS \
-        node:20 \
+        "$IMAGE" \
         node scripts/mermaid/generate.mjs "$@"
     else
       # Enumerate tracked Markdown files on the host to avoid requiring git inside the container
@@ -57,7 +60,7 @@ case "$backend" in
       docker run --rm \
         -e MERMAID_MAX_PARALLEL="$CONC" \
         -v "$PWD:/work" -w /work $VOLS \
-        node:20 \
+        "$IMAGE" \
         node scripts/mermaid/generate.mjs "${FILES[@]}"
     fi
     ;;
