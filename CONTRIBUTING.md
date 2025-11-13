@@ -106,7 +106,6 @@ What it does:
 - Installs pre-commit and pre-push hooks into this repo only.
 - Installs `dprint` and `lychee` via cargo if available (pinned versions matching CI); otherwise prints next steps.
 
-
 ### JSON/YAML formatting (dprint)
 
 - CI enforces formatting via `dprint check` (plugins pinned in `dprint.json`).
