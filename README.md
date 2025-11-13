@@ -203,6 +203,8 @@ Research Profile defaults: PoF required on state pushes; `refs/gatos/policies/**
 * **Proof-first Design:** Every claim is verifiable from first principles — **PoF** (state), **PoE** (jobs), signed governance.
 * **At-Least-Once + Idempotency:** We respect physics. Delivery is at-least-once; consumers dedupe by idempotency keys.
 
+See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.md](./docs/deterministic-lua.md).
+
 ---
 
 ## Contributing

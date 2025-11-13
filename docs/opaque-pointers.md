@@ -1,0 +1,40 @@
+---
+title: Opaque Pointers — Privacy by Construction
+---
+
+# Opaque Pointers — Privacy by Construction
+
+Opaque Pointers allow public verification with private bytes.
+
+## Public Pointer Rules (Normative)
+
+See SPEC §7 and Research Profile §12.1.
+
+- Low‑entropy classes: public pointers **MUST NOT** expose plaintext digests.
+- Public pointers **MUST** include a `ciphertext_digest`.
+- Pointer `size` **SHOULD** be bucketed (e.g., 1 KB, 4 KB, 16 KB, 64 KB).
+- Plaintext commitments, if needed, MUST be hidden (stored in `encrypted_meta`).
+
+## Availability & Resolver
+
+Resolvers serve private bytes to authorized clients.
+
+Headers:
+
+- `Digest: blake3=<hex>`
+- `X-BLAKE3-Digest: <hex>` (duplicate for intermediaries)
+
+Auth (recommended): JWT or HTTP Message Signatures; log decisions under `refs/gatos/audit/`.
+
+## Projection Determinism
+
+Folds operate on pointer shapes, not plaintext bytes. Any materialized computation over decrypted data runs in jobs (PoE) and contributes to PoF/PoX rather than the public fold itself.
+
+## BAA — Blob Availability Attestation
+
+```json
+{ "blob": "blake3:<hex>", "store": "s3://bucket/path", "retain_until": "2026-01-01T00:00:00Z", "sig": "ed25519:<base64>" }
+```
+
+Policies can require a valid BAA before accepting pointers into state.
+
