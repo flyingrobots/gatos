@@ -48,17 +48,17 @@ ZK Proof Envelope (stub):
 
 Not all data belongs in a public, replicated Git repository. GATOS handles sensitive or large data using a mechanism called **Opaque Pointers**.
 
-Instead of storing the data directly in a Git blob, the system stores a small pointer object. This pointer lives on the **operating surface** inside Git, while the sensitive data it points to lives off-chain in a secure, content-addressed blob store.
+Instead of storing the data directly in a Git blob, the system stores a small pointer object. This pointer lives on the **operating surface** inside Git, while the sensitive data it points to lives in an external, policy‑gated content‑addressed blob store.
 
 ```mermaid
 graph TD
-    subgraph "GATOS Repository (On-Chain)"
+    subgraph "GATOS Repository (In-Repo History)"
         A[Opaque Pointer in Git]
         A -- Contains --> C(Ciphertext Hash);
         A -- Contains --> D(Encrypted Meta);
     end
 
-    subgraph "Blob Store (Off-Chain)"
+    subgraph "External Blob Store"
         E[Encrypted Data Blob]
     end
 
@@ -73,7 +73,7 @@ graph TD
 
 Authorized workers can fetch the encrypted blob, decrypt it, verify that the recovered plaintext hash (from encrypted meta) matches expectations, perform a computation, and then produce a new encrypted blob and a new Opaque Pointer.
 
-If the computation is deterministic, the new plaintext hash will be the same for any authorized worker who performs the same operation. This allows the `state_root` of the system to be updated deterministically, even though the actual data remains private and off-chain.
+If the computation is deterministic, the new plaintext hash will be the same for any authorized worker who performs the same operation. This allows the `state_root` of the system to be updated deterministically, even though the actual data remains private and outside the repository.
 
 ### Blob Availability Attestation (BAA)
 
@@ -93,5 +93,5 @@ The Opaque Pointer model also supports **`rekey`** operations. An authorized use
 
 GATOS provides a sophisticated, multi-layered approach to trust, verification, and privacy.
 *   **Attestation and Proof-of-Execution** provide verifiable evidence of computation.
-*   **Opaque Pointers** allow the system to manage and compute on private, off-chain data without sacrificing determinism.
+*   **Opaque Pointers** allow the system to manage and compute on private data outside the repo without sacrificing determinism.
 *   The future integration of **Zero-Knowledge Proofs** will provide even stronger privacy guarantees, enabling a new class of applications that are both fully private and fully verifiable.
