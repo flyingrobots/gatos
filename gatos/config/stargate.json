@@ -1,0 +1,13 @@
+{
+  "$schema": "../docs/schemas/stargate.config.schema.json",
+  "ff_only": [
+    "refs/gatos/policies/**",
+    "refs/gatos/state/**",
+    "refs/gatos/audit/**"
+  ],
+  "require_pof": [
+    "refs/gatos/state/**"
+  ],
+  "deny_audit_ref": "refs/gatos/audit/policy/deny"
+}
+

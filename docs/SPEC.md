@@ -711,6 +711,10 @@ Key verbs (non‑exhaustive):
 - `foldc <src.lua> -o <out.elc>` — compile EchoLua to ELC (records engine id).
 - `policyc <src.rgs> -o <out.rgc>` — compile .rgs policy DSL to deterministic IR/ELC.
 
+See also:
+
+- CLI guides: [foldc](./cli/foldc.md), [policyc](./cli/policyc.md), [export](./cli/export.md), [pox](./cli/pox.md), [lint](./cli/lint.md).
+
 ---
 
 ## 18. Example Use Case: A Git-Native Work Queue

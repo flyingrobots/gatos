@@ -177,16 +177,26 @@ See also:
 EchoLua provides deterministic folds and policy evaluation:
 
 - Compiler: Lua source → normalized AST → Echo Lua IR (ELC); ELC serialized as DAG‑CBOR; `fold_root = sha256(ELC_bytes)`.
-- Runtime: Q32.32 fixed‑point math (ties‑to‑even); canonical JSON emission; no OS/RNG/time; no coroutines/FFI.
+- Runtime: Q32.32 fixed‑point math; division rounds toward zero; canonical JSON emission; no OS/RNG/time; no coroutines/FFI; no transcendentals in v1 folds.
 - Stdlib: `dpairs`, `dkeys`, `dsort`, `encode_canonical`, `decode_strict`.
-- RNG: `rng(seed_bytes)` only; no ambient global state.
+- RNG: `rng(seed_bytes)` only; no ambient global state. Normative algorithm: `pcg32@1`. Canonical seed helper: `seed64 = trunc64(blake3(inputs_root || policy_root || fold_root))`.
 - Linter: fail on `pairs`, `coroutine`, `__gc`, `__pairs`, `math.random`, `os.*`, `io.*`, `debug.*`, `package.*`.
 - Fuel/step limits to guarantee termination.
 
 Artifacts:
 
 - Record `Fold-Root: sha256:<hex>` in state trailers (SPEC §5.3) and PoF (SPEC §5.4).
-- Record `Fold-Engine: echo@<semver>` including deterministic math lib id.
+- Record `Fold-Engine: echo@<semver>+elc@<semver>+num=q32.32+rng=pcg32@<ver>`.
+
+#### Engine IDs
+
+Fold engine identity is a structured string used in trailers and proofs:
+
+```
+echo@<semver>+elc@<semver>+num=q32.32+rng=pcg32@<ver>
+```
+
+This binds runtime, IR version, numeric model, and RNG configuration for reproducible verification.
 
 Testing:
 
@@ -243,6 +253,8 @@ sequenceDiagram
     GATOS->>GATOS: Store new ciphertext in CAS
     GATOS->>GATOS: Atomically update references
 ```
+
+Resolver authentication (normative default): Bearer JWT. Required claims: `sub`, `aud`, `exp`; optional `scope`. Decisions and fetches SHOULD be logged under `refs/gatos/audit/`.
 
 ---
 
@@ -415,19 +427,12 @@ gantt
 ## 14. Wire-Format Invariants
 <a id="14"></a><a id="14.-wire-format-invariants"></a>
 
-To ensure hash stability, GATOS uses a standard canonical encoding format.
+To ensure hash stability, GATOS uses canonical encodings:
 
-```mermaid
-classDiagram
-    class BincodeConfig {
-        <<Rust>>
-        +standard()
-    }
-    class Hash {
-        +[u8; 32]
-    }
-    BincodeConfig ..> Hash : Encodes
-```
+- Events/proofs: DAG‑CBOR (CIDv1 with BLAKE3 bytes).
+- JSON artifacts (pointers, manifests): RFC 8785 JCS (UTF‑8 NFC; sorted keys; fixed numeric formatting).
+- Fold engine identity: `Fold-Engine: echo@<semver>+elc@<semver>+num=q32.32+rng=pcg32@<ver>`.
+- Explorer‑Root (derived exports): `blake3(ledger_head || policy_root || state_root || extractor_version)`.
 
 ---
 
@@ -463,6 +468,14 @@ sequenceDiagram
 3. **Execution:** The worker will execute the job's `command` in a sandboxed environment.
 4. **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
 5. **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
+
+### CLI Surface (selected)
+
+- `git gatos foldc <src.lua> -o <out.elc>` — compile EchoLua → ELC; prints fold_root; records engine id.
+- `git gatos policyc <src.rgs> -o <out.rgc>` — compile .rgs → rgc/ELC; prints policy_code_root.
+- `git gatos export parquet|sqlite --state <ref> --out <dir>`; `git gatos export verify <dir>` — Explorer‑Root verify.
+- `git gatos pox create|verify` and `git gatos reproduce <id>` — Proof‑of‑Experiment workflow.
+- `git gatos lint <paths>` — lints EchoLua sources for deterministic profile.
 
 ---
 
