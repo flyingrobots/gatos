@@ -65,7 +65,7 @@ graph TD
             KV("gatos-kv");
         end
 
-        subgraph "Policy Plane"
+        subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
         end
 

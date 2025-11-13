@@ -5,14 +5,14 @@ This diagram illustrates the high-level architecture of the GATOS system, showin
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
+        subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
         end
 
