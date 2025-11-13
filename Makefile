@@ -1,5 +1,5 @@
 .PHONY: all clean test diagrams lint-md fix-md link-check schemas schema-compile schema-validate schema-negative pre-commit \
-        xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev
+        xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev lint-all
 
 all: schemas lint-md link-check
 
@@ -148,7 +148,7 @@ xtask:
 # CI-parity shims
 # ci-diagrams: Generate all Mermaid diagrams via the shell wrapper.
 ci-diagrams:
-	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash -c 'bash ./scripts/diagrams.sh --all'
+	@MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash -eu -o pipefail ./scripts/diagrams.sh --all
 
 # ci-schemas: Validate and compile all JSON Schemas and example payloads.
 # No special env vars required; xtask handles Node/AJV invocation.
@@ -172,8 +172,19 @@ help:
 	echo "  make xtask ARGS=\"<subcommand> [opts]\"  — run Rust-only tasks (schemas, links, md)"; \
 	echo "  make ci-schemas                        — validate and compile all schemas/examples (xtask)"; \
 	echo "  make ci-linkcheck                      — run Markdown link checks (xtask)"; \
+	echo "  make lint-all                          — run md + schemas + diagrams verify (CI-like)"; \
 	echo "Notes: diagrams are not handled by xtask; set MERMAID_MAX_PARALLEL for scripts/diagrams.sh only."; \
 	echo "  make setup-dev                         — install repo-local hooks and tools (one-time)";
+
+# Aggregate CI-like checks
+lint-all:
+	@bash -c 'set -euo pipefail; \
+	  echo "[lint-all] markdown (xtask md)…"; \
+	  cargo run -p xtask -- md; \
+	  echo "[lint-all] schemas (xtask schemas)…"; \
+	  cargo run -p xtask -- schemas; \
+	  echo "[lint-all] diagrams verify (wrapper)…"; \
+	  MERMAID_MAX_PARALLEL=$${MERMAID_MAX_PARALLEL:-6} bash ./scripts/diagrams.sh --verify --all'
 # One-step developer setup: install hooks and recommended CLI tools
 setup-dev:
 	@bash -eu -o pipefail ./scripts/setup-dev.sh
