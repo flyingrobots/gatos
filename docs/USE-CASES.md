@@ -10,9 +10,9 @@ This document illustrates practical scenarios where GATOS provides unique value.
 
 | | |
 |---|---|
-|**Goal** | Treat Git as a programmable ledger with rule‑checked writes. |
+|**Goal** | Treat Git as a programmable ledger with rule-checked writes. |
 | **How** | Journals under `refs/gatos/journal/**`, policy gate enforces who/what/where, audits on deny. |
-| **Why GATOS** | No server required (local), or push‑gate profile for RYW and centralized enforcement. |
+| **Why GATOS** | No server required (local), or push-gate profile for RYW and centralized enforcement. |
 
 ---
 
@@ -20,9 +20,9 @@ This document illustrates practical scenarios where GATOS provides unique value.
 
 | | |
 |---|---|
-|**Goal** | Model business processes as append‑only events → deterministic state. |
+|**Goal** | Model business processes as append-only events → deterministic state. |
 | **How** | Echo folds compute `state_root`; checkpoints under `refs/gatos/state/**`. |
-| **Why GATOS** | Any node can replay to the same byte‑identical result; offline‑first. |
+| **Why GATOS** | Any node can replay to the same byte-identical result; offline-first. |
 
 ---
 
@@ -30,23 +30,23 @@ This document illustrates practical scenarios where GATOS provides unique value.
 
 | | |
 |---|---|
-|**Goal** | Multi‑agent orchestration with exactly‑once semantics and audit. |
+|**Goal** | Multi-agent orchestration with exactly-once semantics and audit. |
 | **How** | Git message bus (`refs/gatos/mbus/**`) with acks/commitments; capabilities gate topics. |
 | **Why GATOS** | Works without Kafka; merges cleanly; persists forever. |
 
 ---
 
-## 4) Supply‑Chain & Deploy Attestation
+## 4) Supply-Chain & Deploy Attestation
 
 | | |
 |---|---|
 |**Goal** | Immutable, signed, verifiable deploy records. |
-| **How** | Ship every critical action as an event; store stdout/stderr as notes; multi‑sig trust for policy changes. |
+| **How** | Ship every critical action as an event; store stdout/stderr as notes; multi-sig trust for policy changes. |
 | **Why GATOS** | Incident response + compliance with zero vendor lock. |
 
 ---
 
-## 5) Air‑Gapped ML Registry
+## 5) Air-Gapped ML Registry
 
 | | |
 |---|---|
@@ -56,7 +56,7 @@ This document illustrates practical scenarios where GATOS provides unique value.
 
 ---
 
-## 6) Cross‑App Data Sharing (RLS‑gated)
+## 6) Cross-App Data Sharing (RLS-gated)
 
 | | |
 |---|---|
@@ -71,8 +71,8 @@ This document illustrates practical scenarios where GATOS provides unique value.
 | | |
 |---|---|
 |**Goal** | Persist “why” relationships alongside “what” code changes. |
-| **How** | Edges as journal events; roaring‑bitmap caches for fast queries. |
-| **Why GATOS** | Time‑travelable semantics baked into Git. |
+| **How** | Edges as journal events; roaring-bitmap caches for fast queries. |
+| **Why GATOS** | Time-travelable semantics baked into Git. |
 
 ---
 
@@ -81,5 +81,5 @@ This document illustrates practical scenarios where GATOS provides unique value.
 | | |
 |---|---|
 |**Goal** | Signed toggles with audit and rollbacks. |
-| **How** | KV‑style events + index refs; push‑gate for enforcement. |
+| **How** | KV-style events + index refs; push-gate for enforcement. |
 | **Why GATOS** | Auditable configuration without a new database. |

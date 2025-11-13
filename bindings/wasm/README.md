@@ -4,7 +4,7 @@ This crate provides WebAssembly bindings for the GATOS core libraries, allowing 
 
 Exports
 
-- `hello_wasm() -> &'static str` — zero‑allocation helper for Rust callers.
+- `hello_wasm() -> &'static str` — zero-allocation helper for Rust callers.
 - `hello_wasm_js() -> String` — `wasm-bindgen` export suitable for JS; wraps `hello_wasm()`.
 
 For more details on the overall architecture, see the main [GATOS Technical Specification](../../docs/TECH-SPEC.md).

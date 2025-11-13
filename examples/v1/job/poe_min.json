@@ -1,5 +1,5 @@
 {
   "job_id": "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "runner": { "program": "blake3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
-  "outputs": [ { "note": "ok" } ]
+  "outputs": [{ "note": "ok" }]
 }

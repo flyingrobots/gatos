@@ -16,6 +16,7 @@ Schemas:
 - schemas/v1/governance/revocation.schema.json
 - schemas/v1/governance/proof_of_consensus_envelope.schema.json
 - schemas/v1/policy/governance_policy.schema.json
+
 Supersedes: []
 Superseded-By: []
 
@@ -23,13 +24,13 @@ Superseded-By: []
 
 ## Scope
 
-Define a system for gating specific GATOS actions (e.g., locking a file, publishing an artifact, merging a policy) behind a programmable, multi‑party approval process ("Consensus Governance").
+Define a system for gating specific GATOS actions (e.g., locking a file, publishing an artifact, merging a policy) behind a programmable, multi-party approval process ("Consensus Governance").
 
 ## Rationale
 
 **Problem:** As GATOS manages critical state, some actions must be authorized by multiple trusted parties.
 
-**Context:** This generalizes the original "Perforce‑style locks" concept into a flexible governance framework capable of rules like "two leads must approve this asset change." It complements ADR‑0002 (Job Plane) so actions can be executed after reaching consensus.
+**Context:** This generalizes the original "Perforce-style locks" concept into a flexible governance framework capable of rules like "two leads must approve this asset change." It complements ADR-0002 (Job Plane) so actions can be executed after reaching consensus.
 
 ## Decision
 
@@ -41,7 +42,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
    - `refs/gatos/revocations/` — grant revocations (see Revocation below).
 3. Standard workflow:
 
-   Proposal → Approvals (N‑of‑M) → Grant
+   Proposal → Approvals (N-of-M) → Grant
 
 4. Proposal (normative)
    - A commit describing the requested action, scope/target, and required quorum. Schema: [`schemas/v1/governance/proposal.schema.json`](../../../schemas/v1/governance/proposal.schema.json)
@@ -83,12 +84,12 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      Proof-Of-Consensus: blake3:<digest>
      ```
 
-7. Proof‑Of‑Consensus (normative)
+7. Proof-Of-Consensus (normative)
    - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes (see schema: [`schemas/v1/governance/proof_of_consensus_envelope.schema.json`](../../../schemas/v1/governance/proof_of_consensus_envelope.schema.json)):
      - The canonical proposal envelope (by value or by `Proposal-Id`).
      - A sorted list (by `Signer`) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
-   - Implementations MUST use canonical JSON (UTF‑8, sorted keys, no insignificant whitespace) to build this envelope before hashing. All hex encodings MUST be lowercase. Ordering by signer is an application‑level MUST; JSON Schema cannot enforce sort order.
+   - Implementations MUST use canonical JSON (UTF-8, sorted keys, no insignificant whitespace) to build this envelope before hashing. All hex encodings MUST be lowercase. Ordering by signer is an application-level MUST; JSON Schema cannot enforce sort order.
    - Storage: The canonical PoC envelope JSON SHOULD be persisted as a blob referenced under `refs/gatos/audit/proofs/governance/<proposal-id>`; the `Proof-Of-Consensus` trailer MUST equal `blake3(envelope_bytes)`.
 
 8. Governance schema (policy integration)
@@ -106,7 +107,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
            all_of: security_team
      ```
 
-   - Evaluation of approvals and grants MUST reuse the trust graph and signature verification defined by the Policy/Trust plane (ADR‑0001).
+   - Evaluation of approvals and grants MUST reuse the trust graph and signature verification defined by the Policy/Trust plane (ADR-0001).
 
 9. Lifecycle states (normative)
 
@@ -143,7 +144,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 
 - Grants are immutable once committed; changes require revocation or supersedure.
 - Signer private keys SHOULD be protected (offline or delegated to a signing service).
-- Expired proposals MUST NOT be revived post‑TTL; new proposals are required.
+- Expired proposals MUST NOT be revived post-TTL; new proposals are required.
 
 ## Diagrams
 
@@ -195,25 +196,25 @@ sequenceDiagram
 
 ### Pros
 
-- Enables auditable, multi‑party governance for any action.
+- Enables auditable, multi-party governance for any action.
 - Suitable for regulated or collaborative environments.
 - Every step (proposal, approval, grant) is a signed Git object—immutable and traceable.
 
 ### Cons
 
 - Adds workflow complexity for gated actions.
-- Requires signature verification and key‑management tooling.
+- Requires signature verification and key-management tooling.
 
 ## Alternatives Considered
 
 1. External Platform Approvals (e.g., GitHub PR reviews) — Rejected; ties governance to specific vendors.
-2. Single‑Admin Model — Rejected; lacks flexibility for N‑of‑M or group‑based approvals.
+2. Single-Admin Model — Rejected; lacks flexibility for N-of-M or group-based approvals.
 
 ## Future Work
 
 - `gatos grant verify` CLI for checking consensus proofs.
 - TTL enforcement and automatic cleanup of expired proposals.
-- Integrate with the Job Plane (ADR‑0002) to allow "run job after grant" automation.
+- Integrate with the Job Plane (ADR-0002) to allow "run job after grant" automation.
 
 ## Why This ADR Matters
 
@@ -221,9 +222,9 @@ sequenceDiagram
 - Pairs with the Job Plane: e.g., "run this job once 3 of 5 reviewers approve."
 - Scales from teams → orgs → federations via the trust graph.
 
-Together, ADR‑0002 (Job Plane) and ADR‑0003 (Consensus Governance) transform GATOS from a deterministic datastore into a self‑governing distributed runtime.
+Together, ADR-0002 (Job Plane) and ADR-0003 (Consensus Governance) transform GATOS from a deterministic datastore into a self-governing distributed runtime.
 
 ## Terminology and References
 
-- `content_id`: BLAKE3 hash of canonical serialization of an unsigned core (see ADR‑0001).
+- `content_id`: BLAKE3 hash of canonical serialization of an unsigned core (see ADR-0001).
 - Canonical encodings: lowercase hex for BLAKE3 digests; `ed25519:<base64|hex>` for keys/signatures.

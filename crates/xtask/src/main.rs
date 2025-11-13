@@ -11,8 +11,8 @@ use which::which;
     name = "xtask",
     version,
     about = "Repo task runner (cargo xtask)",
-    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nENV:\n  MERMAID_MAX_PARALLEL     Concurrency for diagrams (default: min(cpu, 8))\n  MERMAID_CLI_VERSION      @mermaid-js/mermaid-cli pin (default: 10.9.0)\n  MERMAID_CMD_TIMEOUT_MS   Timeout for mmdc/npx (10s..15m, default: 120s)\n\nEXAMPLES:\n  cargo run -p xtask -- diagrams --all\n  cargo run -p xtask -- diagrams docs/TECH-SPEC.md\n  cargo run -p xtask -- schemas all\n  cargo run -p xtask -- links\n",
-    after_help = "Tip: use 'make ci-*' shims or 'cargo run -p xtask -- <command>' for CI parity."
+    help_template = "{name} {version}\n{about-with-newline}USAGE:\n  {usage}\n\nOPTIONS:\n{options}\n\nSUBCOMMANDS:\n{subcommands}\n\nEXAMPLES:\n  cargo run -p xtask -- schemas\n  cargo run -p xtask -- links\n  cargo run -p xtask -- md --fix\n",
+    after_help = "Guidance: use scripts/diagrams.sh (or 'make diagrams') for Mermaid diagrams. xtask focuses on Rust-based workflows."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -23,8 +23,8 @@ struct Cli {
 enum Cmd {
     /// Run pre-commit pipeline (staged-only)
     PreCommit,
-    /// Generate mermaid diagrams
-    #[command(group(
+    /// Generate mermaid diagrams (deprecated; use scripts/diagrams.sh)
+    #[command(hide = true, group(
         ArgGroup::new("input")
             .args(["all", "files"]) // exactly one must be present
             .required(true)
@@ -46,6 +46,15 @@ enum Cmd {
         #[arg(value_name = "GLOB", required = false)]
         files: Vec<String>,
     },
+    /// Markdown lint (subset of common rules). Use --fix to auto-fix.
+    Md {
+        /// Auto-fix a subset of rules (whitespace/blank lines/non-ASCII hyphens)
+        #[arg(long)]
+        fix: bool,
+        /// Optional markdown files (default: all git-tracked *.md)
+        #[arg(value_name = "FILE", required = false)]
+        files: Vec<PathBuf>,
+    },
 }
 
 // No subcommands for schemas; always run the full suite
@@ -57,6 +66,7 @@ fn main() -> Result<()> {
         Cmd::Diagrams { all, files } => diagrams(all, files),
         Cmd::Schemas => schemas(),
         Cmd::Links { files } => links(files),
+        Cmd::Md { fix, files } => md_lint(fix, files),
     }
 }
 
@@ -65,44 +75,19 @@ fn pre_commit() -> Result<()> {
     run("make", ["-s", "pre-commit"], None)
 }
 
-fn diagrams(all: bool, files: Option<Vec<PathBuf>>) -> Result<()> {
-    let repo = repo_root()?;
-    let script = repo.join("scripts/mermaid/generate.mjs");
-    if all {
-        run(
-            "node",
-            [script.as_os_str(), OsStr::new("--all")],
-            Some(&repo),
-        )?
-    } else if let Some(files) = files {
-        if files.is_empty() {
-            bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
-        }
-        let mut args: Vec<&OsStr> = Vec::with_capacity(files.len() + 1);
-        args.push(script.as_os_str());
-        for f in &files {
-            args.push(f.as_os_str());
-        }
-        run("node", args, Some(&repo))?
-    } else {
-        bail!("No input provided. Pass --all to scan all tracked .md files, or list one or more files.");
-    }
-    Ok(())
+fn diagrams(_all: bool, _files: Option<Vec<PathBuf>>) -> Result<()> {
+    bail!("Use 'scripts/diagrams.sh --all' or 'scripts/diagrams.sh <files...>' (or 'make diagrams'). xtask focuses on Rust-based workflows.")
 }
 
 fn schemas() -> Result<()> {
     let repo = repo_root()?;
     let script = repo.join("scripts/validate_schemas.sh");
-    // Execute via a shell explicitly for cross-platform compatibility
     let shell = if which("bash").is_ok() {
         "bash"
     } else if which("sh").is_ok() {
         "sh"
     } else {
-        bail!(
-            "No suitable shell found to execute {:?}. Install bash/sh or run in CI.",
-            script
-        );
+        bail!("No suitable shell for {:?}", script)
     };
     run(shell, [script.as_os_str()], Some(&repo))?;
     Ok(())
@@ -200,4 +185,283 @@ where
         bail!("{} exited with status {}", cmd, status);
     }
     Ok(())
+}
+
+fn md_lint(fix: bool, files: Vec<PathBuf>) -> Result<()> {
+    let repo = repo_root()?;
+    let debug = std::env::var("XTASK_MD_DEBUG")
+        .ok()
+        .map(|v| v != "0")
+        .unwrap_or(false);
+    // Collect files: use provided or git ls-files
+    let md_files: Vec<PathBuf> = if files.is_empty() {
+        let out = Command::new("git")
+            .args(["ls-files", "--", "*.md"])
+            .current_dir(&repo)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .output()
+            .context("git ls-files for *.md failed")?;
+        let s = String::from_utf8_lossy(&out.stdout);
+        s.lines().map(|l| repo.join(l.trim())).collect()
+    } else {
+        files
+    };
+
+    let mut total_issues = 0usize;
+    for path in md_files {
+        if !path.exists() {
+            continue;
+        }
+        let orig =
+            std::fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
+        let (updated, issues) = lint_one(&orig);
+        if issues > 0 {
+            total_issues += issues;
+            eprintln!(
+                "[md] {}: {} issue(s)",
+                path.strip_prefix(&repo).unwrap_or(&path).display(),
+                issues
+            );
+            if debug && !fix {
+                for diag in debug_report(&orig) {
+                    eprintln!("[md][DBG] {}", diag);
+                }
+            }
+            if fix {
+                // Apply safe fixes: trailing spaces (MD009), multiple blanks (MD012), blanks around headings (MD022), lists (MD032), non-ASCII hyphens
+                // updated already contains fixes for these rules
+                if updated != orig {
+                    std::fs::write(&path, updated.as_bytes())
+                        .with_context(|| format!("write {}", path.display()))?;
+                }
+            }
+        }
+        // If not fixing, drop the planned update without writing
+    }
+    if total_issues > 0 && !fix {
+        bail!(
+            "Markdown lint found {} issue(s). Run: cargo run -p xtask -- md --fix",
+            total_issues
+        );
+    }
+    Ok(())
+}
+
+fn debug_report(s: &str) -> Vec<String> {
+    use regex::Regex;
+    let mut out = Vec::new();
+    let fence_re = Regex::new(r"^\s*(```|~~~)").unwrap();
+    let heading_re = Regex::new(r"^\s*#{1,6}\s+\S").unwrap();
+    let list_re = Regex::new(r"^\s*([-*+]\s+|\d+\.\s+)\S").unwrap();
+    let lines: Vec<&str> = s.split_inclusive('\n').collect();
+    let mut in_fence = false;
+    // Trailing single spaces
+    for (i, l) in lines.iter().enumerate() {
+        if fence_re.is_match(l) {
+            in_fence = !in_fence;
+        }
+        if in_fence {
+            continue;
+        }
+        if let Some(body) = l.strip_suffix('\n') {
+            if body.ends_with(' ') {
+                // count spaces
+                let mut n = 0usize;
+                for ch in body.chars().rev() {
+                    if ch == ' ' {
+                        n += 1;
+                    } else {
+                        break;
+                    }
+                }
+                if n == 1 {
+                    out.push(format!(
+                        "line {}: trailing 1 space before newline (MD009)",
+                        i + 1
+                    ));
+                }
+            }
+        }
+    }
+    // Headings blank around & lists
+    in_fence = false;
+    for (i, l) in lines.iter().enumerate() {
+        if fence_re.is_match(l) {
+            in_fence = !in_fence;
+        }
+        if in_fence {
+            continue;
+        }
+        if heading_re.is_match(l) {
+            if i > 0 && !lines[i - 1].trim().is_empty() {
+                out.push(format!(
+                    "line {}: missing blank line before heading (MD022)",
+                    i + 1
+                ));
+            }
+            if i + 1 < lines.len() && !lines[i + 1].trim().is_empty() {
+                out.push(format!(
+                    "line {}: missing blank line after heading (MD022)",
+                    i + 1
+                ));
+            }
+        }
+    }
+    in_fence = false;
+    let mut i = 0usize;
+    while i < lines.len() {
+        let l = lines[i];
+        if fence_re.is_match(l) {
+            in_fence = !in_fence;
+            i += 1;
+            continue;
+        }
+        if in_fence {
+            i += 1;
+            continue;
+        }
+        if list_re.is_match(l) {
+            if i > 0 && !lines[i - 1].trim().is_empty() {
+                out.push(format!(
+                    "line {}: missing blank line before list (MD032)",
+                    i + 1
+                ));
+            }
+            let mut j = i;
+            while j < lines.len() && list_re.is_match(lines[j]) {
+                j += 1;
+            }
+            if j < lines.len() && !lines[j].trim().is_empty() {
+                out.push(format!("line {}: missing blank line after list (MD032)", j));
+            }
+            i = j;
+            continue;
+        }
+        i += 1;
+    }
+    out
+}
+
+fn lint_one(s: &str) -> (String, usize) {
+    let mut issues = 0usize;
+    let mut out: Vec<String> = Vec::new();
+    let mut lines: Vec<&str> = s.split_inclusive('\n').collect();
+    if lines.is_empty() {
+        return (s.to_string(), 0);
+    }
+
+    // Track code fence state to avoid touching code blocks
+    let mut in_fence = false;
+    let fence_re = regex::Regex::new(r"^\s*(```|~~~)").unwrap();
+
+    // First pass: normalize non-ASCII hyphen (U+2011) and trailing spaces (MD009)
+    let mut norm: Vec<String> = Vec::with_capacity(lines.len());
+    for l in lines.drain(..) {
+        if l.contains('\u{2011}') {
+            issues += 1;
+        }
+        let mut ll = l.replace('\u{2011}', "-");
+        if fence_re.is_match(&ll) {
+            in_fence = !in_fence;
+        }
+        if !in_fence {
+            // Trailing spaces normalization:
+            // - exactly one trailing space before newline => trim (no hard break)
+            // - two or more trailing spaces before newline => normalize to exactly two spaces
+            if ll.ends_with('\n') {
+                let bytes = ll.as_bytes();
+                let mut idx = bytes.len() - 1; // pos of '\n'
+                let mut spaces = 0usize;
+                while idx > 0 && bytes[idx - 1] == b' ' {
+                    spaces += 1;
+                    idx -= 1;
+                }
+                if spaces == 1 {
+                    ll.truncate(ll.len() - 2); // drop ' ' before \n
+                    ll.push('\n');
+                    issues += 1;
+                } else if spaces > 2 {
+                    let keep_until = ll.len() - (spaces + 1); // exclude run + \n
+                    ll.truncate(keep_until);
+                    ll.push_str("  \n");
+                    issues += 1;
+                }
+            } else if ll.ends_with(' ') {
+                ll = ll.trim_end().to_string();
+                issues += 1;
+            }
+        }
+        norm.push(ll);
+    }
+
+    // Second pass: enforce MD012 (no multiple blank lines), MD022 (blank around headings), MD032 (blank around lists)
+    let heading_re = regex::Regex::new(r"^\s*#{1,6}\s+\S").unwrap();
+    let list_re = regex::Regex::new(r"^\s*([-*+]\s+|\d+\.\s+)\S").unwrap();
+
+    in_fence = false;
+    let mut i = 0usize;
+    while i < norm.len() {
+        let line = norm[i].clone();
+        if fence_re.is_match(&line) {
+            in_fence = !in_fence;
+        }
+
+        let is_blank = line.trim().is_empty();
+        // MD012: collapse multiple blank lines
+        if is_blank {
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(false);
+            if prev_blank {
+                issues += 1; /* skip adding this extra blank */
+                i += 1;
+                continue;
+            }
+        }
+
+        // Handle headings/lists only when not inside fences
+        if !in_fence && heading_re.is_match(&line) {
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
+            if !prev_blank {
+                out.push("\n".to_string());
+                issues += 1;
+            }
+            out.push(line);
+            // Ensure blank after heading
+            let next = norm.get(i + 1).cloned().unwrap_or_default();
+            if !next.trim().is_empty() {
+                out.push("\n".to_string());
+                issues += 1;
+            }
+            i += 1;
+            continue;
+        }
+
+        if !in_fence && list_re.is_match(&line) {
+            // Ensure blank line before list block
+            let prev_blank = out.last().map(|l| l.trim().is_empty()).unwrap_or(true);
+            if !prev_blank {
+                out.push("\n".to_string());
+                issues += 1;
+            }
+            // Option A: consume the already-matched current line, then subsequent list lines
+            out.push(line);
+            i += 1;
+            while i < norm.len() && list_re.is_match(&norm[i]) {
+                out.push(norm[i].clone());
+                i += 1;
+            }
+            // Ensure a blank after the list block when the next line is non-blank (and not EOF)
+            let next = norm.get(i).cloned().unwrap_or_default();
+            if !next.trim().is_empty() {
+                out.push("\n".to_string());
+                issues += 1;
+            }
+            continue;
+        }
+
+        out.push(line);
+        i += 1;
+    }
+
+    (out.join(""), issues)
 }
