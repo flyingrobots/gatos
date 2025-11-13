@@ -207,6 +207,7 @@ async function renderTask(task, mmdcPath) {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gatos-mmd-'));
   try {
     const tmpIn = path.join(tmpDir, 'in.mmd');
+    const tmpOut = path.join(tmpDir, 'out.svg');
     await fs.writeFile(tmpIn, task.code, 'utf8');
     const puppetCfg = path.join(repoRoot, 'scripts', 'mermaid', 'puppeteer.json');
     // Validate puppeteer config exists to surface clear errors if missing
@@ -215,10 +216,10 @@ async function renderTask(task, mmdcPath) {
     } catch {
       throw new Error(`Puppeteer config not found: ${puppetCfg}`);
     }
-    const argsLocal = ['-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+    const argsLocal = ['-i', tmpIn, '-o', tmpOut, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
     // Use MERMAID_CLI_VERSION from env or scripts/pins.sh (if present) for reproducibility.
     const cliVer = await resolveMermaidCliVersion();
-    const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', task.outFile, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
+    const argsNpx = ['-y', `@mermaid-js/mermaid-cli@${cliVer}`, '-i', tmpIn, '-o', tmpOut, '-e', 'svg', '-t', 'default', '-p', puppetCfg];
     // Parse and validate timeout from env (ms). Fall back to 120000 on any invalid value.
     const envTimeout = process.env.MERMAID_CMD_TIMEOUT_MS;
     const DEFAULT_TIMEOUT = 120000; // 2 minutes
@@ -250,15 +251,31 @@ async function renderTask(task, mmdcPath) {
         throw e;
       }
     }
+    // Post-process the tmp output file after temp cleanup
+    if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
+      await normalizeSvgIntrinsicSize(tmpOut);
+    }
+    const cliVer = await resolveMermaidCliVersion();
+    await embedMeta(tmpOut, task, cliVer);
+
+    // If an existing file already matches the expected metadata, keep it to avoid noisy diffs in CI.
+    // Otherwise, replace it with the freshly generated svg.
+    let keepExisting = false;
+    try {
+      const existing = await fs.readFile(task.outFile, 'utf8');
+      const meta = extractMeta(existing);
+      if (meta && meta.src === path.relative(repoRoot, task.mdPath).split(path.sep).join('/') && meta.index === task.index && meta.code_sha256 === sha256(task.code) && meta.cli === cliVer) {
+        keepExisting = true;
+      }
+    } catch {}
+    if (!keepExisting) {
+      await fs.mkdir(path.dirname(task.outFile), { recursive: true });
+      await fs.copyFile(tmpOut, task.outFile);
+    }
   } finally {
     // Clean up temporary directory regardless of success/failure
     try { await fs.rm(tmpDir, { recursive: true, force: true }); } catch {}
   }
-  // Post-process the output file after temp cleanup
-  if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
-    await normalizeSvgIntrinsicSize(task.outFile);
-  }
-  await embedMeta(task.outFile, task, await resolveMermaidCliVersion());
 }
 
 // Ensure Quick Look and other viewers render at intrinsic size rather than a huge canvas.
