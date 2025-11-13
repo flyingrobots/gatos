@@ -34,6 +34,10 @@ Grant a capability (example governance policy) and try again, or continue if all
 
 ```bash
 git gatos fold --ns demo
+# Optionally verify the checkpoint's Proof‑of‑Fold (PoF)
+git gatos fold verify refs/gatos/state/demo
+
+See also: [SPEC §5.4 — Proof‑of‑Fold (PoF)](../SPEC.md#5.4-proof-of-fold).
 ```
 
 This writes a checkpoint under `refs/gatos/state/demo`. Verify trailers on the checkpoint commit:
