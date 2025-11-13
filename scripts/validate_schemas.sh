@@ -63,6 +63,7 @@ run_ajv validate -s schemas/v1/policy/governance_policy.schema.json -d examples/
 echo "[schemas] Additional encoding tests (ed25519 base64url forms)…"
 # Create temporary schemas within the repository workdir so the container can access them via the bind mount
 TMPDIR_HOST="$(mktemp -d -p "$PWD" .ajvtmp.XXXXXX)"
+TMPDIR_REL="$(basename "$TMPDIR_HOST")"
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Key"}' > "$TMPDIR_HOST/ed25519Key.schema.json"
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > "$TMPDIR_HOST/ed25519Sig.schema.json"
 
@@ -72,23 +73,23 @@ SIG_B64URL=$(docker run --rm "$AJV_NODE_IMAGE" node -e "process.stdout.write(Buf
 
 echo "  - positive: base64url unpadded key ($(echo -n "$KEY_B64URL" | wc -c) chars)"
 printf '"ed25519:%s"' "$KEY_B64URL" > "$TMPDIR_HOST/key_b64url_unpadded.json"
-run_ajv validate -s "$TMPDIR_HOST/ed25519Key.schema.json" -d "$TMPDIR_HOST/key_b64url_unpadded.json" -r "$AJV_COMMON_REF"
+run_ajv validate -s "$TMPDIR_REL/ed25519Key.schema.json" -d "$TMPDIR_REL/key_b64url_unpadded.json" -r "$AJV_COMMON_REF"
 
 echo "  - positive: base64url unpadded sig ($(echo -n "$SIG_B64URL" | wc -c) chars)"
 printf '"ed25519:%s"' "$SIG_B64URL" > "$TMPDIR_HOST/sig_b64url_unpadded.json"
-run_ajv validate -s "$TMPDIR_HOST/ed25519Sig.schema.json" -d "$TMPDIR_HOST/sig_b64url_unpadded.json" -r "$AJV_COMMON_REF"
+run_ajv validate -s "$TMPDIR_REL/ed25519Sig.schema.json" -d "$TMPDIR_REL/sig_b64url_unpadded.json" -r "$AJV_COMMON_REF"
 
 echo "  - negative: 44-char base64url key without '=' should be rejected"
 KEY_BADLEN="${KEY_B64URL}A" # 43 -> 44 (no '=')
 printf '"ed25519:%s"' "$KEY_BADLEN" > "$TMPDIR_HOST/key_b64url_badlen.json"
-if run_ajv validate -s "$TMPDIR_HOST/ed25519Key.schema.json" -d "$TMPDIR_HOST/key_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
+if run_ajv validate -s "$TMPDIR_REL/ed25519Key.schema.json" -d "$TMPDIR_REL/key_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
   echo "[FAIL] Unexpected acceptance of bad key length (44 without '=')" >&2; exit 1
 fi
 
 echo "  - negative: 88-char base64url sig without '==' should be rejected"
 SIG_BADLEN="${SIG_B64URL}AA" # 86 -> 88 (no '==')
 printf '"ed25519:%s"' "$SIG_BADLEN" > "$TMPDIR_HOST/sig_b64url_badlen.json"
-if run_ajv validate -s "$TMPDIR_HOST/ed25519Sig.schema.json" -d "$TMPDIR_HOST/sig_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
+if run_ajv validate -s "$TMPDIR_REL/ed25519Sig.schema.json" -d "$TMPDIR_REL/sig_b64url_badlen.json" -r "$AJV_COMMON_REF"; then
   echo "[FAIL] Unexpected acceptance of bad sig length (88 without '==')" >&2; exit 1
 fi
 
