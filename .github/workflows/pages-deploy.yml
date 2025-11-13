@@ -2,7 +2,7 @@ name: Pages: Deploy (main → gh-pages)
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -26,13 +26,19 @@ jobs:
           cache: npm
 
       - name: Install deps
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Prebuild linkify/anchors
         run: |
-          python3 scripts/linkify_chapters.py --write --paths docs/guide || true
-          python3 scripts/linkify_refs.py --write --paths docs || true
-          python3 scripts/anchors_and_toc.py --write --paths docs || true
+          set -euo pipefail
+          python3 scripts/linkify_chapters.py --write --paths docs/guide
+          python3 scripts/linkify_refs.py --write --paths docs
+          python3 scripts/anchors_and_toc.py --write --paths docs
 
       - name: Build VitePress (prod base)
         env:
@@ -49,4 +55,3 @@ jobs:
           clean: true
           clean-exclude: |
             pr-preview/
-

@@ -3,8 +3,8 @@
 Linkify bare references like "SPEC §5" or "TECH-SPEC §7.1" in Markdown files
 to anchored links, e.g.:
 
-  SPEC §5    -> [SPEC §5](./SPEC.md#5)
-  TECH-SPEC §7.1 -> [TECH-SPEC §7.1](./TECH-SPEC.md#7.1)
+  SPEC §5         -> [SPEC §5](/SPEC#5)
+  TECH-SPEC §7.1  -> [TECH-SPEC §7.1](/TECH-SPEC#7.1)
 
 Usage:
   python scripts/linkify_refs.py --write [--paths docs]
@@ -25,9 +25,11 @@ def linkify(text: str) -> tuple[bool, str]:
         nonlocal changed
         doc = m.group(1)
         sec = m.group(2)
-        md = "SPEC.md" if doc == "SPEC" else "TECH-SPEC.md"
+        # Use absolute site-root links so paths work from nested pages in VitePress.
+        # VitePress will prepend the configured base (e.g., /gatos/) on deploy.
         changed = True
-        return f"[{doc} §{sec}](./{md}#{sec})"
+        target = "/SPEC" if doc == "SPEC" else "/TECH-SPEC"
+        return f"[{doc} §{sec}]({target}#{sec})"
     out = REF_RE.sub(repl, text)
     return changed, out
 
@@ -80,4 +82,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
