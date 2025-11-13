@@ -229,9 +229,9 @@ Research Profile defaults: PoF required on state pushes; `refs/gatos/policies/**
 > [!important]
 > We are looking for design partners in **scientific research**, **regulated fintech**, and **AI alignment**. If you're interested in GATOS, please get in touch. [james@flyingrobots.dev](mailto:james@flyingrobots.dev)
 
-* [Read the Specification](./SPEC.md)
-* [View the Roadmap](./ROADMAP.md)
-* [Join the Discussion](./DISCUSSIONS)
+* [Read the Specification](./docs/SPEC.md)
+* [View the Roadmap](./docs/ROADMAP.md)
+* [Join the Discussion](https://github.com/flyingrobots/gatos/discussions)
 
 ---
 
