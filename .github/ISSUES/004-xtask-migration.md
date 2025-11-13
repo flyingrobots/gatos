@@ -6,7 +6,7 @@ Adopt the Rust “xtask” pattern to orchestrate common repo tasks (pre-commit 
 
 Motivation
 
-- Cross‑platform: removes dependency on `make` (esp. Windows environments).
+- Cross-platform: removes dependency on `make` (esp. Windows environments).
 - Consistency: devs, CI, and hooks all call the same code path.
 - Testability: orchestration logic lives in Rust; easier to unit/integration test.
 - UX: add helpful errors (detect missing `node`/`docker`, give hints), structured logging.
@@ -15,7 +15,7 @@ Proposed
 
 - Create a new binary crate `crates/xtask` (private) using `clap` for subcommands.
 - Subcommands:
-  - `pre-commit` — staged‑only: markdownlint fix, Prettier (json/yaml), Mermaid gen, link‑check.
+  - `pre-commit` — staged-only: markdownlint fix, Prettier (json/yaml), Mermaid gen, link-check.
   - `diagrams gen` [--files …] — staged or full; `diagrams gen-all` full.
   - `schemas compile|validate|negative` — mirrors CI AJV jobs; draft2020; strict.
   - `lint md [--fix]` — runs markdownlint; mirrors CI.
@@ -48,7 +48,7 @@ Tasks
 Notes
 
 - We’ll still depend on Node/Docker at execution time for external tools (markdownlint, AJV, Mermaid, lychee), but xtask centralizes orchestration in Rust.
-- This is a no‑behavior‑change refactor; focus on parity first, then iterate.
+- This is a no-behavior-change refactor; focus on parity first, then iterate.
 
 References
 

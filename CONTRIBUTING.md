@@ -19,24 +19,56 @@ npx -y markdownlint-cli2-fix
 
 ### Mermaid Diagrams
 
-- Generate SVGs from all Mermaid code blocks in Markdown:
+- Preferred entrypoint (auto-selects Docker or Node):
 
 ```bash
-node scripts/mermaid/generate.mjs
+bash ./scripts/diagrams.sh            # scan all tracked Markdown files
+bash ./scripts/diagrams.sh --all      # explicit full scan
+bash ./scripts/diagrams.sh docs/TECH-SPEC.md  # specific file(s)
 ```
 
 Outputs are written to `docs/diagrams/generated/`.
 
-Diagram generation modes
+Modes
 
-- Pre-commit: generates SVGs only for the staged Markdown files you’re committing (fast).
-- CI: regenerates all diagrams across the repo and fails if there’s drift (ensures reproducibility).
+- Pre-commit: generates SVGs only for staged Markdown (fast).
+- CI: regenerates all diagrams and fails if there’s drift (reproducibility).
 
-Manual full regeneration (all Markdown files):
+Notes
+
+- Concurrency: set `MERMAID_MAX_PARALLEL` (default 6 in CI). Example:
 
 ```bash
-scripts/mermaid/generate_all.sh
+export MERMAID_MAX_PARALLEL=6
 ```
+
+- You can also run the Node entrypoint directly if you have Node installed:
+
+```bash
+node scripts/mermaid/generate.mjs --all
+```
+
+- CI inside containers: set `MERMAID_BACKEND=node` to avoid nested Docker. Ensure Node 20 is present and, for deterministic runs, pin Chromium and pass `PUPPETEER_EXECUTABLE_PATH` (see `.github/workflows/ci.yml`).
+  - Backend selection notes: `MERMAID_BACKEND` accepts `docker|node|auto` (default). Inside containers, the script prefers Node and will not auto-attempt Docker unless explicitly requested. You can override detection with `DIAGRAMS_IN_CONTAINER=1|0`.
+
+- Faster Docker runs in CI: mount caches into the container by exporting `MERMAID_DOCKER_VOLUMES`, for example in GitHub Actions:
+
+```yaml
+- name: Generate Mermaid diagrams (full repo) via script
+  env:
+    MERMAID_DOCKER_VOLUMES: "-v $HOME/.npm:/root/.npm -v $HOME/.cache/puppeteer:/root/.cache/puppeteer"
+  run: MERMAID_MAX_PARALLEL=6 bash ./scripts/diagrams.sh --all
+```
+
+Migration helper
+
+- If you see verify errors about "missing mermaid-meta comment" on legacy SVGs under `docs/diagrams/generated/`, run the one-time backfill to embed metadata without re-rendering:
+
+```bash
+node scripts/mermaid/backfill_meta.mjs --all
+```
+
+This updates existing committed SVGs to include the metadata that CI verifies (source file, block index, code hash, CLI version). It does not change diagram geometry; subsequent full regenerations can be done in CI or locally when networked rendering is available.
 
 ### Git Hooks
 
@@ -47,3 +79,59 @@ scripts/setup-hooks.sh
 ```
 
 If the hook fails, fix the reported issues and retry the commit.
+
+## xtask quickstart (CI parity)
+
+This repo uses a small Rust utility (`cargo xtask`) to run common tasks in a cross-platform, reproducible way.
+
+Prerequisites
+
+- Rust toolchain (install via `rustup`; includes `cargo`)
+- Docker (preferred for Mermaid and AJV); Node.js + npm optional locally
+- git (for normal development flows)
+- Optional: a GitHub Personal Access Token for link checks (set `LYCHEE_GITHUB_TOKEN`); in CI, `GITHUB_TOKEN` is provided automatically
+
+Common commands
+
+- Build/tests: `cargo test --workspace --locked`
+- Schemas (AJV compile/validate/negative via Docker): `cargo run -p xtask -- schemas`
+- Link check (lychee): `cargo run -p xtask -- links`
+  - To avoid GitHub rate limiting locally, export `LYCHEE_GITHUB_TOKEN` (you can also use `export LYCHEE_GITHUB_TOKEN=$GITHUB_TOKEN` in CI).
+
+Diagrams are intentionally outside xtask. Use `make diagrams` or `bash ./scripts/diagrams.sh`.
+
+Tip: `make help` lists handy shims (`ci-diagrams`, `ci-schemas`, `ci-linkcheck`) that mirror CI. For ad-hoc invocations, use `make xtask ARGS="<subcommand> [opts]"` for Rust-based flows.
+
+## One-time Setup (recommended)
+
+Run this once after cloning to install repo-local hooks and recommended tools:
+
+```bash
+make setup-dev
+# or
+bash ./scripts/setup-dev.sh
+```
+
+What it does:
+
+- Installs pre-commit and pre-push hooks into this repo only.
+- Installs `dprint` and `lychee` via cargo if available (pinned versions matching CI); otherwise prints next steps.
+
+### JSON/YAML formatting (dprint)
+
+- CI enforces formatting via `dprint check` (plugins pinned in `dprint.json`).
+- Pre-commit: if `dprint` is installed locally, it will format staged `*.json`/`*.yml`/`*.yaml`. If not installed, the hook will skip with a warning (CI will still enforce).
+
+Install locally (recommended):
+
+```bash
+cargo install dprint --locked
+dprint --version
+```
+
+Run checks manually:
+
+```bash
+dprint check    # verify only
+dprint fmt      # format in place
+```

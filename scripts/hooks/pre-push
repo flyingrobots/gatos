@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+top="$(git rev-parse --show-toplevel)"
+cd "$top"
+
+echo "[pre-push] markdown lint (prefer rumdl; fallback to xtask md; then Node/Docker)"
+if command -v rumdl >/dev/null 2>&1; then
+  rumdl check .
+elif command -v cargo >/dev/null 2>&1; then
+  cargo run -p xtask -- md
+elif command -v node >/dev/null 2>&1; then
+  npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+elif command -v docker >/dev/null 2>&1; then
+  # Pin Node image digest for reproducibility
+  docker run --rm -v "$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
+    npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+else
+  echo "[pre-push][ERROR] No linter available (rumdl/cargo/node/docker missing); aborting push" >&2
+  exit 1
+fi
+
+
+# Quick Rust hygiene (fast): rustfmt check and cargo check (can skip via PREPUSH_SKIP_RUST=1)
+if [[ "${PREPUSH_SKIP_RUST:-0}" != "1" ]]; then
+  if command -v cargo >/dev/null 2>&1; then
+    echo "[pre-push] cargo fmt --check"
+    if ! cargo fmt --all -- --check; then
+      echo "[pre-push][ERROR] rustfmt check failed" >&2
+      exit 1
+    fi
+    echo "[pre-push] cargo check (workspace)"
+    if ! cargo check --workspace -q; then
+      echo "[pre-push][ERROR] cargo check failed" >&2
+      exit 1
+    fi
+    if command -v dprint >/dev/null 2>&1; then
+      echo "[pre-push] dprint check (JSON/YAML)"
+      if ! dprint check; then
+        echo "[pre-push][ERROR] dprint check failed" >&2
+        exit 1
+      fi
+    else
+      echo "[pre-push][WARN] dprint not found; skipping JSON/YAML format check" >&2
+    fi
+  else
+    echo "[pre-push][WARN] cargo not found; skipping Rust checks" >&2
+  fi
+fi
+
+echo "[pre-push] OK"

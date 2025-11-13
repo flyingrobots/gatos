@@ -2,6 +2,7 @@
 Status: Accepted
 Date: 2025-11-08
 ---
+
 # ADR-0001: Split gatos-ledger into `no_std` Core and `std` Backends
 
 ## Decision
