@@ -3,6 +3,8 @@ set -euo pipefail
 
 # Default concurrency: 6 if not provided by caller/CI
 CONC="${MERMAID_MAX_PARALLEL:-6}"
+# Intentionally unquoted to allow multiple -v segments. This is CI-controlled (see .github/workflows/ci.yml).
+# If paths with spaces are ever required, refactor to build an array and append -v entries explicitly.
 VOLS="${MERMAID_DOCKER_VOLUMES:-}"
 # Pin Node image for Docker runs (digest corresponds to node:20)
 IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a"
@@ -42,6 +44,7 @@ backend=$(pick_backend)
 case "$backend" in
   docker)
     if [ "$#" -gt 0 ]; then
+      # shellcheck disable=SC2086  # VOLS intentionally unquoted (see note above)
       docker run --rm \
         -e MERMAID_MAX_PARALLEL="$CONC" \
         -v "$PWD:/work" -w /work $VOLS \
@@ -57,6 +60,7 @@ case "$backend" in
       if [ ${#FILES[@]} -eq 0 ]; then
         echo "No tracked Markdown files found"; exit 0
       fi
+      # shellcheck disable=SC2086  # VOLS intentionally unquoted (see note above)
       docker run --rm \
         -e MERMAID_MAX_PARALLEL="$CONC" \
         -v "$PWD:/work" -w /work $VOLS \

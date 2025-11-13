@@ -7,8 +7,9 @@ AJV_NODE_IMAGE="${AJV_NODE_IMAGE:-$AJV_NODE_IMAGE_DEFAULT}"
 
 run_ajv() {
   local subcmd="$1"; shift
+  # Preinstall ajv-cli and ajv-formats in the npx sandbox to ensure plugin availability
   docker run --rm -v "$PWD:/work" -w /work "$AJV_NODE_IMAGE" \
-    npx -y ajv-cli@5 "$subcmd" --spec=draft2020 --strict=true -c ajv-formats "$@"
+    npx -y -p ajv-cli@5 -p ajv-formats@3 ajv "$subcmd" --spec=draft2020 --strict=true -c ajv-formats "$@"
 }
 
 AJV_COMMON_REF="schemas/v1/common/ids.schema.json"
@@ -65,8 +66,8 @@ printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https:
 printf '{"$schema":"https://json-schema.org/draft/2020-12/schema","$ref":"https://gatos.dev/schemas/v1/common/ids.schema.json#/$defs/ed25519Sig"}' > /tmp/ed25519Sig.schema.json
 
 # Generate canonical base64url encodings from actual byte lengths using Node (in container)
-KEY_B64URL=$(docker run --rm node:20 node -e "process.stdout.write(Buffer.alloc(32).toString('base64url'))")
-SIG_B64URL=$(docker run --rm node:20 node -e "process.stdout.write(Buffer.alloc(64).toString('base64url'))")
+KEY_B64URL=$(docker run --rm "$AJV_NODE_IMAGE" node -e "process.stdout.write(Buffer.alloc(32).toString('base64url'))")
+SIG_B64URL=$(docker run --rm "$AJV_NODE_IMAGE" node -e "process.stdout.write(Buffer.alloc(64).toString('base64url'))")
 
 echo "  - positive: base64url unpadded key ($(echo -n "$KEY_B64URL" | wc -c) chars)"
 printf '"ed25519:%s"' "$KEY_B64URL" > /tmp/key_b64url_unpadded.json

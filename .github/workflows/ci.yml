@@ -172,13 +172,11 @@ jobs:
           echo "PUPPETEER_EXECUTABLE_PATH=$BIN_PATH" >> "$GITHUB_ENV"
           echo "PUPPETEER_CACHE_DIR=$HOME/.cache/puppeteer" >> "$GITHUB_ENV"
       - name: Generate Mermaid diagrams (full repo) via script
-        env:
-          MERMAID_DOCKER_VOLUMES: "-v $HOME/.npm:/root/.npm -v $HOME/.cache/puppeteer:/root/.cache/puppeteer"
         run: MERMAID_MAX_PARALLEL=6 bash ./scripts/diagrams.sh --all
       - name: Fail if generation produced diffs
-        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'make diagrams' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
+        run: git diff --exit-code -- docs/diagrams/generated || (echo "Run 'bash ./scripts/diagrams.sh --all' (or 'node scripts/mermaid/generate.mjs --all') and commit updated diagrams" && exit 1)
       - name: Verify committed diagrams metadata and tool pins
-        run: node scripts/mermaid/generate.mjs --verify --all
+        run: bash ./scripts/diagrams.sh --verify --all
   linkcheck:
     runs-on: ubuntu-latest
     name: Link Check (xtask links)

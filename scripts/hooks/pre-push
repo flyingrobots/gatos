@@ -12,7 +12,8 @@ elif command -v cargo >/dev/null 2>&1; then
 elif command -v node >/dev/null 2>&1; then
   npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
 elif command -v docker >/dev/null 2>&1; then
-  docker run --rm -v "$PWD:/work" -w /work node:20 \
+  # Pin Node image digest for reproducibility
+  docker run --rm -v "$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
     npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
 else
   echo "[pre-push][ERROR] No linter available (rumdl/cargo/node/docker missing); aborting push" >&2
