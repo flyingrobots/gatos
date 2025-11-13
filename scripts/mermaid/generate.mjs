@@ -195,6 +195,14 @@ async function hasLocal(cmdPath) {
   try { await fs.access(cmdPath); return true; } catch { return false; }
 }
 
+async function ensureLocalMmdc() {
+  const cliVer = await resolveMermaidCliVersion();
+  const bin = binPath('mmdc');
+  if (await hasLocal(bin)) return bin;
+  await run('npm', ['i', '--no-save', `@mermaid-js/mermaid-cli@${cliVer}`], { cwd: repoRoot }, 300000);
+  return bin;
+}
+
 async function renderTask(task, mmdcPath) {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gatos-mmd-'));
   try {
@@ -227,7 +235,20 @@ async function renderTask(task, mmdcPath) {
     if (await hasLocal(mmdcPath)) {
       await run(mmdcPath, argsLocal, {}, timeoutMs);
     } else {
-      await run('npx', argsNpx, {}, timeoutMs);
+      try {
+        await run('npx', argsNpx, {}, timeoutMs);
+      } catch (e) {
+        const msg = String(e && e.message || e || '');
+        // Retry by installing locally if npx failed (seen as exit code 126 in CI under concurrency)
+        if (msg.includes('exited with code 126') || msg.includes('exited with code')) {
+          const local = await ensureLocalMmdc().catch(() => null);
+          if (local) {
+            await run(local, argsLocal, {}, timeoutMs);
+            return;
+          }
+        }
+        throw e;
+      }
     }
   } finally {
     // Clean up temporary directory regardless of success/failure
@@ -385,7 +406,19 @@ async function main() {
     return;
   }
 
-  const mmdcPath = binPath('mmdc');
+  // Warm up a local mmdc to avoid repeated concurrent npx executions which can
+  // occasionally fail under CI with exit 126 due to cache races. When the
+  // local binary is present we always prefer it; otherwise we fall back to npx.
+  let mmdcPath = binPath('mmdc');
+  try {
+    const cliVer = await resolveMermaidCliVersion();
+    if (!(await hasLocal(mmdcPath))) {
+      await run('npm', ['i', '--no-save', `@mermaid-js/mermaid-cli@${cliVer}`], { cwd: repoRoot }, 300000);
+    }
+  } catch (e) {
+    // Do not fail generation if warmup install fails; we'll fall back to npx.
+  }
+  mmdcPath = binPath('mmdc');
   if (verifyOnly) {
     const errors = await verifyTasks(tasks);
     if (errors.length) {
