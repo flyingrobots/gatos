@@ -24,15 +24,22 @@ The meld operation is a pure function that takes these three inputs (Shape A, Sh
 
 ```mermaid
 graph TD
-    S[Schema Manifest] --> Sh_A[Shape A]
-    S --> Sh_B[Shape B]
-    Sh_A --> Sh_AB[Meld (Shape AB)]
-    Sh_B --> Sh_AB
+  S[Schema Manifest]
+  Sh_A[Shape A]
+  Sh_B[Shape B]
+  Sh_AB[Meld: Shape AB]
 
-    style S fill:#f9f,stroke:#333,stroke-width:2px
-    style Sh_A fill:#9cf,stroke:#333,stroke-width:2px
-    style Sh_B fill:#9cf,stroke:#333,stroke-width:2px
-    style Sh_AB fill:#9c9,stroke:#333,stroke-width:2px
+  S --> Sh_A
+  S --> Sh_B
+  Sh_A --> Sh_AB
+  Sh_B --> Sh_AB
+
+  classDef s fill:#f9f,stroke:#333,stroke-width:2px;
+  classDef a fill:#9cf,stroke:#333,stroke-width:2px;
+  classDef ab fill:#9c9,stroke:#333,stroke-width:2px;
+  class S s;
+  class Sh_A,Sh_B a;
+  class Sh_AB ab;
 ```
 
 Because the meld is a deterministic fold, any node that performs the operation with the same three inputs will arrive at the exact same resulting shape and, therefore, the same `state_root` hash.

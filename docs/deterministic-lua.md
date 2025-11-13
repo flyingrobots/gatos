@@ -56,7 +56,8 @@ Additional invariants:
 
 ## RNG
 
-- No ambient RNG. Provide `rng(seed_bytes)` which expands a user‑supplied seed into a deterministic stream (e.g., Xoroshiro/PCG implementation pinned by version).
+- No ambient RNG. Provide `rng(seed_bytes)` which expands a user‑supplied seed into a deterministic stream.
+- RECOMMENDED default: `pcg32@1` (pending confirmation). Implementations MUST record RNG id and version in `Fold-RNG` trailer when RNG is used.
 - Use discouraged in folds; if used, caller MUST pass explicit seed material.
 
 ## Linter / Compiler Rules
@@ -69,10 +70,10 @@ Hard‑fail on:
 ## Proof / Trailer Integration
 
 - State checkpoints MUST include `Fold-Root: sha256:<hex>` trailers.
+- RECOMMENDED trailers: `Fold-Math: fixed-q32.32@<libver>`, `Fold-RNG: <alg>@<ver>`.
 - PoF envelopes SHOULD include `fold_root` and verifiers MUST recompute from ELC bytes when present.
 
 ## Open Implementation Notes
 
 - Transcendentals: when required, ship a pinned deterministic math library and record its version in `Fold-Engine`.
 - Performance: heavy data operators should be implemented as deterministic native intrinsics, invoked from EchoLua.
-

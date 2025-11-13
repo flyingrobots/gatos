@@ -344,6 +344,8 @@ Policy-Root: <commit-oid>         # commit/digest that identifies the effective 
 Fold-Engine: echo@<semver>        # fold engine identity and version (incl. math lib id)
 Fold-Root: sha256:<hex>           # hash of EchoLua IR bytes (ELC)
 Fold-Version: <schema-version>     # application/shape schema version
+Fold-Math: fixed-q32.32@<libver>   # RECOMMENDED: numeric model + lib version
+Fold-RNG: pcg32@<ver>              # RECOMMENDED: RNG algorithm id + version (if used)
 ```
 
 These trailers enable portable verification and reproducible builds of state across nodes and platforms.
@@ -620,7 +622,15 @@ graph TD
 
 ### 15.1 Exports and Explorer‑Root (Normative)
 
-Exporters that materialize state to external formats (e.g., Parquet, SQLite) **MUST** emit an `Explorer-Root` checksum:
+Exporters that materialize views **MUST** emit an `Explorer-Root` checksum.
+
+- For derived state exports (materialized from folds), include the fold identity:
+
+```
+Explorer-Root = blake3(ledger_head || policy_root || fold_root || extractor_version)
+```
+
+- For raw ledger exports (no folds applied), omit `fold_root`:
 
 ```
 Explorer-Root = blake3(ledger_head || policy_root || extractor_version)

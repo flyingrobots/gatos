@@ -8,7 +8,15 @@ Exports let you analyze GATOS state outside the repo (e.g., Parquet/SQLite) whil
 
 ## Explorer‑Root (Normative)
 
-See SPEC §15.1. Exporters **MUST** compute:
+See SPEC §15.1. Exporters **MUST** compute `Explorer-Root`.
+
+Derived state exports (from folds) include `fold_root`:
+
+```
+Explorer-Root = blake3(ledger_head || policy_root || fold_root || extractor_version)
+```
+
+Raw ledger exports (no folds) omit `fold_root`:
 
 ```
 Explorer-Root = blake3(ledger_head || policy_root || extractor_version)
@@ -41,4 +49,3 @@ exports/<name>/
 - Mismatch: repo advanced or artifacts altered → `verify` fails.
 - Partial exports: mark incomplete and refuse `verify`.
 - Sampling: if present, must record sample strategy/seed; `verify` should refuse unless explicitly allowed.
-
