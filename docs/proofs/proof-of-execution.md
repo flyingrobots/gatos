@@ -16,6 +16,7 @@ Proof-Of-Execution: blake3:<hex>
 Worker-Id: ed25519:<pubkey>
 Attest-Program: blake3:<hex>   # RECOMMENDED
 Attest-Sig: ed25519:<sig>      # OPTIONAL
+Policy-Code-Root: sha256:<hex> # canonical policy code hash in effect
 ```
 
 Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the result manifest and PoE envelope).
@@ -29,4 +30,3 @@ git gatos jobs show --id <job-id> --poe
 # Verify PoE signatures and ancestry
 git gatos verify proof --id <poe-id>
 ```
-

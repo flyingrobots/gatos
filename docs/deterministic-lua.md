@@ -50,14 +50,15 @@ Additional invariants:
 
 - `table`: `dkeys`, `dvalues`, `dsort`, `dpairs(t)` (sorted iteration).
 - `json`: `encode_canonical`, `decode_strict`.
-- `math`: +, −, ×, ÷ in Q32.32; optional trig/exp/log only via pinned deterministic lib.
+- `math`: +, −, ×, ÷ in Q32.32 (division rounds toward zero). Transcendentals (sin/exp/log/…) are not permitted in v1 folds; perform in jobs (PoE) instead.
 - `set`, `counter`: deterministic CRDT‑style helpers for folds.
 - No `debug`, `package`, `io`, `os` modules.
 
 ## RNG
 
 - No ambient RNG. Provide `rng(seed_bytes)` which expands a user‑supplied seed into a deterministic stream.
-- RECOMMENDED default: `pcg32@1` (pending confirmation). Implementations MUST record RNG id and version in `Fold-RNG` trailer when RNG is used.
+- Normative algorithm: `pcg32@1`. Implementations MUST record RNG id and version via the `Fold-Engine` string and SHOULD include `Fold-RNG` trailer when RNG is used.
+- Canonical seed helper: `seed64 = trunc64(blake3(inputs_root || policy_root || fold_root))`.
 - Use discouraged in folds; if used, caller MUST pass explicit seed material.
 
 ## Linter / Compiler Rules

@@ -24,7 +24,16 @@ Headers:
 - `Digest: blake3=<hex>`
 - `X-BLAKE3-Digest: <hex>` (duplicate for intermediaries)
 
-Auth (recommended): JWT or HTTP Message Signatures; log decisions under `refs/gatos/audit/`.
+Auth (normative default): Bearer JWT; log decisions under `refs/gatos/audit/`.
+
+Required JWT claims:
+
+- `sub` — subject (requesting principal)
+- `aud` — audience (resolver/repo id)
+- `exp` — expiry (short‑lived)
+- Optional `scope` — dataset/namespace scope
+
+Optional extensions: HTTP Message Signatures and/or mTLS may be supported; they are not required for the Research profile.
 
 ## Projection Determinism
 
@@ -37,4 +46,3 @@ Folds operate on pointer shapes, not plaintext bytes. Any materialized computati
 ```
 
 Policies can require a valid BAA before accepting pointers into state.
-

@@ -17,6 +17,7 @@ See SPEC: 10.x PoX and Glossary.
   "inputs_root": "blake3:<hex>",
   "program_id": "blake3:<hex>",
   "policy_root": "<commit-oid>",
+  "policy_code_root": "sha256:<hex>",
   "outputs_root": "blake3:<hex>",
   "links": {
     "poe": ["blake3:<hex>", "…"],   // jobs/results used
@@ -46,4 +47,3 @@ git gatos reproduce <ulid>
 ## Citing PoX in papers
 
 Include the PoX ULID and the repo commit (or DOI) in the Methods appendix. Provide a link to the public `refs/gatos/audit/proofs/experiments/<ulid>` if available.
-

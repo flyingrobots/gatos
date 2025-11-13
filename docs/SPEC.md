@@ -84,6 +84,8 @@ graph TD
 
 **Fold IR** (Echo Lua IR, ELC) is serialized as DAG‑CBOR and identified by `fold_root = sha256(ELC_bytes)`. Stock Lua bytecode (luac) is NOT portable and MUST NOT be used.
 
+**Numeric Model (EchoLua, v1)** is normative: Q32.32 fixed‑point using signed 64‑bit representation. All arithmetic (+, −, ×, ÷) executes in Q32.32; division MUST round toward zero. Transcendental functions (sin, cos, exp, log, …) are not permitted in v1 folds and SHOULD be performed in jobs (PoE) instead.
+
 **Signatures** include an explicit `sig_alg` and use domain separation with context string `GATOS/v0`.
 
 ---
@@ -338,14 +340,15 @@ A Fold is defined by a `.yaml` spec and a compiled EchoLua program (ELC). The Ec
 Every state checkpoint commit under `refs/gatos/state/<ns>` **MUST** include the following trailers with canonical encodings:
 
 ```
-State-Root: blake3:<hex>          # lowercase hex digest of canonical state
-Ledger-Head: <commit-oid>         # last ledger commit included in this fold
-Policy-Root: <commit-oid>         # commit/digest that identifies the effective policy
-Fold-Engine: echo@<semver>        # fold engine identity and version (incl. math lib id)
-Fold-Root: sha256:<hex>           # hash of EchoLua IR bytes (ELC)
-Fold-Version: <schema-version>     # application/shape schema version
-Fold-Math: fixed-q32.32@<libver>   # RECOMMENDED: numeric model + lib version
-Fold-RNG: pcg32@<ver>              # RECOMMENDED: RNG algorithm id + version (if used)
+State-Root: blake3:<hex>                 # lowercase hex digest of canonical state
+Ledger-Head: <commit-oid>                # last ledger commit included in this fold
+Policy-Root: <commit-oid>                # commit/digest that identifies the effective policy
+Policy-Code-Root: sha256:<hex>           # canonical hash of policy code used (ELC/.rgc)
+Fold-Engine: echo@<semver>+elc@<semver>+num=q32.32+rng=pcg32@<ver>
+Fold-Root: sha256:<hex>                  # hash of EchoLua IR bytes (ELC)
+Fold-Version: <schema-version>            # application/shape schema version
+Fold-Math: fixed-q32.32                   # numeric model (normative in v1)
+Fold-RNG: pcg32@<ver>                     # RNG algorithm id + version (if used)
 ```
 
 These trailers enable portable verification and reproducible builds of state across nodes and platforms.
@@ -367,6 +370,7 @@ At minimum, a PoF MUST commit to:
 - `Fold-Id` (stable identifier or digest of the fold function/spec),
 - `Fold-Root` (sha256 of ELC bytes),
 - `State-Root` (content hash of the resulting checkpoint),
+- `Policy-Code-Root` (sha256 of the canonicalized policy code/ELC),
 - Signatures of the folding actor(s) when required by policy.
 
 Implementations MAY embed PoF in commit trailers or attach a sidecar manifest. Verifiers MUST recompute the fold over the declared window and compare the resulting `State-Root`.
@@ -379,7 +383,7 @@ Implementations MAY embed PoF in commit trailers or attach a sidecar manifest. V
 ### 6.1 Gate Contract
 <a id="6.1"></a><a id="61"></a><a id="6"></a><a id="6.1-gate-contract"></a>
 
-All events are evaluated by a Policy Gate before being accepted. Gates that execute policy code MUST adhere to the [Deterministic Lua (EchoLua)](./deterministic-lua.md) runtime profile.
+All events are evaluated by a Policy Gate before being accepted. Gates that execute policy code MUST adhere to the [Deterministic Lua (EchoLua)](./deterministic-lua.md) runtime profile. Policy is authored in `.rgs` and compiled to `.rgc`/ELC; policy bundles and proofs MUST record `Policy-Code-Root` so the exact governing code is recoverable.
 $Decision = Gate.evaluate(intent, context) -> {Allow | Deny(reason)}$
 
 Note: A deterministic execution profile for Lua will be documented (see [Deterministic Lua](./deterministic-lua.md)); policy engines **SHOULD** adhere to that profile to ensure portable verification.
@@ -491,7 +495,7 @@ graph TD
 ## 10. Proofs (Commitments / ZK)
 <a id="10"></a><a id="10.-proofs-commitments-zk"></a>
 
-A proof envelope attests to the deterministic execution of a fold or job.
+A proof envelope attests to the deterministic execution of a fold or job. Where applicable, proofs MUST record `Policy-Code-Root` alongside `Policy-Root` so the governing policy code is unambiguously identified.
 
 ```mermaid
 classDiagram
@@ -694,6 +698,8 @@ graph TD
     A --> L(bisect);
     A --> M(export);
     A --> N(doctor);
+    A --> O(foldc);
+    A --> P(policyc);
 ```
 
 Key verbs (non‑exhaustive):
@@ -702,6 +708,8 @@ Key verbs (non‑exhaustive):
 - `reproduce <pox-id>` — fetch pointers, run jobs (PoE), check PoF; report identical/diff.
 - `bisect --state=<ref> --good <ts|commit> --bad <ts|commit> --predicate <script|jq>` — binary search over checkpoints.
 - `export parquet|sqlite` — emit Explorer‑Root; `export verify <path>` compares it.
+- `foldc <src.lua> -o <out.elc>` — compile EchoLua to ELC (records engine id).
+- `policyc <src.rgs> -o <out.rgc>` — compile .rgs policy DSL to deterministic IR/ELC.
 
 ---
 

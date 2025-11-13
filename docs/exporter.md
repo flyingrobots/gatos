@@ -10,10 +10,10 @@ Exports let you analyze GATOS state outside the repo (e.g., Parquet/SQLite) whil
 
 See SPEC §15.1. Exporters **MUST** compute `Explorer-Root`.
 
-Derived state exports (from folds) include `fold_root`:
+Derived state exports (from folds) include `state_root`:
 
 ```
-Explorer-Root = blake3(ledger_head || policy_root || fold_root || extractor_version)
+Explorer-Root = blake3(ledger_head || policy_root || state_root || extractor_version)
 ```
 
 Raw ledger exports (no folds) omit `fold_root`:
