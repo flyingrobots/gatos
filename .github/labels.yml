@@ -20,7 +20,7 @@
   color: 5319e7
   description: Rust xtask tooling
 - name: "area: schemas"
-  color: b60205
+  color: 6e5494
   description: JSON Schemas and examples
 - name: "area: diagrams"
   color: 0e8a16
@@ -35,7 +35,7 @@
   color: 0366d6
   description: Deterministic projections and encodings
 - name: "area: privacy"
-  color: 5319e7
+  color: 6f42c1
   description: Privacy / ciphertext handling concerns
 - name: "area: governance"
   color: 0052cc
