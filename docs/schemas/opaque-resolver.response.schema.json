@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/opaque-resolver.response.schema.json",
+  "title": "Opaque Resolver Response",
+  "type": "object",
+  "properties": {
+    "status": { "type": "integer", "enum": [200, 403, 404] },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "content_type": { "type": "string" },
+    "bytes_b64": { "type": "string" }
+  },
+  "required": ["status"],
+  "additionalProperties": false
+}
+

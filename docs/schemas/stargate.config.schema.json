@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/stargate.config.schema.json",
+  "title": "Stargate Push-Gate Config",
+  "type": "object",
+  "properties": {
+    "ff_only": {
+      "description": "Glob patterns of refs that must be fast-forward only",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["refs/gatos/policies/**", "refs/gatos/state/**", "refs/gatos/audit/**"]
+    },
+    "require_pof": {
+      "description": "Ref globs that require Proof-of-Fold on update",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["refs/gatos/state/**"]
+    },
+    "deny_audit_ref": {
+      "description": "Where DENY decisions are logged",
+      "type": "string",
+      "default": "refs/gatos/audit/policy/deny"
+    }
+  },
+  "required": ["ff_only", "require_pof", "deny_audit_ref"],
+  "additionalProperties": false
+}
+

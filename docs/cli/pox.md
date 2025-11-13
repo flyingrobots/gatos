@@ -1,0 +1,35 @@
+---
+title: git gatos pox — Proof‑of‑Experiment
+---
+
+# git gatos pox — Proof‑of‑Experiment
+
+Create, show, verify, and reproduce PoX bundles tying inputs, program, policy, and outputs.
+
+## Synopsis
+
+```bash
+# Create PoX from roots and links
+git gatos pox create \
+  --inputs <ref|path> \
+  --program <digest> \
+  --policy-code-root <sha256:...> \
+  --outputs <ref|path> \
+  --link-poe <id> --link-pof <id> \
+  --out pox/<ulid>.json
+
+# Verify a PoX bundle (signatures, ancestry, links)
+git gatos pox verify --id <ulid>
+
+# Reproduce end‑to‑end
+git gatos reproduce <ulid>
+```
+
+## Behavior
+
+- `create` writes a canonical envelope under `refs/gatos/audit/proofs/experiments/<ulid>`.
+- `verify` checks signatures, ancestry, and that linked PoE/PoF are consistent.
+- `reproduce` fetches pointers, re‑runs jobs, and verifies PoF/outputs.
+
+See: docs/proofs/proof-of-experiment.md and SPEC §10.x PoX.
+
