@@ -2,6 +2,12 @@ import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
 import path from 'node:path'
 
+// Site base for GitHub Pages. For project pages at
+// https://<org>.github.io/<repo>/ the base should be '/<repo>/'
+// Default to '/gatos/' (derived from repo name). Override in CI with DOCS_BASE
+// e.g. '/gatos/pr-preview/pr-123/'.
+const SITE_BASE = (process.env.DOCS_BASE || '/gatos/').replace(/([^/])$/, '$1/')
+
 function chapterItems(): { text: string; link: string }[] {
   const guideDir = path.join(process.cwd(), 'docs', 'guide')
   const files = fs
@@ -28,18 +34,24 @@ function mermaidToImg(md: any) {
       const count = (counters.get(rel) || 0) + 1
       counters.set(rel, count)
       const safe = rel.replace(/\\/g, '/').replace(/\.md$/, '').replace(/\//g, '__')
-      const base = `/diagrams/generated/${safe}__mermaid_${count}`
-      const abs = (p: string) => path.join(process.cwd(), 'docs', p.replace(/^\//, ''))
-      const relLight = `${base}-light.svg`
-      const relDark = `${base}-dark.svg`
-      const relPlain = `${base}.svg`
-      const hasLight = fs.existsSync(abs(relLight))
-      const hasDark = fs.existsSync(abs(relDark))
-      const hasPlain = fs.existsSync(abs(relPlain))
+      // Filesystem-relative base (under docs/)
+      const fsBase = `diagrams/generated/${safe}__mermaid_${count}`
+      const abs = (p: string) => path.join(process.cwd(), 'docs', p)
+      const fsLight = `${fsBase}-light.svg`
+      const fsDark = `${fsBase}-dark.svg`
+      const fsPlain = `${fsBase}.svg`
+      const hasLight = fs.existsSync(abs(fsLight))
+      const hasDark = fs.existsSync(abs(fsDark))
+      const hasPlain = fs.existsSync(abs(fsPlain))
+      // Public URLs must honor the site base for GitHub Pages subpaths
+      const url = (p: string) => `${SITE_BASE.replace(/\/$/, '')}/${p}`.replace(/([^:]\/)\/+/g, '$1')
+      const hrefLight = url(fsLight)
+      const hrefDark = url(fsDark)
+      const hrefPlain = url(fsPlain)
       if (hasLight && hasDark) {
-        return `<figure><picture><source srcset="${relDark}" media="(prefers-color-scheme: dark)"><img src="${relLight}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
+        return `<figure><picture><source srcset="${hrefDark}" media="(prefers-color-scheme: dark)"><img src="${hrefLight}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
       } else if (hasPlain) {
-        return `<figure><img src="${relPlain}" alt="diagram ${count}" loading="lazy"/></figure>\n`
+        return `<figure><img src="${hrefPlain}" alt="diagram ${count}" loading="lazy"/></figure>\n`
       }
     }
     return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options)
@@ -49,6 +61,7 @@ function mermaidToImg(md: any) {
 export default {
   title: 'GATOS',
   description: 'Git As The Operating Surface',
+  base: SITE_BASE,
   lastUpdated: true,
   themeConfig: {
     nav: [
