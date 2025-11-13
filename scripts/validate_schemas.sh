@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Pins: load centralized pins if available
+if [ -f "$(dirname "$0")/pins.sh" ]; then . "$(dirname "$0")/pins.sh"; fi
 echo "[schemas] Using Dockerized AJV (no host Node required)…"
-AJV_NODE_IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a" # corresponds to node:20
+AJV_NODE_IMAGE_DEFAULT="${NODE_IMAGE_DIGEST:-node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a}" # corresponds to node:20
 AJV_NODE_IMAGE="${AJV_NODE_IMAGE:-$AJV_NODE_IMAGE_DEFAULT}"
 
 run_ajv() {

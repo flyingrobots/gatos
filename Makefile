@@ -2,7 +2,7 @@
         xtask ci-diagrams ci-schemas ci-linkcheck help setup-dev lint-all
 
 # Pinned Node image used for ad-hoc Docker invocations (keep in sync with scripts)
-NODE_IMAGE_DIGEST ?= node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a
+NODE_IMAGE_DIGEST ?= $(shell bash -lc '. ./scripts/pins.sh 2>/dev/null || true; printf "%s" "$$NODE_IMAGE_DIGEST" | sed -e "s/^$/node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a/"')
 
 all: schemas lint-md link-check
 
@@ -72,75 +72,7 @@ schema-negative:
 schemas: schema-compile schema-validate schema-negative
 
 pre-commit:
-	@bash -c 'set -euo pipefail; \
-	 echo "[make pre-commit] markdown lint (prefer rumdl, then xtask md --fix)…"; \
-	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
-	   if command -v rumdl >/dev/null 2>&1; then rumdl check . --fix; \
-	   else cargo run -p xtask -- md --fix; fi; \
-	   git diff --cached --name-only -z --diff-filter=ACM -- "*.md" | xargs -0 git add --; \
-	 fi; \
-	 echo "[make pre-commit] JSON/YAML formatting (dprint)…"; \
-	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.json" "*.yml" "*.yaml")" ]; then \
-	   if command -v dprint >/dev/null 2>&1; then \
-	     dprint fmt; \
-	   else \
-	     # Interactive prompt if possible; otherwise emit a stern warning and continue
-	     if [ -t 1 ] && [ -z "$$CI" ]; then \
-	       echo "Looks like you haven't installed the required development workflow tools yet." >&2; \
-	       printf "Do you want to install them now? [Yes/no] " >&2; \
-	       read -r REPLY; REPLY=$${REPLY:-Yes}; \
-	       case "$${REPLY}" in \
-	         y|Y|yes|Yes|YES) \
-	           echo "[pre-commit] Installing tools and hooks…" >&2; \
-	           bash ./scripts/setup-dev.sh || true; \
-	           if command -v dprint >/dev/null 2>&1; then \
-	             echo "[pre-commit] dprint installed; formatting staged JSON/YAML…" >&2; \
-	             dprint fmt; \
-	           else \
-	             echo "[pre-commit][WARN] dprint still not available after install; continuing." >&2; \
-	           fi \
-	           ;; \
-	         *) \
-	           echo "OK… but you should REALLY consider installing them." >&2; \
-	           echo "You can do so with:  make setup-dev\n\nContinuing… but grumbling." >&2; \
-	           ;; \
-	       esac; \
-	     else \
-	       echo "" >&2; \
-	       echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2; \
-	       echo "[pre-commit][WARN][MISSING DPRINT] Skipping JSON/YAML formatting for staged files." >&2; \
-
-	       echo "Install our hooks and tools with:  make setup-dev   (or: bash scripts/setup-dev.sh)" >&2; \
-	       echo "CI will fail formatting if this is not fixed." >&2; \
-	       echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2; \
-	     fi; \
-	   fi; \
-	   git diff --cached --name-only -z --diff-filter=ACM -- "*.json" "*.yml" "*.yaml" | xargs -0 git add --; \
-	 fi; \
-	 echo "[make pre-commit] Mermaid (staged MD only)…"; \
-	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
-	   if command -v node >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 node scripts/mermaid/generate.mjs; \
-	   elif command -v docker >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 docker run --rm -v "$$PWD:/work" -w /work $(NODE_IMAGE_DIGEST) \
-	           node scripts/mermaid/generate.mjs; \
-	   else echo "Need Node.js or Docker" >&2; exit 1; fi; \
-	   if [ -d docs/diagrams/generated ]; then git add -- docs/diagrams/generated; fi; \
-	 fi; \
-	 echo "[make pre-commit] Link check (staged MD)…"; \
-	 if [ -n "$$(git diff --cached --name-only --diff-filter=ACM -- "*.md")" ]; then \
-	   if command -v lychee >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 lychee --no-progress --config .lychee.toml --; \
-	   elif command -v docker >/dev/null 2>&1; then \
-	     git diff --cached --name-only -z --diff-filter=ACM -- "*.md" \
-	       | xargs -0 -I{} docker run --rm -v "$$PWD:/work" -w /work ghcr.io/lycheeverse/lychee:latest \
-	           --no-progress --config .lychee.toml \"{}\"; \
-	   else echo "lychee not found and Docker unavailable; skipping link check" >&2; fi; \
-	 fi; \
-	 echo "[make pre-commit] Done."'
+	@bash -eu -o pipefail ./scripts/hooks/run-pre-commit.sh
 ## ---- xtask shims (Rust orchestrator) ----
 
 # Generic xtask passthrough: use ARGS to forward to the xtask CLI.

@@ -19,8 +19,11 @@ if [ -n "$VOLS_STR" ]; then
     esac
   done <<< "$VOLS_STR"
 fi
+# Pins
+# Load centralized pins if available
+if [ -f "$(dirname "$0")/pins.sh" ]; then . "$(dirname "$0")/pins.sh"; fi
 # Pin Node image for Docker runs (digest corresponds to node:20)
-IMAGE_DEFAULT="node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a"
+IMAGE_DEFAULT="${NODE_IMAGE_DIGEST:-node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a}"
 IMAGE="${MERMAID_NODE_IMAGE:-$IMAGE_DEFAULT}"
 
 # Backend selection: auto (default), docker, or node.
