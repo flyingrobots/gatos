@@ -6,7 +6,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:normalize": "node scripts/md/normalize.mjs --write",
     "docs:normalize:check": "node scripts/md/normalize.mjs --check",
-    "docs:build": "bash -euo pipefail -c 'node scripts/md/normalize.mjs --write && vitepress build docs'",
+    "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
