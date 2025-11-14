@@ -1,4 +1,3 @@
-import { defineConfig } from 'vitepress'
 import { createHash } from 'node:crypto'
 import { pagefindPlugin } from 'vitepress-plugin-pagefind'
 import fs from 'node:fs'
@@ -79,7 +78,7 @@ function mermaidToImg(md: any) {
   }
 }
 
-export default async () => defineConfig({
+export default async () => ({
   title: 'GATOS',
   description: 'Git As The Operating Surface',
   base: SITE_BASE,
