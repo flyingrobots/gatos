@@ -39,5 +39,5 @@ features:
 Welcome to the GATOS docs. **GATOS** (Git As The Operating Surface) enables deterministic state, governance, messaging, and jobs — entirely within Git.
 
 - New to GATOS? Start with [Chapter&nbsp;1](/guide/CHAPTER-001).
-- Need the specs? Read the [SPEC](/SPEC) and [TECH‑SPEC](/TECH-SPEC).
+- Need the specs? Read the [SPEC](/SPEC) and [TECH-SPEC](/TECH-SPEC).
 - Contributing? Visit the [GitHub repository](https://github.com/flyingrobots/gatos).
