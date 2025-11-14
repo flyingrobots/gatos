@@ -255,7 +255,6 @@ async function renderTask(task, mmdcPath) {
     if ((process.env.MERMAID_SVG_INTRINSIC_DIM || '1') !== '0') {
       await normalizeSvgIntrinsicSize(tmpOut);
     }
-    const cliVer = await resolveMermaidCliVersion();
     await embedMeta(tmpOut, task, cliVer);
 
     // If an existing file already matches the expected metadata, keep it to avoid noisy diffs in CI.
