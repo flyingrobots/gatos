@@ -61,7 +61,7 @@ Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lu
 | Iteration | pairs() unspecified | dpairs(t) sorts keys; ipairs allowed |
 | Table hashing | Randomized seed | Fixed seed; do not rely on hash order |
 | Coroutines | yield anywhere | Disallowed in folds/policy eval |
-| Metamethods | __gc etc | __gc and __pairs forbidden; compile-time error |
+| Metamethods | __gc etc. | __gc and __pairs forbidden; compile-time error |
 | FFI/dlopen | via add-ons | Forbidden |
 | Math lib | Host-lib variance | Deterministic lib; exp/log/sin/cos pinned or disallowed |
 
