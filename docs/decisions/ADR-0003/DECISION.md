@@ -25,18 +25,18 @@
 Status: Accepted
 Date: 2025-11-08
 ADR: ADR-0003
-Authors: \[flyingrobots]
-Requires: \[ADR-0001]
-Related: \[ADR-0002]
-Tags: \[Governance, Consensus, Policy]
+Authors: [flyingrobots]
+Requires: [ADR-0001]
+Related: [ADR-0002]
+Tags: [Governance, Consensus, Policy]
 Schemas:
 
-- schemas/v1/governance/proposal.schema.json
-- schemas/v1/governance/approval.schema.json
-- schemas/v1/governance/grant.schema.json
-- schemas/v1/governance/revocation.schema.json
-- schemas/v1/governance/proof\_of\_consensus\_envelope.schema.json
-- schemas/v1/policy/governance\_policy.schema.json
+- `schemas/v1/governance/proposal.schema.json`
+- `schemas/v1/governance/approval.schema.json`
+- `schemas/v1/governance/grant.schema.json`
+- `schemas/v1/governance/revocation.schema.json`
+- `schemas/v1/governance/proof_of_consensus_envelope.schema.json`
+- `schemas/v1/policy/governance_policy.schema.json`
 
 Supersedes: \[]
 Superseded-By: \[]
@@ -113,7 +113,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
      ```
 
 7. Proof-Of-Consensus (normative)
-   - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes (see schema: [`schemas/v1/governance/proof_of_consensus_envelope.schema.json`](../../../schemas/v1/governance/proof_of_consensus_envelope.schema.json)):
+    - The `Proof-Of-Consensus` digest MUST be the BLAKE3 of a canonical envelope that includes (see schema: [`schemas/v1/governance/proof_of_consensus_envelope.schema.json`](../../../schemas/v1/governance/proof_of_consensus_envelope.schema.json)):
      - The canonical proposal envelope (by value or by `Proposal-Id`).
      - A sorted list (by `Signer`) of all valid approvals used to reach quorum (each by value or `Approval-Id`).
      - The governance rule id (`Policy-Rule`) and effective quorum parameters.
