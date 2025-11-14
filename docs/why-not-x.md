@@ -3,6 +3,7 @@ title: Why Not X?
 ---
 
 # Why Not X?
+
 <a id="why-not-x"></a>
 Short answers to common comparisons.
 
