@@ -61,4 +61,4 @@ git gatos export verify exports/ns/
 - Raw ledger exports omit `state_root`.
 - `verify` recomputes Explorer-Root from the repo and fails on mismatch.
 
-See also: docs/exporter.md and \[[SPEC §15.1](/SPEC#15.1)]\(/SPEC#15.1).
+See also: docs/exporter.md and [SPEC §15.1](/SPEC#15.1).
