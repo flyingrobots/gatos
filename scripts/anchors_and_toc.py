@@ -82,8 +82,8 @@ def build_toc(headings: list[tuple[int,str,str]]) -> str:
         # indent 2 spaces per level offset from H2 (i.e., level 2 -> 0 indent)
         indent = max(0, level - 2) * 2
         lines.append(" " * indent + f"- [{text}](#{hid})\n")
-    # Ensure a trailing newline before the END marker for readability
-    lines.append("\n" + TOC_END + "\n")
+    # Close immediately with END (no blank spacer line to avoid noisy diffs)
+    lines.append(TOC_END + "\n")
     return "".join(lines)
 
 def process_file(path: pathlib.Path) -> tuple[bool, str]:

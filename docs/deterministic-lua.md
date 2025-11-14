@@ -34,9 +34,9 @@ This document is normative where called out by SPEC and TECH-SPEC; elsewhere it 
 
 <a id="compilation-pipeline"></a>
 ```text
-Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lua IR)
+Lua source  ──parse/normalize──► AST ──lower──► ELC (Echo Lua IR; deterministic IR)
                                          │
-                                         └─► DAG-CBOR bytes  (fold_root = sha256(ELC_bytes))
+                                         └─► DAG-CBOR bytes  (CBOR-encoded DAG; fold_root = sha256(ELC_bytes))
 ```
 
 - Normalize: remove syntactic sugar, canonical constant folding, resolve upvalues.
@@ -71,7 +71,7 @@ Additional invariants:
 - `table`: `dkeys`, `dvalues`, `dsort`, `dpairs(t)` (sorted iteration).
 - `json`: `encode_canonical`, `decode_strict`.
 - `math`: +, −, ×, ÷ in Q32.32 (division rounds toward zero). Transcendentals (sin/exp/log/…) are not permitted in v1 folds; perform in jobs (PoE) instead.
-- `set`, `counter`: deterministic CRDT-style helpers for folds.
+- `set`, `counter`: deterministic CRDT (Conflict-free Replicated Data Type)-style helpers for folds.
 - No `debug`, `package`, `io`, `os` modules.
 
 ## RNG
@@ -97,7 +97,7 @@ Hard-fail on:
 
 - State checkpoints MUST include `Fold-Root: sha256:<hex>` trailers.
 - RECOMMENDED trailers: `Fold-Math: fixed-q32.32@<libver>`, `Fold-RNG: <alg>@<ver>`.
-- PoF envelopes SHOULD include `fold_root` and verifiers MUST recompute from ELC bytes when present.
+- PoF (Proof of Fold) envelopes SHOULD include `fold_root` and verifiers MUST recompute from ELC bytes when present.
 
 ## Open Implementation Notes
 

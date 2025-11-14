@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.14.0
           cache: npm
 
       - name: Install deps
@@ -50,10 +50,12 @@ jobs:
           preview-branch: gh-pages
           umbrella-dir: pr-preview
 
-      - name: Comment canonical preview URL
+      - name: Comment/update canonical preview URL (idempotent)
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.number }}
           body: |
             PR Preview (canonical)
             https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
+          edit-mode: replace
+          body-includes: "PR Preview (canonical)"

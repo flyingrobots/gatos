@@ -4,8 +4,8 @@ set -euo pipefail
 top="$(git rev-parse --show-toplevel)"
 cd "$top"
 
-if [[ "${PREPUSH_LINT:-0}" = "1" ]]; then
-  echo "[pre-push] markdown lint (enabled via PREPUSH_LINT=1)"
+if [[ "${PREPUSH_SKIP_LINT:-0}" != "1" ]]; then
+  echo "[pre-push] markdown lint"
   if command -v rumdl >/dev/null 2>&1; then
     rumdl check .
   elif command -v cargo >/dev/null 2>&1; then
@@ -22,8 +22,8 @@ if [[ "${PREPUSH_LINT:-0}" = "1" ]]; then
 fi
 
 
-# Docs normalize (AST) — block if normalization would change files
-if [[ "${PREPUSH_NORMALIZE:-0}" = "1" ]]; then
+# Docs normalize (AST) — runs by default; can skip via PREPUSH_SKIP_NORMALIZE=1
+if [[ "${PREPUSH_SKIP_NORMALIZE:-0}" != "1" ]]; then
   if command -v node >/dev/null 2>&1; then
     echo "[pre-push] docs normalize:check (unified/remark)"
     if ! npm run -s docs:normalize:check; then
