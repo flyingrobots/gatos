@@ -104,6 +104,9 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
     in_code = False
     headings_for_toc: list[tuple[int,str]] = []
     i = 0
+    def is_blank(s: str) -> bool:
+        return s.strip() == ""
+
     while i < len(lines):
         line = lines[i]
         # code fence toggle
@@ -117,6 +120,9 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
             if m:
                 level = len(m.group("hashes"))
                 text_content = m.group("text").strip()
+                # Ensure a blank line BEFORE heading (unless at file start)
+                if out and not is_blank(out[-1]):
+                    out.append("\n")
                 out.append(line)
                 # consider headings for TOC (skip H1, include H2..H5)
                 if level >= 2:
@@ -142,6 +148,9 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                     for aid in extract_anchor_ids(l):
                         if aid not in existing_ids:
                             existing_ids.append(aid)
+                # Ensure a blank line AFTER heading before anchors/content
+                if not collected or (collected and not is_blank(collected[0])):
+                    out.append("\n")
                 if existing_ids:
                     # Drop top-level numeric ids when a more specific numeric id (e.g., 5.3) exists
                     tops = [i for i in existing_ids if re.fullmatch(r"\d+", i)]
