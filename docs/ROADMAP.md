@@ -1,4 +1,4 @@
-<ANSWERS APPLIED: updated roadmap per feedback; see top-level ROADMAP.md for issue bundle.>
+<!-- ANSWERS APPLIED: updated roadmap per feedback; see top-level ROADMAP.md for issue bundle. -->
 
 # 🐈‍⬛ GATOS ROADMAP
 
