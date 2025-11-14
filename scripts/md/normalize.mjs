@@ -137,8 +137,8 @@ async function processOne(absPath, write) {
     .use(remarkFrontmatter, ['yaml'])
     .use(remarkGfm)
     .use(remarkSlug)
-    .use(anchorsMulti)
-    .use(tocMarkers)
+    // Anchors/TOC: authoritative generator is scripts/anchors_and_toc.py.
+    // Do not inject <a id> or rewrite TOC here to avoid duplicate churn.
     .use(linkifySpec)
     .use(pathFixer)
     .use(remarkStringify, {
