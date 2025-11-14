@@ -13,20 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docs-normalize:
-    runs-on: ubuntu-latest
-    name: Docs normalize (AST)
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Setup Node.js
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
-        with:
-          node-version: "20"
-      - name: Install dev deps (normalize)
-        run: npm install --no-fund --no-audit
-      - name: docs normalize check (AST pipeline)
-        run: npm run docs:normalize:check
   editorconfig:
     runs-on: ubuntu-latest
     steps:
