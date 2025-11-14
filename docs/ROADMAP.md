@@ -116,15 +116,6 @@ These are explicit non-goals until after the core truth machine is working:
 
 ---
 
-## M0 — Repository Skeleton & Governance
-<a id="m0-repository-skeleton-governance"></a>
-
-<a id="m0-repository-skeleton-governance"></a>
-
-... (content mirrors the feedback; see top-level ROADMAP.md for full version) ...
-
----
-
 ## **M0 — Repository Skeleton & Governance**
 <a id="m0-repository-skeleton-governance"></a>
 
