@@ -161,6 +161,9 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                                 existing_ids.remove(head)
                             except ValueError:
                                 pass
+                    # If identical ids appear multiple times (e.g., triple duplicates), reduce to one
+                    seen = set()
+                    existing_ids = [x for x in existing_ids if not (x in seen or seen.add(x))]
                     # Rebuild a single normalized anchor line from existing ids
                     normalized = "".join(f"<a id=\"{html.escape(i)}\"></a>" for i in existing_ids) + "\n"
                     # Emit one anchor line, drop extra blank/anchor lines
@@ -169,11 +172,14 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                     if len(collected) != 1 or (collected and collected[0] != normalized):
                         changed = True
                 else:
-                    # No existing anchors found nearby; insert new anchor line
+                    # No existing anchors found nearby; insert new anchor line only if not already present later
                     anchor_line = make_anchor_line(text_content)
                     if anchor_line:
-                        out.append(anchor_line)
-                        changed = True
+                        # If a line with the same exact html anchor exists among the next two lines, skip insertion
+                        probe = "".join(lines[i+1:i+3]) if i + 3 <= len(lines) else ""
+                        if anchor_line not in probe:
+                            out.append(anchor_line)
+                            changed = True
                 # Skip over the collected lines in the input
                 i = j
                 continue
