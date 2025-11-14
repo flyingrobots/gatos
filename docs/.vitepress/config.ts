@@ -13,7 +13,6 @@ const SITE_BASE = (process.env.DOCS_BASE || '/gatos/').replace(/([^/])$/, '$1/')
 async function chapterItemsSafe(): Promise<{ text: string; link: string }[]> {
   const guideDir = path.join(process.cwd(), 'docs', 'guide')
   try {
-    if (!fs.existsSync(guideDir)) return []
     const entries = await fsp.readdir(guideDir)
     const files = entries.filter((f) => /^CHAPTER-\d{3}\.md$/.test(f)).sort()
     const items: { text: string; link: string }[] = []
