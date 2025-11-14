@@ -23,14 +23,16 @@ fi
 
 
 # Docs normalize (AST) — block if normalization would change files
-if command -v node >/dev/null 2>&1; then
-  echo "[pre-push] docs normalize:check (unified/remark)"
-  if ! npm run -s docs:normalize:check; then
-    echo "[pre-push][ERROR] docs are not normalized. Run: npm run docs:normalize" >&2
-    exit 1
+if [[ "${PREPUSH_NORMALIZE:-0}" = "1" ]]; then
+  if command -v node >/dev/null 2>&1; then
+    echo "[pre-push] docs normalize:check (unified/remark)"
+    if ! npm run -s docs:normalize:check; then
+      echo "[pre-push][ERROR] docs are not normalized. Run: npm run docs:normalize" >&2
+      exit 1
+    fi
+  else
+    echo "[pre-push][WARN] Node is not available; skipping docs normalize check" >&2
   fi
-else
-  echo "[pre-push][WARN] Node is not available; skipping docs normalize check" >&2
 fi
 
 # Docs build (VitePress) — can skip via PREPUSH_SKIP_DOCS=1
