@@ -7,9 +7,9 @@
   - [App Developer (DEV)](#app-developer-dev)
   - [Platform Engineer (PENG)](#platform-engineer-peng)
   - [Security/Compliance (SEC)](#securitycompliance-sec)
-  - [SRE / Ops (SRE)](#sre-ops-sre)
+  - [SRE / Ops (SRE)](#sre--ops-sre)
   - [Data/ML Engineer (DML)](#dataml-engineer-dml)
-  - [Auditor / GRC (AUD)](#auditor-grc-aud)
+  - [Auditor / GRC (AUD)](#auditor--grc-aud)
   - [LLM/Agent (AGENT)](#llmagent-agent)
   - [Product/Program Manager (PM)](#productprogram-manager-pm)
 - [Goals Synopsis](#goals-synopsis)
@@ -96,7 +96,7 @@
 
 - `DEV`: determinism, fast local loop, simple APIs.
 - `PENG`: predictable ops (GC, epochs), observability, policy profiles.
-- `SEC`: artifacts-as-law, explainable denies, signatures everywhere.
+- `SEC`: artifacts-as-law, explainable denials, signatures everywhere.
 - `SRE`: exactly-once buses, replayable state, clean audit of deploys.
 - `DML`: chunking/opaque pointers, RLS export, provenance.
 - `AUD`: portable verification, no SaaS dependency, proof envelopes.

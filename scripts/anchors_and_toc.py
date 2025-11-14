@@ -55,6 +55,8 @@ def slugify_kebab(text: str) -> str:
     t = re.sub(r"[^a-z0-9\-\s\.]+", "", t)
     t = re.sub(r"\s+", "-", t)
     t = re.sub(r"-+", "-", t).strip("-")
+    # domain-specific normalization: no-std -> nostd
+    t = re.sub(r"\bno-std\b", "nostd", t)
     return t
 
 def make_anchor_line(text: str) -> str:
@@ -131,6 +133,12 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                     break
                 # Always compute canonical single id (ensure file-unique by suffixing -2, -3, …)
                 base = slugify_kebab(text_content)
+                # STAKEHOLDERS exceptions: keep historical ids used in TOC
+                if CURRENT_FILE and CURRENT_FILE.endswith("/STAKEHOLDERS.md"):
+                    if base == "sre-ops-sre":
+                        base = "sre--ops-sre"
+                    if base == "auditor-grc-aud":
+                        base = "auditor--grc-aud"
                 # For ROADMAP numbered subsections, force numbering (goals-X, deliverables-X, done-when-X)
                 if CURRENT_FILE.endswith("/ROADMAP.md") and base in ("goals", "deliverables", "done-when"):
                     idx = base_counters.get(base, 0)
