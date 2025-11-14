@@ -33,7 +33,7 @@ git gatos pox create \
 git gatos pox verify --id <ulid>
 
 # Reproduce end-to-end
-git gatos reproduce <ulid>
+git gatos reproduce --id <ulid>
 ```
 
 ## Behavior
@@ -45,4 +45,3 @@ git gatos reproduce <ulid>
 - `reproduce` fetches pointers, re-runs jobs, and verifies PoF/outputs.
 
 See: docs/proofs/proof-of-experiment.md and [SPEC §10](/SPEC#10).x PoX.
-

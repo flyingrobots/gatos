@@ -36,5 +36,8 @@ features:
     details: All diagrams are pre-rendered SVGs — fast and deterministic.
 ---
 
-Welcome to the GATOS docs. Use the buttons above to jump in, or open the Book to start with Chapter 1.
+Welcome to the GATOS docs. **GATOS** (Git As The Operating Surface) enables deterministic state, governance, messaging, and jobs — entirely within Git.
 
+- New to GATOS? Start with [Chapter&nbsp;1](/guide/CHAPTER-001).
+- Need the specs? Read the [SPEC](/SPEC) and [TECH‑SPEC](/TECH-SPEC).
+- Contributing? Visit the [GitHub repository](https://github.com/flyingrobots/gatos).
