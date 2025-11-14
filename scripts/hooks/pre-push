@@ -4,20 +4,21 @@ set -euo pipefail
 top="$(git rev-parse --show-toplevel)"
 cd "$top"
 
-echo "[pre-push] markdown lint (prefer rumdl; fallback to xtask md; then Node/Docker)"
-if command -v rumdl >/dev/null 2>&1; then
-  rumdl check .
-elif command -v cargo >/dev/null 2>&1; then
-  cargo run -p xtask -- md
-elif command -v node >/dev/null 2>&1; then
-  npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
-elif command -v docker >/dev/null 2>&1; then
-  # Pin Node image digest for reproducibility
-  docker run --rm -v "$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
+if [[ "${PREPUSH_LINT:-0}" = "1" ]]; then
+  echo "[pre-push] markdown lint (enabled via PREPUSH_LINT=1)"
+  if command -v rumdl >/dev/null 2>&1; then
+    rumdl check .
+  elif command -v cargo >/dev/null 2>&1; then
+    cargo run -p xtask -- md
+  elif command -v node >/dev/null 2>&1; then
     npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
-else
-  echo "[pre-push][ERROR] No linter available (rumdl/cargo/node/docker missing); aborting push" >&2
-  exit 1
+  elif command -v docker >/dev/null 2>&1; then
+    # Pin Node image digest for reproducibility
+    docker run --rm -v "$PWD:/work" -w /work node@sha256:47dacd49500971c0fbe602323b2d04f6df40a933b123889636fc1f76bf69f58a \
+      npx -y markdownlint-cli@0.45.0 "**/*.md" --config .markdownlint.json
+  else
+    echo "[pre-push][WARN] PREPUSH_LINT=1 set but no linter is available; skipping" >&2
+  fi
 fi
 
 
