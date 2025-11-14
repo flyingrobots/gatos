@@ -56,8 +56,9 @@ def make_anchor_line(text: str) -> str:
     if m:
         num = m.group("num")
         anchors.append(num)
-        # Include only the top-level numeric section to reduce collisions
-        anchors.append(num.split(".")[0])
+        # Only add the top-level numeric id if this heading itself is top-level (no dot)
+        if "." not in num:
+            anchors.append(num)
     slug = slugify_github(text)
     if slug:
         anchors.append(slug)
@@ -142,6 +143,15 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                         if aid not in existing_ids:
                             existing_ids.append(aid)
                 if existing_ids:
+                    # Drop top-level numeric ids when a more specific numeric id (e.g., 5.3) exists
+                    tops = [i for i in existing_ids if re.fullmatch(r"\d+", i)]
+                    # If any id starts with '<top>.' (e.g., '10.' or '10.x'), drop the bare top-level '<top>' here
+                    for head in list(tops):
+                        if any(s.startswith(head + ".") for s in existing_ids if s != head):
+                            try:
+                                existing_ids.remove(head)
+                            except ValueError:
+                                pass
                     # Rebuild a single normalized anchor line from existing ids
                     normalized = "".join(f"<a id=\"{html.escape(i)}\"></a>" for i in existing_ids) + "\n"
                     # Emit one anchor line, drop extra blank/anchor lines
