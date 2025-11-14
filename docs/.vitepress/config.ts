@@ -39,6 +39,18 @@ async function chapterItemsSafe(): Promise<{ text: string; link: string }[]> {
 function mermaidToImg(md: any) {
   const defaultFence = md.renderer.rules.fence?.bind(md)
   const counters = new Map<string, number>()
+  // Pre-scan diagrams directory once to avoid per-diagram fs.existsSync calls
+  const diagramsDir = path.join(process.cwd(), 'docs', 'diagrams', 'generated')
+  const existingSvgNames = new Set<string>()
+  try {
+    if (fs.existsSync(diagramsDir)) {
+      for (const ent of fs.readdirSync(diagramsDir, { withFileTypes: true })) {
+        if (ent.isFile() && ent.name.endsWith('.svg')) existingSvgNames.add(ent.name)
+      }
+    }
+  } catch {
+    // Non-fatal: leave the set empty
+  }
   md.renderer.rules.fence = (tokens: any[], idx: number, options: any, env: any, self: any) => {
     const token = tokens[idx]
     const info = (token.info || '').trim()
@@ -52,16 +64,15 @@ function mermaidToImg(md: any) {
       // Prefer hashed scheme; fall back to legacy (no hash) while transitioning
       const hashedBase = `diagrams/generated/${safeStem.split('/').join('__')}__${hash}__mermaid_${count}`
       const legacyBase = `diagrams/generated/${rel.replace(/\\/g, '/').replace(/\.md$/i, '').split('/').join('__')}__mermaid_${count}`
-      const abs = (p: string) => path.join(process.cwd(), 'docs', p)
       const candidates = [hashedBase, legacyBase]
       let chosenBase = ''
       let pair = false
       for (const base of candidates) {
-        const light = `${base}-light.svg`
-        const dark = `${base}-dark.svg`
-        const plain = `${base}.svg`
-        if (fs.existsSync(abs(light)) && fs.existsSync(abs(dark))) { chosenBase = base; pair = true; break }
-        if (fs.existsSync(abs(plain))) { chosenBase = base; pair = false; break }
+        const lightName = path.posix.basename(`${base}-light.svg`)
+        const darkName = path.posix.basename(`${base}-dark.svg`)
+        const plainName = path.posix.basename(`${base}.svg`)
+        if (existingSvgNames.has(lightName) && existingSvgNames.has(darkName)) { chosenBase = base; pair = true; break }
+        if (existingSvgNames.has(plainName)) { chosenBase = base; pair = false; break }
       }
       // Build relative URLs from the current markdown file to the generated asset
       // so Vite doesn't try to resolve an absolute import like 
