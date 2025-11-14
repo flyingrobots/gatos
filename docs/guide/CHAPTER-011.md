@@ -120,17 +120,26 @@ git config --global repack.packKeptObjects false
 
 Consider partial clone and promisor remotes for `refs/gatos/mbus/*`.
 
-#### Cache Invalidation (One-liner)
+#### Cache Invalidation Strategy
 
 <a id="cache-invalidation-oneliner"></a>
 
-Build a footprint map; on new events, compute impacted regions; drop those cache segments; re-fold only the impacted units.
+1. Build a footprint map tracking which cache segments depend on which event ranges.
+2. On new events, compute impacted regions by intersecting the event's read/write set with the footprint map.
+3. Drop those cache segments.
+4. Re-fold only the impacted units on next query.
 
 #### Roaring Indexing
 
 <a id="roaring-indexing"></a>
 
-Index by ULID time, entity id, and event type. Define integer encodings for each dimension to ensure stable hashing and fast intersections.
+Index by ULID time, entity id, and event type:
+
+- Time dimension: Extract millisecond epoch from ULID prefix (48 bits), truncate to suitable granularity (for example, hour buckets).
+- Entity dimension: Maintain a stable id→int mapping persisted in cache metadata.
+- Event type dimension: Use a fixed enum or a hash-to-int mapping with collision handling.
+
+Encodings must be deterministic and versioned to maintain cache correctness across fold engine updates.
 
 The key is that this transformation is itself a **deterministic fold**. The analytical database is a secondary, verifiable view of the primary data in the ledger. You can always rebuild it from scratch and get the exact same result.
 
@@ -145,4 +154,3 @@ GATOS is designed for both correctness and performance. It achieves high perform
 *   **Explorer Off-ramps** bridge the gap to the traditional world of data analytics, providing a verifiable, read-optimized view of the GATOS ledger.
 
 This combination allows GATOS to serve as both a high-integrity transactional system and a high-performance analytical backend, without compromising on its core principles.
-
