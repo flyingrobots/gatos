@@ -225,7 +225,25 @@ The normative layout is as follows:
     └── config/
 ```
 
-Active policy bundles and their lineage SHOULD be recorded under `refs/gatos/policies/`. Implementations MAY track an `active` pointer (e.g., `refs/gatos/policies/active`) to select the effective policy root used for gate evaluation.
+Policy bundles (Normative).
+
+- Storage: Each policy bundle **MUST** be recorded as a commit on
+  `refs/gatos/policies/<bundle-id>`, where `<bundle-id>` is a stable identifier
+  (e.g., `blake3(policy_tree)` or a ULID). The commit’s tree contains the
+  compiled policy artifacts; the commit trailers **MUST** include
+  `Policy-Root: <commit-oid>` and `Policy-Code-Root: sha256:<hex>`.
+- Lineage: Bundle lineage **MUST** be represented by commit ancestry on the
+  same ref (append-only). Historical bundles remain reachable.
+- Active pointer: Implementations **MUST** expose the effective bundle via
+  `refs/gatos/policies/active` pointing to the commit OID of the active bundle.
+  Updates to `refs/gatos/policies/**` (including `active`) **MUST** be
+  fast‑forward only. `active` is a plain ref (not a tag).
+- Consumers: Policy Gate evaluation **MUST** read the current policy from
+  `refs/gatos/policies/active`. Verifiers and CLIs **SHOULD** default to the
+  same unless explicitly overridden by a flag.
+- Mutation workflow: Promote a candidate bundle by fast‑forwarding
+  `refs/gatos/policies/<bundle-id>` and then atomically updating
+  `refs/gatos/policies/active` to that commit (both operations FF‑only).
 
 ---
 
@@ -272,16 +290,30 @@ All actions in GATOS are initiated via a signed Event.
 ```mermaid
 classDiagram
     class EventEnvelope {
-        +String type
-        +String ulid
-        +String actor
-        +String[] caps
-        +Object payload
-        +String policy_root
-        +String sig_alg
-        +String ts
+        +String type             // required; e.g., "event.append"
+        +String ulid             // required; client-supplied idempotency key
+        +String actor            // required; "user:<name>", "agent:<name>", ...
+        +String[] caps           // optional; capabilities asserted by actor
+        +Object payload          // required; event body
+        +String policy_root      // required; policy commit governing evaluation
+        +String sig_alg          // optional; signature algorithm id
+        +String ts               // optional; RFC3339 UTC timestamp
     }
 ```
+
+Field semantics and compatibility:
+
+- `sig_alg` — algorithm identifier; for v1, implementations **MUST** support
+  `ed25519`; other algorithms (e.g., `ecdsa-p256`) **MAY** be accepted by
+  agreement. When omitted, verifiers **MUST** infer the algorithm from the
+  signature material or commit metadata.
+- `ts` — RFC 3339/ISO‑8601 timestamp in UTC (`YYYY-MM-DDTHH:MM:SSZ`). When
+  omitted, receivers **MAY** use the commit timestamp for display only; the
+  envelope remains valid without `ts`.
+- Back/forward compatibility — Fields not present in older envelopes are simply
+  absent from the canonical encoding. Receivers **MUST** accept envelopes with
+  or without `sig_alg`/`ts`. Canonical bytes are computed over the envelope
+  with `sig` omitted and only the fields that are present.
 
 Canonicalization and signing:
 
@@ -292,7 +324,20 @@ Canonicalization and signing:
 
 ### 4.2 Journal Semantics
 <a id="4.2"></a><a id="4"></a><a id="4.2-journal-semantics"></a><a id="42"></a>
-Appending an event **MUST** create a new commit on an append-only ref in `refs/gatos/journal/<ns>/<actor>`. Ref updates **MUST** use atomic compare-and-swap via `git update-ref <old> <new>`.
+Appending an event **MUST** create a new commit on an append-only ref in
+`refs/gatos/journal/<ns>/<actor>`. Ref updates **MUST** use atomic
+compare‑and‑swap via `git update-ref <old> <new>`.
+
+CAS failure and idempotency:
+
+- On `update-ref` failure (old OID mismatch), writers **MUST** refetch and
+  retry. Writers **SHOULD** implement jittered exponential backoff (e.g.,
+  base=25 ms, max≈500 ms) and **SHOULD** cap retries (e.g., 5 attempts) before
+  surfacing an error to the caller.
+- Clients **SHOULD** supply `ulid` as an idempotency key; gates **MAY** reject
+  duplicate ULIDs within a configured horizon.
+- Journals are linear; divergence is resolved by retrying the CAS against the
+  latest head. Merges into journal refs are forbidden.
 
 ---
 
@@ -336,7 +381,18 @@ Fold-Math: fixed-q32.32                   # numeric model (normative in v1)
 Fold-RNG: pcg32@<ver>                     # RNG algorithm id + version (if used)
 ```
 
-These trailers enable portable verification and reproducible builds of state across nodes and platforms.
+Validation and compatibility:
+
+- Verifiers **MUST** require at least: `State-Root`, `Ledger-Head`,
+  `Policy-Root`, `Fold-Root`, and `Fold-Engine`. Unknown trailers **MUST** be
+  ignored.
+- When optional trailers (e.g., `Fold-RNG`, `Fold-Math`) are absent, verifiers
+  **MUST** apply implementation defaults for the declared profile and still
+  accept the checkpoint.
+- Trailer values **MUST** use the prefixed canonical encodings shown above.
+
+These rules enable portable verification and reproducible builds of state across
+nodes and platforms.
 
 > Cross-reference
 >
@@ -415,7 +471,16 @@ classDiagram
     }
 ```
 
-Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque objects, no plaintext **MAY** be stored in Git. Public pointers in low-entropy classes **MUST NOT** reveal a plaintext digest; they **MUST** include a ciphertext digest. Pointer `size` **SHOULD** be bucketed (e.g., 1 KB/4 KB/16 KB/64 KB). If a plaintext commitment is required, use a hiding commitment and store it inside `encrypted_meta`.
+Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque
+objects, no plaintext **MAY** be stored in Git. Public pointers in low‑entropy
+classes **MUST NOT** reveal a plaintext digest; they **MUST** include a
+ciphertext digest. Pointer `size` **SHOULD** be bucketed (e.g.,
+1 KB/4 KB/16 KB/64 KB). If a plaintext commitment is required, use a hiding
+commitment and store it inside `encrypted_meta`.
+
+Compatibility note: previous drafts referred to `cipher_meta`; the normative
+field name is now `encrypted_meta`. Implementations **SHOULD** accept inputs
+using either name and **MUST** emit `encrypted_meta` going forward.
 
 ---
 
