@@ -80,6 +80,27 @@ scripts/setup-hooks.sh
 
 If the hook fails, fix the reported issues and retry the commit.
 
+### Docs Normalization (AST pipeline)
+
+We run a deterministic Markdown normalization step before building docs. It parses Markdown to an AST (remark), applies project transforms (anchors, TOC, link fixes), and stringifies back. This eliminates duplicate anchors, malformed links, and spacing lint failures.
+
+Manual runs:
+
+```bash
+npm run docs:normalize          # write normalized Markdown
+npm run docs:normalize:check    # fail if normalization would change files
+```
+
+CI runs `docs:normalize:check` before markdownlint and fails on drift.
+
+Pre-push hook behavior (can be skipped via env):
+
+- docs normalize check (always, if Node available)
+- docs build (VitePress) unless `PREPUSH_SKIP_DOCS=1`
+- Mermaid verify (`scripts/diagrams.sh --verify --all`) unless `PREPUSH_SKIP_MERMAID=1`
+
+This keeps pushes green and avoids docs churn in CI.
+
 ## xtask quickstart (CI parity)
 
 This repo uses a small Rust utility (`cargo xtask`) to run common tasks in a cross-platform, reproducible way.

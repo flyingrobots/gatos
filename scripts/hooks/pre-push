@@ -21,6 +21,38 @@ else
 fi
 
 
+# Docs normalize (AST) — block if normalization would change files
+if command -v node >/dev/null 2>&1; then
+  echo "[pre-push] docs normalize:check (unified/remark)"
+  if ! npm run -s docs:normalize:check; then
+    echo "[pre-push][ERROR] docs are not normalized. Run: npm run docs:normalize" >&2
+    exit 1
+  fi
+else
+  echo "[pre-push][WARN] Node is not available; skipping docs normalize check" >&2
+fi
+
+# Docs build (VitePress) — can skip via PREPUSH_SKIP_DOCS=1
+if [[ "${PREPUSH_SKIP_DOCS:-0}" != "1" ]]; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "[pre-push] docs:build (vitepress)"
+    npm run -s docs:build
+  else
+    echo "[pre-push][WARN] npm not available; skipping docs build" >&2
+  fi
+fi
+
+# Mermaid verify — can skip via PREPUSH_SKIP_MERMAID=1
+if [[ "${PREPUSH_SKIP_MERMAID:-0}" != "1" ]]; then
+  if [[ -x "./scripts/diagrams.sh" ]]; then
+    echo "[pre-push] Mermaid verify (scripts/diagrams.sh --verify --all)"
+    MERMAID_MAX_PARALLEL=${MERMAID_MAX_PARALLEL:-6} bash ./scripts/diagrams.sh --verify --all
+  else
+    echo "[pre-push][WARN] scripts/diagrams.sh missing; skipping Mermaid verify" >&2
+  fi
+fi
+
+
 # Quick Rust hygiene (fast): rustfmt check and cargo check (can skip via PREPUSH_SKIP_RUST=1)
 if [[ "${PREPUSH_SKIP_RUST:-0}" != "1" ]]; then
   if command -v cargo >/dev/null 2>&1; then
