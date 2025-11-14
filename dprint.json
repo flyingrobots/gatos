@@ -6,7 +6,7 @@
     "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.5.1.wasm"
   ],
   "includes": ["**/*.json", "**/*.yml", "**/*.yaml"],
-  "excludes": ["target/**", ".git/**", "node_modules/**"],
+  "excludes": ["target/**", ".git/**", "node_modules/**", ".tmp/**"],
   "json": {
     "indentWidth": 2
   }

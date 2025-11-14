@@ -32,17 +32,8 @@ function anchorsMulti() {
       // Skip if parent missing
       if (!parent) return
       const text = toString(node).trim()
-      const m = /^([0-9]+(?:\.[0-9x]+)*)\b/.exec(text)
-      // Compute slug id as GitHub-like
+      // Compute slug id as GitHub-like; use a single canonical id (no numeric variants)
       const slugId = slugger.slug(text)
-      // Build anchor list: numeric (if present), and slug
-      const ids = []
-      if (m) {
-        const numeric = m[1]
-        ids.push(numeric)
-        // If the numeric contains a dot (e.g., 5.3), do NOT add bare top-level '5'
-      }
-      ids.push(slugId)
       // Remove any existing adjacent HTML anchors following the heading
       let j = idx + 1
       let collected = []
@@ -62,7 +53,7 @@ function anchorsMulti() {
         for (let k = collected.length - 1; k >= 0; k--) parent.children.splice(collected[k], 1)
       }
       // Insert a single normalized anchor html node after the heading
-      const html = ids.map((id) => `<a id="${id}"></a>`).join('') + '\n'
+      const html = `<a id="${slugId}"></a>\n`
       parent.children.splice((idx ?? 0) + 1, 0, { type: 'html', value: html })
     })
   }
@@ -86,10 +77,9 @@ function tocMarkers() {
       visit(tree, 'heading', (h) => {
         if (h.depth >= 2 && h.depth <= 4) {
           const text = toString(h).trim()
-          // Prefer numeric anchor if present
-          const m = /^([0-9]+(?:\.[0-9x]+)*)\b/.exec(text)
+          // Always use the slug anchor for stability; numeric anchors are not emitted
           const slug = (h.data && h.data.hProperties && h.data.hProperties.id) || new Slugger().slug(text)
-          const anchor = m ? m[1] : slug
+          const anchor = slug
           items.push({ depth: h.depth, text, anchor })
         }
       })
@@ -100,7 +90,8 @@ function tocMarkers() {
         const indent = '  '.repeat(Math.max(0, it.depth - 2))
         lines.push(`${indent}- [${it.text}](#${it.anchor})\n`)
       }
-      lines.push('\n' + END)
+      // Close immediately without extra spacer line before END for compactness
+      lines.push(END)
       const htmlNode = { type: 'html', value: lines.join('') }
       // Replace everything between markers with a single node
       nodes.splice(start, end - start + 1, htmlNode)
@@ -185,4 +176,3 @@ async function main() {
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })
-

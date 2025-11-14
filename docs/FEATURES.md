@@ -2,6 +2,8 @@
 
 <a id="gatos--features-derived-from-spec-v03"></a>
 
+<a id="gatos--features-derived-from-spec-v03"></a>
+
 <a id="gatos-features-derived-from-spec-v0.3"></a>
 
 <!--
@@ -65,9 +67,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f1--append-only-journals-ff-only-refs"></a>
 
+<a id="f1--append-only-journals-ff-only-refs"></a>
+
 <a id="f1-append-only-journals-ff-only-refs"></a>
 
 ### F1-US-DEV
+
+<a id="f1-us-dev"></a>
 
 <a id="f1-us-dev"></a>
 
@@ -83,6 +89,8 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f1-acceptance-criteria--dor"></a>
 
+<a id="f1-acceptance-criteria--dor"></a>
+
 <a id="f1-acceptance-criteria-dor"></a>
 
 - [ ] Atomic CAS update-ref used on every append
@@ -90,6 +98,8 @@ Each feature includes user stories per relevant stakeholders (format requested),
 - [ ] Appends visible via `git log` and via JSONL stream
 
 #### F1-US-SEC Test Plan
+
+<a id="f1-us-sec-test-plan"></a>
 
 <a id="f1-us-sec-test-plan"></a>
 
@@ -107,6 +117,8 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f1-us-sec"></a>
 
+<a id="f1-us-sec"></a>
+
 |                |                                               |
 | -------------- | --------------------------------------------- |
 | **As a...**    | Security/Compliance                           |
@@ -119,10 +131,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f1-acceptance-criteria"></a>
 
+<a id="f1-acceptance-criteria"></a>
+
 - [ ] Every deny → `audit.decision` with rule and reason
 - [ ] Policy\_root and trust\_chain recorded
 
 #### F1 Test Plan
+
+<a id="f1-test-plan"></a>
 
 <a id="f1-test-plan"></a>
 
@@ -138,9 +154,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f2--deterministic-folds--state-roots"></a>
 
+<a id="f2--deterministic-folds--state-roots"></a>
+
 <a id="f2-deterministic-folds-state-roots"></a>
 
 ### F2-US-DEV
+
+<a id="f2-us-dev"></a>
 
 <a id="f2-us-dev"></a>
 
@@ -158,10 +178,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f2-acceptance-criteria"></a>
 
+<a id="f2-acceptance-criteria"></a>
+
 - [ ] Canonical serializer used; BLAKE3 hash stable across OS/arch
 - [ ] Fold spec validated before run
 
 #### F2 Test Plan
+
+<a id="f2-test-plan"></a>
 
 <a id="f2-test-plan"></a>
 
@@ -177,9 +201,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f3--policy-gate-pure-deterministic"></a>
 
+<a id="f3--policy-gate-pure-deterministic"></a>
+
 <a id="f3-policy-gate-pure-deterministic"></a>
 
 ### F3-US-SEC
+
+<a id="f3-us-sec"></a>
 
 <a id="f3-us-sec"></a>
 
@@ -197,10 +225,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f3-acceptance-criteria"></a>
 
+<a id="f3-acceptance-criteria"></a>
+
 - [ ] Policy VM forbids I/O, clock, RNG
 - [ ] `policy_root` bound to every ALLOW
 
 #### F3 Test Plan
+
+<a id="f3-test-plan"></a>
 
 <a id="f3-test-plan"></a>
 
@@ -216,9 +248,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f4--capability-grants--trust-graph"></a>
 
+<a id="f4--capability-grants--trust-graph"></a>
+
 <a id="f4-capability-grants-trust-graph"></a>
 
 ### F4-US-PENG
+
+<a id="f4-us-peng"></a>
 
 <a id="f4-us-peng"></a>
 
@@ -236,10 +272,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f4-acceptance-criteria"></a>
 
+<a id="f4-acceptance-criteria"></a>
+
 - [ ] Quorum thresholds enforced
 - [ ] Grant chains verify ancestry
 
 #### F4 Test Plan
+
+<a id="f4-test-plan"></a>
 
 <a id="f4-test-plan"></a>
 
@@ -255,9 +295,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f5--message-bus-qos-with-ackscommits"></a>
 
+<a id="f5--message-bus-qos-with-ackscommits"></a>
+
 <a id="f5-message-bus-qos-with-acks-commits"></a>
 
 ### F5-US-SRE
+
+<a id="f5-us-sre"></a>
 
 <a id="f5-us-sre"></a>
 
@@ -275,10 +319,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f5-acceptance-criteria"></a>
 
+<a id="f5-acceptance-criteria"></a>
+
 - [ ] `gmb.msg` + `gmb.ack` + `gmb.commit` protocol
 - [ ] De-dup by (topic, ulid)
 
 #### F5 Test Plan
+
+<a id="f5-test-plan"></a>
 
 <a id="f5-test-plan"></a>
 
@@ -294,9 +342,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f6--opaque-pointers--cas"></a>
 
+<a id="f6--opaque-pointers--cas"></a>
+
 <a id="f6-opaque-pointers-cas"></a>
 
 ### F6-US-DML
+
+<a id="f6-us-dml"></a>
 
 <a id="f6-us-dml"></a>
 
@@ -314,10 +366,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f6-acceptance-criteria"></a>
 
+<a id="f6-acceptance-criteria"></a>
+
 - [ ] Pointer includes plaintext hash, ciphertext hash, cipher meta
 - [ ] Rekey operation available
 
 #### F6 Test Plan
+
+<a id="f6-test-plan"></a>
 
 <a id="f6-test-plan"></a>
 
@@ -333,9 +389,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f7--epochs--compaction"></a>
 
+<a id="f7--epochs--compaction"></a>
+
 <a id="f7-epochs-compaction"></a>
 
 ### F7-US-PENG
+
+<a id="f7-us-peng"></a>
 
 <a id="f7-us-peng"></a>
 
@@ -353,11 +413,15 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f7-acceptance-criteria"></a>
 
+<a id="f7-acceptance-criteria"></a>
+
 - [ ] `gatos epoch new` creates anchor
 - [ ] New clones fetch current epoch + anchors
 - [ ] Verification across epochs
 
 #### F7 Test Plan
+
+<a id="f7-test-plan"></a>
 
 <a id="f7-test-plan"></a>
 
@@ -373,9 +437,13 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f8--observability--doctor"></a>
 
+<a id="f8--observability--doctor"></a>
+
 <a id="f8-observability-doctor"></a>
 
 ### F8-US-SRE
+
+<a id="f8-us-sre"></a>
 
 <a id="f8-us-sre"></a>
 
@@ -393,10 +461,14 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f8-acceptance-criteria"></a>
 
+<a id="f8-acceptance-criteria"></a>
+
 - [ ] `/healthz`, `/readyz`, `/metrics` exposed
 - [ ] `gatos doctor` covers refs, packs, epochs, caches
 
 #### F8 Test Plan
+
+<a id="f8-test-plan"></a>
 
 <a id="f8-test-plan"></a>
 

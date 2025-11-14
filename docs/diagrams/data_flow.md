@@ -3,6 +3,8 @@
 <a id="gatos-data-flow-example"></a>
 
 <a id="gatos-data-flow-example"></a>
+
+<a id="gatos-data-flow-example"></a>
 This diagram shows an example data flow for a typical operation: enqueuing and processing a job.
 
 ```mermaid
