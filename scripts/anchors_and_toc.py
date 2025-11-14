@@ -71,18 +71,12 @@ def extract_anchor_ids(line: str) -> list[str]:
 def is_anchor_line(line: str) -> bool:
     return bool(ANCHOR_RE.search(line))
 
-def build_toc(headings: list[tuple[int,str]]) -> str:
+def build_toc(headings: list[tuple[int,str,str]]) -> str:
     lines = [TOC_START, "\n"]
-    for level, text in headings:
+    for level, text, hid in headings:
         # indent 2 spaces per level offset from H2 (i.e., level 2 -> 0 indent)
         indent = max(0, level - 2) * 2
-        slug = slugify_kebab(text)
-        # Prefer numeric id if present
-        m = NUM_PREFIX_RE.match(text)
-        anchor = slug
-        if m:
-            anchor = m.group("num")
-        lines.append(" " * indent + f"- [{text}](#{anchor})\n")
+        lines.append(" " * indent + f"- [{text}](#{hid})\n")
     lines.append("\n" + TOC_END + "\n")
     return "".join(lines)
 
@@ -92,7 +86,8 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
     changed = False
     out = []
     in_code = False
-    headings_for_toc: list[tuple[int,str]] = []
+    headings_for_toc: list[tuple[int,str,str]] = []
+    used_ids: set[str] = set()
     i = 0
     def is_blank(s: str) -> bool:
         return s.strip() == ""
@@ -114,9 +109,7 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                 if out and not is_blank(out[-1]):
                     out.append("\n")
                 out.append(line)
-                # consider headings for TOC (skip H1, include H2..H5)
-                if level >= 2:
-                    headings_for_toc.append((level, text_content))
+                # (TOC entries are appended after id is assigned)
                 # Look ahead a few lines to collapse duplicate anchors and/or insert if missing.
                 j = i + 1
                 # Collect consecutive blank or anchor lines immediately after the heading
@@ -132,8 +125,15 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                         j += 1
                         continue
                     break
-                # Always compute canonical single id and ensure only one anchor line exists
-                canonical = make_anchor_line(text_content)
+                # Always compute canonical single id (ensure file-unique by suffixing -2, -3, …)
+                base = slugify_kebab(text_content)
+                hid = base
+                suffix = 2
+                while hid in used_ids:
+                    hid = f"{base}-{suffix}"
+                    suffix += 1
+                used_ids.add(hid)
+                canonical = f"<a id=\"{html.escape(hid)}\"></a>\n"
                 # Ensure a blank line AFTER heading before anchors/content
                 if not collected or (collected and not is_blank(collected[0])):
                     out.append("\n")
@@ -147,6 +147,9 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                     if canonical:
                         out.append(canonical)
                         changed = True
+                # collect for TOC (skip H1)
+                if level >= 2:
+                    headings_for_toc.append((level, text_content, hid))
                 # Skip over the collected lines in the input
                 i = j
                 continue

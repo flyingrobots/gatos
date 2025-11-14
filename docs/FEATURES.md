@@ -7,7 +7,7 @@
     - [F1 Test Plan](#f1-test-plan)
   - [F1-US-SEC](#f1-us-sec)
     - [F1 Acceptance Criteria](#f1-acceptance-criteria)
-    - [F1 Test Plan](#f1-test-plan)
+    - [F1 Test Plan](#f1-test-plan-2)
 - [F2 — Deterministic Folds & State Roots](#f2-deterministic-folds-state-roots)
   - [F2-US-DEV](#f2-us-dev)
     - [F2 Acceptance Criteria](#f2-acceptance-criteria)
@@ -82,7 +82,7 @@ Each feature includes user stories per relevant stakeholders (format requested),
 - [ ] Policy\_root and trust\_chain recorded
 
 #### F1 Test Plan
-<a id="f1-test-plan"></a>
+<a id="f1-test-plan-2"></a>
 - [ ] Golden: missing cap → DENY with rule
 - [ ] Edge: expired grant → DENY with `expired` reason
 - [ ] Failure: tampered audit record → verification fails
