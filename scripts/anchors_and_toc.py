@@ -49,8 +49,9 @@ def slugify_kebab(text: str) -> str:
     t = text.strip().lower()
     t = re.sub(r"`+", "", t)
     t = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", t)
-    # replace underscores with spaces to normalize
+    # replace separators with spaces to keep word boundaries
     t = t.replace("_", " ")
+    t = t.replace("/", " ")
     # remove everything except alnum, dot, space, hyphen
     t = re.sub(r"[^a-z0-9\-\s\.]+", "", t)
     t = re.sub(r"\s+", "-", t)
@@ -75,11 +76,13 @@ def is_anchor_line(line: str) -> bool:
     return bool(ANCHOR_RE.search(line))
 
 def build_toc(headings: list[tuple[int,str,str]]) -> str:
-    lines = [TOC_START, "\n"]
+    # Keep the START marker directly above the first list item (no blank spacer line)
+    lines = [TOC_START + "\n"]
     for level, text, hid in headings:
         # indent 2 spaces per level offset from H2 (i.e., level 2 -> 0 indent)
         indent = max(0, level - 2) * 2
         lines.append(" " * indent + f"- [{text}](#{hid})\n")
+    # Ensure a trailing newline before the END marker for readability
     lines.append("\n" + TOC_END + "\n")
     return "".join(lines)
 
