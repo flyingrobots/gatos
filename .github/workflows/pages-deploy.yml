@@ -1,0 +1,57 @@
+name: "Pages: Deploy (main → gh-pages)"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Prebuild linkify/anchors
+        run: |
+          set -euo pipefail
+          python3 scripts/linkify_chapters.py --write --paths docs/guide
+          python3 scripts/linkify_refs.py --write --paths docs
+          python3 scripts/anchors_and_toc.py --write --paths docs
+
+      - name: Build VitePress (prod base)
+        env:
+          DOCS_BASE: /gatos/
+        run: |
+          npm run docs:build
+          touch docs/.vitepress/dist/.nojekyll
+
+      - name: Deploy to gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/.vitepress/dist
+          clean: true
+          clean-exclude: |
+            pr-preview/

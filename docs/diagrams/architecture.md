@@ -1,18 +1,27 @@
 # GATOS System Architecture
 
-This diagram illustrates the high-level architecture of the GATOS system, showing the core crates and how they map to the four conceptual planes.
+<a id="gatos-system-architecture"></a>
+
+<a id="gatos-system-architecture"></a>
+
+<a id="gatos-system-architecture"></a>
+This diagram illustrates the high-level architecture of the GATOS system, showing the core crates and how they map to the five conceptual planes.
 
 ```mermaid
 graph TD
     subgraph "User / Client"
-        CLI("gatosd (CLI)")
+        CLI("git gatos (CLI)")
         SDK("Client SDK")
     end
 
     subgraph "GATOS System"
         Daemon("gatosd (Daemon)")
 
-        subgraph "Policy Plane"
+        subgraph "Ledger Plane"
+            Ledger("gatos-ledger");
+        end
+
+        subgraph "Policy/Trust Plane"
             Policy("gatos-policy");
         end
 
@@ -27,10 +36,6 @@ graph TD
 
         subgraph "Job Plane"
             Compute("gatos-compute");
-        end
-
-        subgraph "Ledger Plane"
-            Ledger("gatos-ledger");
         end
 
         Daemon --> Policy;

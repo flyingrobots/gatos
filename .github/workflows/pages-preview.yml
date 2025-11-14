@@ -1,0 +1,61 @@
+name: "Pages: PR Preview"
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.14.0
+          cache: npm
+
+      - name: Install deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Prebuild linkify/anchors
+        run: |
+          set -euo pipefail
+          python3 scripts/linkify_chapters.py --write --paths docs/guide
+          python3 scripts/linkify_refs.py --write --paths docs
+          python3 scripts/anchors_and_toc.py --write --paths docs
+
+      - name: Build VitePress (PR base)
+        env:
+          DOCS_BASE: /gatos/pr-preview/pr-${{ github.event.number }}/
+        run: |
+          npm run docs:build
+          touch docs/.vitepress/dist/.nojekyll
+
+      - name: Deploy PR Preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: docs/.vitepress/dist
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+
+      - name: Comment/update canonical preview URL (idempotent)
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.number }}
+          body: |
+            PR Preview (canonical)
+            https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ github.event.number }}/
+          edit-mode: replace
+          body-includes: "PR Preview (canonical)"

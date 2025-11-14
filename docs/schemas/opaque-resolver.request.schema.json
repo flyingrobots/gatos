@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.dev/schemas/opaque-resolver.request.schema.json",
+  "title": "Opaque Resolver Request",
+  "type": "object",
+  "properties": {
+    "algo": { "type": "string", "enum": ["blake3"] },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "jwt": { "type": "string", "description": "Bearer token" }
+  },
+  "required": ["algo", "digest", "jwt"],
+  "additionalProperties": false
+}

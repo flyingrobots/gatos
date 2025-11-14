@@ -1,0 +1,27 @@
+{
+  "name": "gatos-docs",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:normalize": "node scripts/md/normalize.mjs --write",
+    "docs:normalize:check": "node scripts/md/normalize.mjs --check",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.2.3",
+    "vitepress-plugin-pagefind": "^0.4.15",
+    "fuse.js": "^7.0.0",
+    "unified": "^11.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-slug": "^7.0.0",
+    "unist-util-visit": "^5.0.0",
+    "mdast-util-to-string": "^4.0.0",
+    "github-slugger": "^2.0.0",
+    "globby": "^14.0.0"
+  }
+}

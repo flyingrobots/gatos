@@ -80,6 +80,29 @@ scripts/setup-hooks.sh
 
 If the hook fails, fix the reported issues and retry the commit.
 
+### Docs Normalization (AST pipeline)
+
+We run a deterministic Markdown normalizer (unified/remark) as a prebuild check. It parses Markdown to an AST, applies project transforms (anchors, TOC, link fixes), and stringifies back. This keeps anchors and spacing lint-clean and idempotent.
+
+Manual runs:
+
+```bash
+npm run docs:normalize          # write normalized Markdown
+npm run docs:normalize:check    # fail if normalization would change files
+```
+
+Pre-push hook (opt-out flags; each step runs by default):
+
+- Set `PREPUSH_SKIP_DOCS=1` to skip the VitePress docs build.
+- Set `PREPUSH_SKIP_MERMAID=1` to skip Mermaid diagram verification (`scripts/diagrams.sh --verify --all`).
+- Set `PREPUSH_SKIP_LINT=1` to skip Markdown lint.
+- Set `PREPUSH_SKIP_NORMALIZE=1` to skip the Markdown normalizer check (`npm run docs:normalize:check`).
+- Set `PREPUSH_SKIP_RUST=1` to skip Rust checks (`cargo fmt --check`, `cargo check`, `dprint`).
+
+Mermaid verification mode:
+
+- `scripts/diagrams.sh --verify --all` performs a non-destructive validation of all committed SVGs (metadata/tool pin checks). It exits non-zero on failures, which fails CI and pre-push unless you set `PREPUSH_SKIP_MERMAID=1`.
+
 ## xtask quickstart (CI parity)
 
 This repo uses a small Rust utility (`cargo xtask`) to run common tasks in a cross-platform, reproducible way.
@@ -99,6 +122,10 @@ Common commands
   - To avoid GitHub rate limiting locally, export `LYCHEE_GITHUB_TOKEN` (you can also use `export LYCHEE_GITHUB_TOKEN=$GITHUB_TOKEN` in CI).
 
 Diagrams are intentionally outside xtask. Use `make diagrams` or `bash ./scripts/diagrams.sh`.
+
+Docs build system
+
+- We use VitePress for docs. The build command is `npm run docs:build`, which runs `vitepress build docs` (package.json). The Markdown normalizer and anchor/TOC generator run as prebuild steps in CI to keep the site consistent.
 
 Tip: `make help` lists handy shims (`ci-diagrams`, `ci-schemas`, `ci-linkcheck`) that mirror CI. For ad-hoc invocations, use `make xtask ARGS="<subcommand> [opts]"` for Rust-based flows.
 
