@@ -391,8 +391,7 @@ sequenceDiagram
 
 On **DENY**, the gate **MUST** append an audit decision to `refs/gatos/audit/policy`.
 
-> [!IMPORTANT]
-> DENY is always logged under audit. Each decision MUST include the policy rule identifier (`Policy-Rule`), a reproducible reason, and sufficient context (actor, target, refs) for independent verification.
+> Important: DENY is always logged under audit. Each decision MUST include the policy rule identifier (`Policy-Rule`), a reproducible reason, and sufficient context (actor, target, refs) for independent verification.
 
 ---
 
