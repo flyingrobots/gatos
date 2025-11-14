@@ -1,4 +1,5 @@
 # GATOS System Architecture
+
 <a id="gatos-system-architecture"></a>
 This diagram illustrates the high-level architecture of the GATOS system, showing the core crates and how they map to the five conceptual planes.
 
