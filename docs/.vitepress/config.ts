@@ -64,8 +64,18 @@ function mermaidToImg(md: any) {
         if (fs.existsSync(abs(light)) && fs.existsSync(abs(dark))) { chosenBase = base; pair = true; break }
         if (fs.existsSync(abs(plain))) { chosenBase = base; pair = false; break }
       }
-      // Public URLs must honor the site base for GitHub Pages subpaths
-      const url = (p: string) => `${SITE_BASE.replace(/\/$/, '')}/${p}`.replace(/([^:]\/)\/+/g, '$1')
+      // Build relative URLs from the current markdown file to the generated asset
+      // so Vite doesn't try to resolve an absolute import like 
+      // "/gatos/pr-preview/pr-64/diagrams/..." during SSR. Relative links will
+      // naturally inherit the site base at runtime (e.g., PR preview paths).
+      const url = (p: string) => {
+        const from = path.posix.join('docs', path.posix.dirname(rel))
+        const to = path.posix.join('docs', p)
+        let relUrl = path.posix.relative(from, to).replace(/^\.\//, '')
+        // Ensure it remains a relative URL (so Vite doesn't treat it as root).
+        if (!/^[.]{1,2}\//.test(relUrl)) relUrl = `./${relUrl}`
+        return relUrl
+      }
       if (chosenBase) {
         if (pair) {
           return `<figure><picture><source srcset="${url(chosenBase + '-dark.svg')}" media="(prefers-color-scheme: dark)"><img src="${url(chosenBase + '-light.svg')}" alt="diagram ${count}" loading="lazy"></picture></figure>\n`
