@@ -82,7 +82,7 @@ If the hook fails, fix the reported issues and retry the commit.
 
 ### Docs Normalization (AST pipeline)
 
-We run a deterministic Markdown normalization step before building docs. It parses Markdown to an AST (remark), applies project transforms (anchors, TOC, link fixes), and stringifies back. This eliminates duplicate anchors, malformed links, and spacing lint failures.
+We provide an optional, deterministic Markdown normalizer (unified/remark). It parses Markdown to an AST, applies project transforms (anchors, TOC, link fixes), and stringifies back. Use it when performing large doc edits; it helps avoid duplicate anchors and spacing issues.
 
 Manual runs:
 
@@ -91,15 +91,16 @@ npm run docs:normalize          # write normalized Markdown
 npm run docs:normalize:check    # fail if normalization would change files
 ```
 
-CI runs `docs:normalize:check` before markdownlint and fails on drift.
+Pre‑push hook behavior (skip flags and warnings):
 
-Pre-push hook behavior (can be skipped via env):
+- Docs build (VitePress) runs unless `PREPUSH_SKIP_DOCS=1`. When set, the build step is skipped; the hook continues and prints a warning.
+- Mermaid verify (`scripts/diagrams.sh --verify --all`) runs unless `PREPUSH_SKIP_MERMAID=1`. When set, verification is skipped; the hook continues and prints a warning.
+- Markdown lint runs only if `PREPUSH_LINT=1` (opt‑in). When not set, lint is skipped.
+- Docs normalize check runs only if `PREPUSH_NORMALIZE=1` (opt‑in). When not set, it is skipped.
 
-- docs normalize check (always, if Node available)
-- docs build (VitePress) unless `PREPUSH_SKIP_DOCS=1`
-- Mermaid verify (`scripts/diagrams.sh --verify --all`) unless `PREPUSH_SKIP_MERMAID=1`
+Mermaid verification mode:
 
-This keeps pushes green and avoids docs churn in CI.
+- `scripts/diagrams.sh --verify --all` performs a non‑destructive validation of all committed SVGs (metadata/tool pin checks). It exits non‑zero on failures, which fails CI and pre‑push unless you set `PREPUSH_SKIP_MERMAID=1`.
 
 ## xtask quickstart (CI parity)
 
@@ -120,6 +121,10 @@ Common commands
   - To avoid GitHub rate limiting locally, export `LYCHEE_GITHUB_TOKEN` (you can also use `export LYCHEE_GITHUB_TOKEN=$GITHUB_TOKEN` in CI).
 
 Diagrams are intentionally outside xtask. Use `make diagrams` or `bash ./scripts/diagrams.sh`.
+
+Docs build system
+
+- We use VitePress for docs. The build command is `npm run docs:build`, which runs `vitepress build docs` as defined in package.json.
 
 Tip: `make help` lists handy shims (`ci-diagrams`, `ci-schemas`, `ci-linkcheck`) that mirror CI. For ad-hoc invocations, use `make xtask ARGS="<subcommand> [opts]"` for Rust-based flows.
 
