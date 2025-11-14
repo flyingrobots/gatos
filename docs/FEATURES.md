@@ -107,7 +107,7 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 #### F2 Test Plan
 <a id="test-plan"></a>
-- [ ] Golden vectors across linux/macos/windows
+- [ ] Golden vectors across linux/macOS/windows
 - [ ] Edge: empty input corpus
 - [ ] Failure: non-canonical payload ordering → hash mismatch detected
 
