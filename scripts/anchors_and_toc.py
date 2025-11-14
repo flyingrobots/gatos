@@ -72,8 +72,13 @@ def make_anchor_line(text: str) -> str:
         return ""
     return "".join(f"<a id=\"{html.escape(i)}\"></a>" for i in ids) + "\n"
 
-def has_anchor_line(next_line: str) -> bool:
-    return next_line.strip().startswith("<a id=")
+ANCHOR_RE = re.compile(r"<a\s+id=\"([^\"]+)\"\s*></a>")
+
+def extract_anchor_ids(line: str) -> list[str]:
+    return ANCHOR_RE.findall(line)
+
+def is_anchor_line(line: str) -> bool:
+    return bool(ANCHOR_RE.search(line))
 
 def build_toc(headings: list[tuple[int,str]]) -> str:
     lines = [TOC_START, "\n"]
@@ -115,14 +120,43 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                 # consider headings for TOC (skip H1, include H2..H5)
                 if level >= 2:
                     headings_for_toc.append((level, text_content))
-                # insert anchor line if missing or not an anchor
-                next_line = lines[i+1] if i + 1 < len(lines) else "\n"
-                if not has_anchor_line(next_line):
+                # Look ahead a few lines to collapse duplicate anchors and/or insert if missing.
+                j = i + 1
+                # Collect consecutive blank or anchor lines immediately after the heading
+                collected: list[str] = []
+                while j < len(lines):
+                    nxt = lines[j]
+                    if nxt.strip() == "":
+                        collected.append(nxt)
+                        j += 1
+                        continue
+                    if is_anchor_line(nxt):
+                        collected.append(nxt)
+                        j += 1
+                        continue
+                    break
+                # Determine existing anchor ids in the collected lines
+                existing_ids: list[str] = []
+                for l in collected:
+                    for aid in extract_anchor_ids(l):
+                        if aid not in existing_ids:
+                            existing_ids.append(aid)
+                if existing_ids:
+                    # Rebuild a single normalized anchor line from existing ids
+                    normalized = "".join(f"<a id=\"{html.escape(i)}\"></a>" for i in existing_ids) + "\n"
+                    # Emit one anchor line, drop extra blank/anchor lines
+                    out.append(normalized)
+                    # If the collected block differs from the normalized single line, mark changed
+                    if len(collected) != 1 or (collected and collected[0] != normalized):
+                        changed = True
+                else:
+                    # No existing anchors found nearby; insert new anchor line
                     anchor_line = make_anchor_line(text_content)
                     if anchor_line:
                         out.append(anchor_line)
                         changed = True
-                i += 1
+                # Skip over the collected lines in the input
+                i = j
                 continue
         out.append(line)
         i += 1
