@@ -46,4 +46,4 @@ git gatos reproduce --id <ulid>
 - `verify` checks signatures, ancestry, and that linked PoE/PoF are consistent.
 - `reproduce` fetches pointers, re-runs jobs, and verifies PoF/outputs.
 
-See: docs/proofs/proof-of-experiment.md and [[[SPEC §10](/SPEC#10)](/SPEC#10)](/SPEC#10).x PoX.
+See: docs/proofs/proof-of-experiment.md and [SPEC §10.x PoX](/SPEC#10.x-proof-of-experiment-pox).
