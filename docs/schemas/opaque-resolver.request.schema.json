@@ -11,4 +11,3 @@
   "required": ["algo", "digest", "jwt"],
   "additionalProperties": false
 }
-

@@ -12,4 +12,3 @@
   "required": ["status"],
   "additionalProperties": false
 }
-

@@ -25,4 +25,3 @@
   "required": ["ff_only", "require_pof", "deny_audit_ref"],
   "additionalProperties": false
 }
-
