@@ -87,7 +87,7 @@ Additional invariants:
 
 ## Linter / Compiler Rules
 
-<a id="linter--compiler-rules"></a><a id="linter-compiler-rules"></a>
+<a id="linter-compiler-rules"></a>
 Hard-fail on:
 
 - use of `pairs`, `coroutine`, `__gc`, `__pairs`, `math.random`, `os.*`, `io.*`, `debug.*`, `package.*`.
@@ -95,7 +95,7 @@ Hard-fail on:
 
 ## Proof / Trailer Integration
 
-<a id="proof--trailer-integration"></a><a id="proof-trailer-integration"></a>
+<a id="proof-trailer-integration"></a>
 
 - State checkpoints MUST include `Fold-Root: sha256:<hex>` trailers.
 - RECOMMENDED trailers: `Fold-Math: fixed-q32.32@<libver>`, `Fold-RNG: <alg>@<ver>`.

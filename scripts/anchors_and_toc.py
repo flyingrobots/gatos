@@ -29,6 +29,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+CURRENT_FILE = None
 
 MD_GLOB = [ROOT / "docs"]
 
@@ -81,6 +82,8 @@ def build_toc(headings: list[tuple[int,str,str]]) -> str:
     return "".join(lines)
 
 def process_file(path: pathlib.Path) -> tuple[bool, str]:
+    global CURRENT_FILE
+    CURRENT_FILE = str(path)
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
     changed = False
@@ -88,6 +91,7 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
     in_code = False
     headings_for_toc: list[tuple[int,str,str]] = []
     used_ids: set[str] = set()
+    base_counters: dict[str,int] = {}
     i = 0
     def is_blank(s: str) -> bool:
         return s.strip() == ""
@@ -127,11 +131,17 @@ def process_file(path: pathlib.Path) -> tuple[bool, str]:
                     break
                 # Always compute canonical single id (ensure file-unique by suffixing -2, -3, …)
                 base = slugify_kebab(text_content)
-                hid = base
-                suffix = 2
-                while hid in used_ids:
-                    hid = f"{base}-{suffix}"
-                    suffix += 1
+                # For ROADMAP numbered subsections, force numbering (goals-X, deliverables-X, done-when-X)
+                if CURRENT_FILE.endswith("/ROADMAP.md") and base in ("goals", "deliverables", "done-when"):
+                    idx = base_counters.get(base, 0)
+                    hid = f"{base}-{idx}"
+                    base_counters[base] = idx + 1
+                else:
+                    hid = base
+                    suffix = 2
+                    while hid in used_ids:
+                        hid = f"{base}-{suffix}"
+                        suffix += 1
                 used_ids.add(hid)
                 canonical = f"<a id=\"{html.escape(hid)}\"></a>\n"
                 # Ensure a blank line AFTER heading before anchors/content
