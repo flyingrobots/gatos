@@ -17,7 +17,7 @@
   - [Compilation](#compilation)
   - [Library](#library)
   - [Explainability](#explainability)
-- [Obvious gaps we should close (spec addenda)](#obvious-gaps-we-should-close-spec-addenda)
+- [Obvious gaps we should close (specification supplements)](#obvious-gaps-we-should-close-specification-supplements)
   - [1. **Bind fold version**](#1)
   - [2. **Canonical JSON rules**](#2)
   - [3. Error code taxonomy (for JSONL)](#3)
@@ -48,7 +48,7 @@
   - [2) Execution](#2)
   - [3) Standard library (deterministic subset)](#3)
 - [🧪 Determinism hazards & how we neutralize them](#determinism-hazards-how-we-neutralize-them)
-  - [1.Floating point drift](#1)
+  - [1. Floating-point drift](#1)
   - [2.Table iteration order](#2)
   - [3.Randomness/time](#3)
   - [4.GC/finalizers](#4)
@@ -302,10 +302,10 @@ Standard predicates:
 
 ---
 
-## Obvious gaps we should close (spec addenda)
-<a id="obvious-gaps-we-should-close-spec-addenda"></a>
+## Obvious gaps we should close (specification supplements)
+<a id="obvious-gaps-we-should-close-specification-supplements"></a>
 
-<a id="obvious-gaps-we-should-close-spec-addenda"></a>
+<a id="obvious-gaps-we-should-close-specification-supplements"></a>
 
 ### 1. **Bind fold version**
 <a id="1"></a><a id="1.-bind-fold-version"></a>
@@ -636,7 +636,7 @@ The EchoLua VM interprets ELC with:
 
 <a id="determinism-hazards-how-we-neutralize-them"></a>
 
-### 1.Floating point drift
+### 1. Floating-point drift
 <a id="1"></a><a id="1.floating-point-drift"></a>
 
 <a id="1"></a><a id="1.floating-point-drift"></a>
