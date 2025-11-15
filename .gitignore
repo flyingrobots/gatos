@@ -57,3 +57,6 @@ node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
 .pagefind/
+
+# Tooling / temporary artifacts
+.tmp/
