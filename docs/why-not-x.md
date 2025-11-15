@@ -9,6 +9,7 @@ title: Why Not X?
 <a id="why-not-x"></a>
 
 <a id="why-not-x"></a>
+
 Short answers to common comparisons.
 
 - Blockchains: Global consensus is expensive and unnecessary for most workflows. GATOS uses Git + signatures with local policy enforcement and verifiable proofs (PoF/PoE/PoX).

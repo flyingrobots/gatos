@@ -79,4 +79,5 @@ git gatos reproduce <ulid>
 <a id="citing-pox-in-papers"></a>
 
 <a id="citing-pox-in-papers"></a>
+
 Include the PoX ULID and the repo commit (or DOI) in the Methods appendix. Provide a link to the public `refs/gatos/audit/proofs/experiments/<ulid>` if available.

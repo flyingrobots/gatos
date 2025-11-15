@@ -55,6 +55,7 @@ Superseded-By: \[]
 <a id="scope"></a>
 
 <a id="scope"></a>
+
 Define a system for gating specific GATOS actions (e.g., locking a file, publishing an artifact, merging a policy) behind a programmable, multi-party approval process ("Consensus Governance").
 
 ## Rationale
@@ -64,6 +65,7 @@ Define a system for gating specific GATOS actions (e.g., locking a file, publish
 <a id="rationale"></a>
 
 <a id="rationale"></a>
+
 **Problem:** As GATOS manages critical state, some actions must be authorized by multiple trusted parties.
 
 **Context:** This generalizes the original "Perforce-style locks" concept into a flexible governance framework capable of rules like "two leads must approve this asset change." It complements ADR-0002 (Job Plane) so actions can be executed after reaching consensus.
