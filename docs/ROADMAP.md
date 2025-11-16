@@ -166,12 +166,15 @@ These are explicit non-goals until after the core truth machine is working:
 
 - Repo structure + Rust workspace + crate skeletons.
 - ADR/RFC process (`/spec/adr`).
-- Canonical encoding: **DAG-CBOR** for signed data.
+- Canonical encodings:
+  - **DAG-CBOR** for signed data (events, proofs) as per SPEC §2.
+  - **RFC 8785 JCS** for JSON artifacts (pointers, manifests, exporter metadata).
 - CLI shim: `git-gatos` (or alias).
 - Profiles: `default` and `research`.
 - Initial documentation scaffold:
   - `SPEC.md`, `TECH-SPEC.md`, `research-profile.md`
   - `opaque-pointers.md`, `exporter.md`, `proof-of-experiment.md`
+  - Event model sketch: `EventEnvelope` (SPEC §4.1) and journal layout (SPEC §4.2).
 
 ### Done When
 
@@ -225,8 +228,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-1"></a>
 
-- `gatos-core` fold engine (Lua or WASM reducer).
-- EventEnvelope (DAG-CBOR) parser.
+- `gatos-core` fold engine (EchoLua / ELC reducer; see TECH-SPEC §3 and `deterministic-lua.md`).
+- EventEnvelope (DAG-CBOR) parser, conforming to SPEC §4.1.
 - StateRoot computation + PoF envelope.
 - Checkpoint commits under `refs/gatos/state/**`.
 - CLI:
@@ -282,7 +285,7 @@ These are explicit non-goals until after the core truth machine is working:
 - Pre-receive gate:
   - Reject non-FF pushes to `policies/**`, `state/**`, `audit/**`.
   - Reject state pushes lacking PoF.
-- Policy VM (Lua/WASM).
+- Deterministic policy VM using the EchoLua runtime profile (see `deterministic-lua.md` and SPEC §6).
 - DENY-audit under `refs/gatos/audit/policy/**`.
 - Governance MVP:
   - proposals → approvals → grants (N-of-M).
@@ -492,8 +495,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-7"></a>
 
-- Export to Parquet/SQLite.
-- Explorer-Root checksum.
+- Export to Parquet/SQLite (derived and raw views).
+- Explorer-Root checksum computed per SPEC §15.1 / TECH-SPEC §14 (canonical BE32-prefixed concatenation of `ledger_head`, `policy_root`, optional `fold_root`, and `extractor_version`).
 - CLI: `export`, `export verify`.
 
 ### Done When
