@@ -26,6 +26,30 @@ The original model envisioned using a local, out‑of‑repo directory for priva
 - Public state remains globally verifiable.
 - Sensitive details live in a private overlay but are **addressable** and **auditable** via content hashes.
 
+## Alternatives Considered
+
+Several alternative approaches to managing privacy and sensitive data were considered:
+
+*   **1. Pure Public State (No Privacy Model):**
+    *   **Description:** All data, regardless of sensitivity, is committed directly to the Git repository and is part of the `PublicState`.
+    *   **Reason for Rejection:** This approach fundamentally contradicts the requirement to handle sensitive data (e.g., PII, large datasets) and maintain confidentiality. It would render GATOS unsuitable for many real-world applications that necessitate data privacy.
+
+*   **2. Pure Private State (No Public Projection):**
+    *   **Description:** All state is kept entirely private, with only cryptographic proofs or attestations made public.
+    *   **Reason for Rejection:** While offering maximum privacy, this model would significantly diminish the verifiability and auditability of the system. It would impede collaboration and sharing of non-sensitive data and likely increase the complexity of proving computational correctness without revealing any underlying data. GATOS aims for a balanced approach between privacy and verifiability.
+
+*   **3. Ad-hoc Private Data Storage (Original Model):**
+    *   **Description:** Private data is stored in local, out-of-repo directories, and redacted/pointerized state is committed to Git, but without a normative, deterministic framework.
+    *   **Reason for Rejection:** This represents the "original model" described in the Rationale. Its primary drawbacks are a lack of determinism, auditability, and a standardized mechanism for addressing and resolving private data. Reliance on ad-hoc solutions can lead to inconsistencies, operational errors, and makes system evolution difficult. This ADR specifically aims to formalize and standardize this pattern.
+
+*   **4. Encrypted Blobs Directly in Git:**
+    *   **Description:** Instead of opaque pointers, encrypted blobs containing sensitive data are committed directly to the Git repository.
+    *   **Reason for Rejection:** This approach, while technically feasible, introduces several significant issues:
+        *   **Repository Bloat:** Committing large encrypted blobs would drastically increase repository size, leading to slow cloning, fetching, and other Git operations.
+        *   **Key Management Complexity:** Changing encryption keys would necessitate rewriting Git history or re-encrypting and re-committing substantial portions of the repository, which is impractical.
+        *   **Limited Access Control:** Git's native access control operates at the repository level. It would be challenging to implement granular access control for specific encrypted blobs without granting access to the entire repository.
+        *   **Public Metadata Leakage:** Even if encrypted, the mere presence, size, and commit history of these blobs could inadvertently leak sensitive metadata. Opaque pointers offer finer-grained control over what metadata is exposed publicly.
+
 ## Decision
 
 ### 1. Actor‑Anchored Private Namespace (normative)
