@@ -431,11 +431,11 @@ Field semantics and compatibility:
   **MUST** infer the algorithm from signature material. If `sig_alg` contradicts
   the inferred algorithm, verifiers **MUST NOT** accept the envelope.
 
-  | `sig_alg`     | Required? | Canonical specification references                                     | Notes                                                                                  |
-  | :------------ | :-------- | :--------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
-  | `ed25519`     | YES       | RFC 8032                                                                | Default v1 algorithm; all verifiers **MUST** implement and accept this identifier.     |
-  | `ecdsa-p256`  | OPTIONAL  | SEC 1 (P-256 curve); RFC 6979 (deterministic ECDSA); FIPS 186-4        | MAY be enabled by policy; when enabled, implementations **MUST** follow these specs.  |
-  | other/unknown | NO        | —                                                                       | Values not explicitly listed here **MUST** be rejected, unless a policy override exists. |
+  | `sig_alg`     | Required? | Canonical specification references                              | Notes                                                                                    |
+  | :------------ | :-------- | :-------------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
+  | `ed25519`     | YES       | RFC 8032                                                        | Default v1 algorithm; all verifiers **MUST** implement and accept this identifier.       |
+  | `ecdsa-p256`  | OPTIONAL  | SEC 1 (P-256 curve); RFC 6979 (deterministic ECDSA); FIPS 186-4 | MAY be enabled by policy; when enabled, implementations **MUST** follow these specs.     |
+  | other/unknown | NO        | —                                                               | Values not explicitly listed here **MUST** be rejected, unless a policy override exists. |
 
   When `sig_alg` is omitted, verifiers **MUST** infer the algorithm from the
   signature material and key type, as described above.
