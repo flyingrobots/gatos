@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gatos.io/schemas/v1/privacy/opaque_pointer.schema.json",
+  "title": "Opaque Pointer",
+  "description": "Schema for an opaque pointer envelope, referencing private data.",
+  "type": "object",
+  "required": [
+    "kind",
+    "algo",
+    "digest",
+    "location"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "description": "Indicates the type of the pointer.",
+      "const": "opaque_pointer"
+    },
+    "algo": {
+      "type": "string",
+      "description": "The hashing algorithm used for the digest.",
+      "enum": ["blake3"]
+    },
+    "digest": {
+      "type": "string",
+      "description": "Content-address of the private blob, prefixed with the algorithm (e.g., 'blake3:<64hex>').",
+      "pattern": "^blake3:[0-9a-fA-F]{64}$"
+    },
+    "size": {
+      "type": "integer",
+      "description": "Optional: Byte size of the private blob.",
+      "minimum": 0
+    },
+    "location": {
+      "type": "string",
+      "description": "URI indicating where to retrieve the private blob.",
+      "format": "uri",
+      "pattern": "^(gatos-node://ed25519:[0-9a-fA-F]{64}|file:///|https://|s3://|ipfs://).*"
+    },
+    "capability": {
+      "type": "string",
+      "description": "URI indicating how to authorize/decrypt the private blob.",
+      "format": "uri",
+      "pattern": "^(gatos-key://v1/aes-256-gcm/|kms://aws/|age://|sops://).*"
+    }
+  },
+  "additionalProperties": false
+}
