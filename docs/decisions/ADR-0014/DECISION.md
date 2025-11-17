@@ -20,17 +20,8 @@ Jobs already attest execution (ADR-0002 PoE). Folds need equivalent integrity gu
 
 ## Decision
 1. **Envelope** (canonical JSON):
-   ```json
-   {
-     "fold_id": "blake3:<...>",
-     "engine": { "program": "sha256:<...>", "version": "x.y.z", "platform": "..." },
-     "policy_root": "sha256:<...>",
-     "inputs": { "events": ["..."], "upstreams": ["blake3:...", "..."] },
-     "output_shape_root": "blake3:<...>",
-     "metrics": { "units": "N", "duration_ms": "M" },
-     "ts": "<iso8601>"
-   }
-   ```
+   - Serialized according to `schemas/v1/state/proof_of_fold_envelope.schema.json`.
+   - Includes `content_id = blake3(envelope_bytes)` so downstream verification doesn’t re-hash.
 2. **Signature**: Engine signs `blake3(envelope)` with its key; trailers:
    - `Proof-Of-Fold: blake3:<digest>`
    - `Fold-Sig: ed25519:<sig>`
@@ -57,3 +48,4 @@ sequenceDiagram
 
 ## Open Questions
 - Do we include WASM module hash for portable fold engines in v1?
+- Should Proof-of-Fold signatures be batched (multi-unit proofs) or per-state only?

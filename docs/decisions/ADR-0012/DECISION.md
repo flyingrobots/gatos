@@ -19,23 +19,40 @@ Allow a repository to **subscribe to** and **mount** public state from other rep
 Enables decentralized composition (e.g., central governance repo consumed by many project repos) without monorepos.
 
 ## Decision
-1. **Config**: `.gatos/federation.yaml` declares mounts:
+1. **Configuration** (`.gatos/federation.yaml`)
+   - Validates against `schemas/v1/federation/mounts.schema.json`.
    ```yaml
    mounts:
      - name: governance
-       source: "git+https://example.com/org/gov-repo.git#refs/gatos/state/public/policy/main"
-       verify: "ed25519:<pubkey>"
+       source: "git+https://example.com/org/gov.git#refs/gatos/state/public/policy/main"
+       verify: "ed25519:ABC123..."
        refresh: "PT5M"
+       auth:
+         kind: token
+         token_env: GATOS_FED_TOKEN
+       policy:
+         trusted_refs:
+           - "refs/gatos/state/public/policy/main"
+         max_depth: 2
    ```
-2. **On-Disk Refs**:
-   - `refs/gatos/remotes/<mount-name>/state/<ns>/<channel>` (read-only mirror).
-3. **Resolution**:
-   - Fetch at refresh cadence or on demand.
-   - Verify signed commit against `verify` key in trust graph; reject otherwise.
-4. **Usage**:
-   - State folds can read mounted refs as input; mounts MUST NOT be mutated locally.
-5. **UI/API**:
-   - GraphQL exposes mounts under a separate namespace; streams emit updates when mount advances.
+   - Cycles are prevented by `max_depth` (default 3); mounts referencing each other deeper than the limit fail validation.
+
+2. **On-Disk Layout**
+   - Mirror remote refs under `refs/gatos/remotes/<mount-name>/state/<ns>/<channel>`.
+   - Metadata stored at `refs/gatos/remotes/<mount-name>/meta` including last fetch time and verified commit.
+
+3. **Fetch & Verification Pipeline**
+   - Mount daemon (`gatos mountd`) fetches `source` on startup and every `refresh` interval; manual `gatos mount sync <name>` triggers eager fetch.
+   - Each fetched commit MUST include a signed trailer (per ADR-0003 trust graph); `verify` key (ed25519) is looked up in the trust graph. If signature fails, the mount is marked `stale` and not exposed to folds.
+   - Only refs listed in `policy.trusted_refs` are tracked; others are ignored to prevent repo sprawl.
+
+4. **Usage in Folds & APIs**
+   - State folds reference mount refs via `refs/gatos/remotes/...` but treat them as read-only. Any attempt to commit to a mount ref MUST be rejected client-side and server-side.
+   - GraphQL exposes mounts under `federation { mounts { name, state(ns, channel) } }`. WebSocket streams include `ref.update` frames when a mount advances.
+
+5. **Failure Modes**
+   - If mount fetch fails (auth/network), mark mount `degraded` and emit an event to `refs/gatos/audit/federation/<name>/<ulid>`.
+   - Policy MUST support forcing a mount to `offline` when `max_depth` is exceeded to avoid cycles.
 
 ```mermaid
 graph TD
@@ -50,4 +67,4 @@ graph TD
 - Requires remote availability and verification logic.
 
 ## Open Questions
-- Cycles between mounts (A mounts B, B mounts A) — forbid or handle with depth limits?
+- Federation gossip: do we allow automatic mount discovery, or keep `.gatos/federation.yaml` manual only?
