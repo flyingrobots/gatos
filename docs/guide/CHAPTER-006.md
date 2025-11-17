@@ -32,7 +32,7 @@ While the Ledger, State, and Policy planes provide the core foundation for a ver
 
 <a id="the-message-plane-a-commit-backed-bus"></a>
 
-The Message Plane, managed by the **`gatos-mind`** crate, provides a reliable, asynchronous publish/subscribe message bus built directly on Git. It serves as the central nervous system for GATOS.
+The Message Plane, managed by the **`gatos-message-plane`** crate, provides a reliable, asynchronous publish/subscribe message bus built directly on Git. It serves as the central nervous system for GATOS.
 
 ### How It Works
 
@@ -42,10 +42,10 @@ The Message Plane, managed by the **`gatos-mind`** crate, provides a reliable, a
 
 <a id="how-it-works"></a>
 
-1. **Topics as Refs:** Each message topic is a Git ref under the `refs/gatos/mbus/<topic>/<shard>` namespace.
-2. **Messages as Commits:** When a publisher sends a message to a topic, `gatos-mind` creates a new commit on the topic ref. The message payload is stored in the commit.
-3. **Consumption:** Subscribers `git fetch` the topic refs to discover new messages.
-4. **Acknowledgements:** Delivery is **at-least-once**. Use idempotency keys (the message `ULID`) and dedupe on read. Consumers write an `ack` commit to a corresponding `refs/gatos/mbus-ack/` ref; the system can then observe that a message has been processed by a quorum before considering it “done.”
+1. **Topics as Refs:** Each message topic lives at `refs/gatos/messages/<topic>/head`, optionally fanned out into dated segments (`refs/gatos/messages/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>`).
+2. **Messages as Commits:** Publishing writes a commit containing `message/envelope.json` plus optional attachments; the canonical envelope follows [`schemas/v1/message-plane/event_envelope.schema.json`].
+3. **Consumption:** Subscribers either `git fetch` or call the `messages.read` RPC to stream canonical envelopes (ULID + commit id + `content_id`).
+4. **Checkpoints:** Delivery is **at-least-once**. Consumers dedupe by ULID and persist checkpoints under `refs/gatos/consumers/<group>/<topic>`, so crashed workers can resume deterministically.
 
 This Git-native approach provides a message bus that is:
 
@@ -92,7 +92,7 @@ sequenceDiagram
 
 1. **Scheduling:** A job is scheduled by writing a `jobs.enqueue` event to the Ledger Plane. This event contains a manifest describing the work to be done (e.g., a command to run, input data).
 2. **Discovery:** A message is published to a topic on the Message Plane (e.g., `gatos.jobs.pending`), announcing the new job.
-3. **Claiming:** A `gatos-compute` worker, subscribed to the topic, discovers the job. It then performs an atomic compare-and-swap on a single lock ref `refs/gatos/jobs/<job-id>/claim` using `git update-ref <old=000..0> <new-claim-oid>`. The winner (who observed the zero OID) writes its `worker_id` into the claim object, preventing other workers from executing it.
+3. **Claiming:** A `gatos-compute` worker, subscribed to the topic, discovers the job. It performs an atomic compare-and-swap on `refs/gatos/jobs/<job-id>/claims/<worker-id>` (expected old = `000..0`). Policy enforces that only the winning worker’s claim is recognized; losers receive a deterministic deny and must retry/back off.
 4. **Execution:** The worker executes the job's `command` in a sandboxed environment.
 5. **Result:** Upon completion, the worker creates a `jobs.result` event and commits it to the ledger. This event includes the job's output, exit status, and, crucially, a **Proof-of-Execution (PoE)**.
 
@@ -132,11 +132,11 @@ Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the resul
 
 <a id="bus-retention--compaction-guidance"></a><a id="bus-retention-compaction-guidance"></a>
 
-- Segment topics: `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` (or numeric `0001`, `0002`, …) to bound ref sizes.
+- Segment topics: `refs/gatos/messages/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` (or numeric `0001`, `0002`, …) to bound ref sizes.
 - Rotation thresholds (defaults): rotate at 100k messages or \~192 MB per segment (whichever comes first).
 - TTL: retain segments for 30 days, then prune; write a summary commit (counts, Merkle root, last offsets) when pruning to preserve verifiability.
 - Offsets: snapshot consumer offsets; prune only segments older than the minimum acknowledged offset across active consumers.
-- Git optimization: enable `fetch.writeCommitGraph=true`, `repack.writeBitmaps=true`; consider partial clone/promisor remotes for `refs/gatos/mbus/*` on busy installations.
+- Git optimization: enable `fetch.writeCommitGraph=true`, `repack.writeBitmaps=true`; consider partial clone/promisor remotes for `refs/gatos/messages/*` on busy installations.
 
 ## Summary
 
@@ -146,6 +146,6 @@ Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the resul
 
 <a id="summary"></a>
 
-The Message and Job planes are what make GATOS a dynamic, living system. `gatos-mind` provides the nervous system, allowing for reliable, auditable communication. `gatos-compute` provides the motor function, enabling the system to perform work in a distributed and verifiable way.
+The Message and Job planes are what make GATOS a dynamic, living system. `gatos-message-plane` provides the nervous system, allowing for reliable, auditable communication. `gatos-compute` provides the motor function, enabling the system to perform work in a distributed and verifiable way.
 
 Together, they transform the GATOS repository from a passive record of history into an active, programmable "Operating Surface" that can orchestrate complex, distributed workflows with an unprecedented level of trust and transparency.

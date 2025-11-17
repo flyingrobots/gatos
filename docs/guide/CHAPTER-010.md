@@ -92,8 +92,8 @@ Instead of storing the data directly in a Git blob, the system stores a small po
 graph TD
     subgraph "GATOS Repository (In-Repo History)"
         A[Opaque Pointer in Git]
-        A -- Contains --> C(Ciphertext Hash);
-        A -- Contains --> D(Encrypted Meta);
+        A -- Contains --> C(Plaintext Digest);
+        A -- Contains --> D(Location & Capability URIs);
     end
 
     subgraph "External Blob Store"
@@ -104,8 +104,9 @@ graph TD
 ```
 
 - The actual data is encrypted and stored in a separate, **content-addressed blob store** (which could be anything from a local directory to a cloud storage bucket).
-- The **`ciphertext_hash`** is the hash of the encrypted data, allowing for integrity checks.
-- The **encrypted meta** contains the information an authorized user needs to decrypt the data (e.g., a reference to a key stored in a KMS, the encryption algorithm used, and the plaintext hash/commitment). The public pointer MUST NOT reveal a raw plaintext hash to avoid dictionary attacks. Use a hiding commitment in the public pointer if needed.
+- The pointer stores the **plaintext digest** (`digest = blake3(plaintext)`), proving integrity without revealing the bytes.
+- The pointer also records **where to fetch** (`location`, e.g., `gatos-node://ed25519:…`, `https://…`, `s3://…`, `ipfs://…`) and **how to authorize/decrypt** (`capability`, e.g., `gatos-key://`, `kms://`, `age://`).
+- Because only the digest and URIs live in Git, private data never enters the public repo. Policy decides which fields (if any) are low-entropy enough to remain plain `blobptr`s; everything sensitive becomes an `opaque_pointer` envelope.
 
 ### Verifiable Folds on Private Data
 
@@ -115,7 +116,7 @@ graph TD
 
 <a id="verifiable-folds-on-private-data"></a>
 
-Authorized workers can fetch the encrypted blob, decrypt it, verify that the recovered plaintext hash (from encrypted meta) matches expectations, perform a computation, and then produce a new encrypted blob and a new Opaque Pointer.
+Authorized workers fetch the encrypted blob via `location`, use the declared `capability` to obtain or derive a key, decrypt, and verify that `blake3(plaintext)` equals the pointer’s `digest`. They can then compute, persist a new blob, and commit a new `opaque_pointer` envelope.
 
 If the computation is deterministic, the new plaintext hash will be the same for any authorized worker who performs the same operation. This allows the `state_root` of the system to be updated deterministically, even though the actual data remains private and outside the repository.
 

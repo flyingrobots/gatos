@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://gatos.io/schemas/v1/shiplog/consumer_checkpoint.schema.json",
-  "title": "Shiplog Consumer Checkpoint",
-  "description": "Schema for a shiplog consumer checkpoint.",
+  "$id": "https://gatos.io/schemas/v1/message-plane/consumer_checkpoint.schema.json",
+  "title": "Message Plane Consumer Checkpoint",
+  "description": "Schema for a Message Plane consumer checkpoint.",
   "type": "object",
   "required": [
     "ulid"

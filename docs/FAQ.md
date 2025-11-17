@@ -300,7 +300,7 @@ Add `fold_root` to proof envelope and make proof field type-tagged:
 <a id="4"></a><a id="4-message-bus-scaling--changing-shard-count"></a><a id="4-message-bus-scaling-changing-shard-count"></a>
 Use a versioned shard map + dual-write migration.
 
-- Store topic config at `refs/gatos/mbus-config/<topic>.json`:
+- Store topic config at `refs/gatos/messages-config/<topic>.json`:
 
 ```json
 {
@@ -647,7 +647,7 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 <a id="2supply-chain--deploy-attestation"></a><a id="2.supply-chain-deploy-attestation"></a>
 
 - Needs: signed events, multi-sig policy changes, human/JSON logs, offline verify.
-- We meet: Shiplog DNA + proof envelopes v1.
+- We meet: Message Plane DNA + proof envelopes v1.
 - Add: “evidence pack” command that bundles logs + proof → ✅ audit-ready.
 
 ### 3. Air-gapped ML registry
@@ -930,8 +930,8 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 - **Gate**:
   - finalize `.rgs` grammar + deterministic interpreter;
   - emit rule ids in Deny.
-- **Bus**:
-  - `mbus-config/<topic>.json` with versioned shard maps + dual-write migration.
+- **Message Plane**:
+  - `messages-config/<topic>.json` with versioned shard maps + dual-write migration.
 - **Proofs**:
   - implement commitment proofs today;
   - leave ZK behind a trait.

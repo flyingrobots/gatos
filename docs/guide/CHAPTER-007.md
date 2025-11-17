@@ -35,7 +35,7 @@ GATOS is designed as a distributed system where each Git repository is a self-co
 
 A GATOS **federation** is a network of independent GATOS repositories that have agreed to share some portion of their state or policy. For example, a central "governance" repository could define policies that are consumed by dozens of "project" repositories.
 
-This is achieved through the Message Plane (`gatos-mind`) and the State Plane's ability to read from multiple sources. A project repository can subscribe to the `gatos.policy.updated` topic on the governance repository. When a new policy is published, the project node can fetch it, validate it, and incorporate it into its own local policy engine.
+This is achieved through the Message Plane (`gatos-message-plane`) and the State Plane's ability to read from multiple sources. A project repository can subscribe to the `gatos.policy.updated` topic on the governance repository. When a new policy is published, the project node can fetch it, validate it, and incorporate it into its own local policy engine.
 
 ## The Challenge: Merging Divergent Realities
 

@@ -25,9 +25,9 @@ These are sensible, proof-first defaults for scientific and high-assurance setup
   - `refs/gatos/policies/**`, `refs/gatos/state/**`, `refs/gatos/audit/**` are FF-only.
   - Enforced by repo policy; violations are denied and logged to audit.
 
-- Message bus QoS and retention
-  - Topics under `refs/gatos/mbus/<topic>/<shard>` rotate at \~100k messages or \~192 MB per shard.
-  - TTL ≈ 30 days (configurable per topic). Delivery is at-least-once; consumers dedupe by idempotency key (ULID).
+- Message Plane QoS and retention
+  - Topics under `refs/gatos/messages/<topic>/head` (and optional shard refs) rotate at \~100k messages or \~192 MB per shard.
+  - TTL ≈ 30 days (configurable per topic). Delivery is at-least-once; consumers dedupe by ULID and persist checkpoints under `refs/gatos/consumers/<group>/<topic>`.
 
 - Audit anchors and GC
   - Audit proofs and the latest state checkpoints act as retention anchors for Git GC.
@@ -35,6 +35,7 @@ These are sensible, proof-first defaults for scientific and high-assurance setup
 
 - Opaque pointers and privacy
   - Public commitments are recorded in history; private bytes live behind a policy-gated resolver.
+  - Pointers follow the ADR-0004 schema (`kind/algo/digest/size/location/capability`) with bucketed sizes and digest = `blake3(plaintext)`.
   - Policies may require zero-knowledge proofs, redacted attestations, or external KMS checks.
 
 Adjust these with your IRB/compliance requirements; treat them as a starting point for a verifiable research workflow.
@@ -53,4 +54,4 @@ Create `gatos/config/profile.yaml` with:
 profile: research
 ```
 
-Then restart `gatosd` (or re-run your commands). Gates will enforce the stricter invariants described above (PoF required on state pushes; FF-only refs; mbus rotation/TTL; pointer privacy buckets; audit anchors).
+Then restart `gatosd` (or re-run your commands). Gates will enforce the stricter invariants described above (PoF required on state pushes; FF-only refs; Message Plane rotation/TTL; pointer privacy buckets; audit anchors).

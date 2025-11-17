@@ -13,7 +13,7 @@ sequenceDiagram
     participant Client
     participant Daemon as gatosd
     participant Ledger as gatos-ledger
-    participant Bus as gatos-mind
+    participant Bus as gatos-message-plane
     participant State as gatos-echo
 
     Client->>Daemon: 1. Enqueue Job (Event)

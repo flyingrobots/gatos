@@ -47,7 +47,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"
@@ -101,7 +101,7 @@ graph TD
 
    See \[\[\[\[\[\[[SPEC §5.4](/SPEC#5.4)]\(/SPEC#5.4)]\(/SPEC#5.4)]\(/SPEC#5.4)]\(/SPEC#5.4)]\(/SPEC#5.4) — Proof-of-Fold (PoF)]\(../SPEC.md#5.4-proof-of-fold) for the formal verification link between ledger windows, policy roots, and state checkpoints.
 
-4. **The Message Plane (`gatos-mind`)**
+4. **The Message Plane (`gatos-message-plane`)**
 
    This plane provides a commit-backed, asynchronous publish/subscribe message bus. It allows different parts of the GATOS system, as well as external agents, to communicate reliably. For example, when a new job is scheduled in the Job Plane, a message is published to a topic on the message bus, allowing available workers to discover and claim the job.
 
@@ -136,7 +136,7 @@ The following chapters will explore each of these planes in greater detail, show
 
 - `refs/gatos/journal/<ns>/<actor>` — append-only event journals (FF-only).
 - `refs/gatos/state/<ns>` — deterministic state checkpoints.
-- `refs/gatos/mbus/<topic>/<shard>` — message topics (pub/sub).
+- `refs/gatos/messages/<topic>/head` — Message Plane topics (pub/sub).
 - `refs/gatos/jobs/<job-id>` — job artifacts (claim/result).
 - `refs/gatos/proposals|approvals|grants|revocations` — governance.
 - `refs/gatos/audit/**` — audit decisions and proofs.

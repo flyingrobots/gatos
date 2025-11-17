@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://gatos.io/schemas/v1/shiplog/event_envelope.schema.json",
-  "title": "Shiplog Event Envelope",
-  "description": "Schema for a shiplog event envelope.",
+  "$id": "https://gatos.io/schemas/v1/message-plane/event_envelope.schema.json",
+  "title": "Message Plane Envelope",
+  "description": "Schema for a Message Plane event envelope.",
   "type": "object",
   "required": [
     "ulid",

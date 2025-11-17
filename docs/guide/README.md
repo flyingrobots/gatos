@@ -85,7 +85,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"
@@ -248,7 +248,7 @@ See the full step-by-step guides:
   - **Objective:**
     - To cover the components that enable GATOS to orchestrate communication and asynchronous tasks in a distributed environment.
   - **Key Concepts:**
-    - Commit-Backed Message Bus (`gatos-mind`)
+    - Commit-Backed Message Bus (`gatos-message-plane`)
     - Pub/Sub on Git Refs
     - Job Lifecycle (`gatos-compute`)
     - Proof-of-Execution (PoE)

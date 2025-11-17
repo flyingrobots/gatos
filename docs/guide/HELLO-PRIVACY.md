@@ -26,7 +26,7 @@ This walkthrough demonstrates the hybrid privacy model: creating an opaque point
 >
 > - Public state: pushable materialized state.
 > - Private overlay: encrypted blobs addressed via opaque pointers.
-> - Public pointers MUST NOT reveal a plaintext hash; store it inside encrypted meta (or use a hiding commitment).
+> - Pointers are canonical JSON envelopes with `kind: "opaque_pointer"`, plaintext `digest`, and URIs for `location` + `capability`.
 
 ## 0. Prepare a Private Blob
 
@@ -71,10 +71,12 @@ A pointer contains at least:
 
 ```json
 {
-  "kind": "opaque",
+  "kind": "opaque_pointer",
   "algo": "blake3",
-  "ciphertext_hash": "blake3:<hex>",
-  "encrypted_meta": "base64:..."   // contains plaintext commitment, KMS refs, cipher params
+  "digest": "blake3:<hex>",
+  "size": 4096,
+  "location": "gatos-node://ed25519:<pubkey>",
+  "capability": "gatos-key://v1/aes-256-gcm/<key-id>"
 }
 ```
 
@@ -85,7 +87,7 @@ git gatos event add --ns privacy --type demo.pointer --payload @pointers/secret.
 git gatos fold --ns privacy
 ```
 
-`State-Root` is computed deterministically from the public shape. Authorized workers can decrypt and verify the plaintext commitment from `encrypted_meta` outside the repository as needed.
+`State-Root` is computed deterministically from the public shape. Authorized workers fetch via `location`, redeem the `capability`, decrypt, and verify that `blake3(plaintext) == digest` outside the repository as needed.
 
 ## 2. Rekey the Blob
 

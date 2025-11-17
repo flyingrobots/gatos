@@ -498,8 +498,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "gatos-mind"
+name = "gatos-message-plane"
 version = "0.1.0"
+dependencies = [
+ "blake3",
+ "hex",
+ "serde_json",
+]
 
 [[package]]
 name = "gatos-policy"
@@ -522,7 +527,7 @@ dependencies = [
  "clap",
  "gatos-echo",
  "gatos-ledger",
- "gatos-mind",
+ "gatos-message-plane",
  "gatos-policy",
  "serde_json",
  "tokio",

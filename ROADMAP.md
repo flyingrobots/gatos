@@ -16,7 +16,7 @@ It follows a strict **proof-first** philosophy:
 
 - **Proof-first Design** — Every claim is verifiable from first principles.
 - **Deterministic by Construction** — Same history + same policy = same state, bit-for-bit.
-- **Git as History, not Database** — Git stores events, checkpoints, and proofs; bulk data lives behind Opaque Pointers; heavy analytics via Explorer off-ramp.
+- **Git as History, not Database** — Git stores Message Plane events, checkpoints, and proofs; bulk data lives behind Opaque Pointers; heavy analytics via Explorer off-ramp.
 - **Research Profile Defaults** — A conservative profile for scientific reproducibility (PoF required, policy FF-only, anchored audit refs).
 - **At-Least-Once + Idempotency** — Delivery is at-least-once; consumers dedupe idempotently. No “exactly-once” fairy tales.
 
@@ -28,7 +28,7 @@ These are explicit non-goals until after the core truth machine is working:
 
 - A fully featured **multi-peer networking layer** (start single-node).
 - A **cluster scheduler** or full-blown job orchestration system.
-- A replacement for **Kafka** or high-throughput brokers.
+- A replacement for **Kafka** or high-throughput brokers (Message Plane stays Git-native, not a hosted queue).
 - A hosted “GATOS Cloud” product.
 - Strong isolation / capability-based sandboxing beyond basic VM guarantees
 
@@ -43,7 +43,7 @@ These are explicit non-goals until after the core truth machine is working:
 | **M0** | Repo, scaffolding, canonicalization, ADR process |
 | **M1** | EchoLua fold engine + Proof-of-Fold (PoF) |
 | **M2** | Push-gate, .rgs policy, DENY-audit, grants |
-| **M3** | Commit-backed Message Bus (segmented, TTL, summaries) |
+| **M3** | Message Plane (Git-native append-only stream + queries) |
 | **M4** | Job Plane + Proof-of-Execution (PoE) |
 | **M5** | Opaque Pointers + privacy-preserving projection |
 | **M6** | Explorer off-ramp + Explorer-Root verification |
@@ -139,31 +139,29 @@ These are explicit non-goals until after the core truth machine is working:
 
 ---
 
-## M3 — Message Bus (Commit-backed Pub/Sub)
+## M3 — Message Plane (ADR-0005)
 
-**Goal:** A usable event bus that lives in Git without melting Git.
+**Goal:** Land the Git-native Message Plane so integrations can consume ordered events without parsing the entire ledger.
 
 **Deliverables:**
 
-- Namespaced mbus:
-  - `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<ulid>`
-- QoS:
-  - At-least-once delivery.
-  - Idempotency keys + content hashes.
-  - Subscriber-side dedupe.
-- Rotation and retention:
-  - Segment rotation based on `max_messages_per_segment` OR `max_segment_bytes`.
-  - TTL-based pruning for old segments.
-  - Summary commits capturing:
-    - Merkle root of message bodies.
-    - count, min/max offsets.
-- Observability:
-  - Metrics: messages per segment, pack sizes, TTL age, rotation suggestions.
+- Refs & checkpoints:
+  - `refs/gatos/messages/<topic>/head` per-topic parent chains.
+  - `refs/gatos/consumers/<group>/<topic>` storing last processed `ulid` (+ optional commit) for each consumer group.
+- Event envelope:
+  - Canonical JSON payload with `ulid`, `ns`, `type`, `payload`, `refs`, and `content_id` (BLAKE3 of the canonical envelope).
+  - Enforce `Event-Id` and `Content-Id` headers in Message Plane commit messages.
+- APIs & tooling:
+  - `gatos-message-plane messages.read(topic, since_ulid, limit)` returning canonical envelopes + commit ids, oldest → newest.
+  - Consumer checkpoint helpers (list, advance, reset) plus tests for ULID monotonicity.
+- Integration:
+  - Automatically emit Message Plane events for ledger folds and governance transitions (e.g., `governance` topic).
+  - Optional bridge mirroring Message Plane topics to external brokers (Kafka/NATS) without breaking Git-native ownership.
 
 **Done when:**
 
-- Duplicate messages do not cause duplicate effects if consumers obey idempotency.
-- Git repos remain manageable under expected message load.
+- Consumers can resume from checkpoints and replay Message Plane topics deterministically on fresh clones.
+- Governance transitions and ledger mirrors emit Message Plane events discoverable via `messages.read`.
 
 ---
 
@@ -176,7 +174,7 @@ These are explicit non-goals until after the core truth machine is working:
 - Job claims:
   - Exclusive CAS lock ref `refs/gatos/jobs/<job-id>/claim`.
 - Worker:
-  - Subscribe to mbus.
+  - Subscribe to the Message Plane `jobs` topic (`messages.read` helper).
   - Claim jobs.
   - Run configured program/container.
   - Commit results.
@@ -199,9 +197,10 @@ These are explicit non-goals until after the core truth machine is working:
 **Deliverables:**
 
 - Public pointer schema:
-  - Commitments and ciphertext digests.
-  - Bucketed sizes (e.g., 1k/4k/16k/64k).
-  - No plaintext digest for low-entropy classes.
+  - Canonical JSON envelope with `kind: "opaque_pointer"`, `algo`, `digest`, and optional bucketed `size` (e.g., 1k/4k/16k/64k).
+  - `location` URI for retrieval (e.g., `gatos-node://`, `https://`, `s3://`, `ipfs://`).
+  - `capability` URI describing how to authorize/decrypt (e.g., `gatos-key://`, `kms://`, `age://`).
+  - `digest` is the BLAKE3 hash of the raw plaintext blob; no ciphertext hash is tracked in Git.
 - Resolver service:
   - Auth (Bearer JWT; optional HTTP signatures/mTLS).
   - Returns bytes + `Digest` headers.
@@ -300,7 +299,8 @@ These are explicit non-goals until after the core truth machine is working:
 - `git gatos doctor`:
   - Checks for misconfigurations in:
     - profiles,
-    - mbus rotation/TTL,
+    - Message Plane head continuity & retention,
+    - consumer checkpoint drift,
     - anchors,
     - PoF presence,
     - export consistency.
@@ -323,7 +323,7 @@ These are explicit non-goals until after the core truth machine is working:
   - DAG-CBOR parsing,
   - EchoLua interpreter,
   - .rgs compiler,
-  - mbus dedupe,
+  - Message Plane consumer dedupe/resume logic,
   - pointer resolver.
 - External cryptography review:
   - PoF and PoE signing,
@@ -401,15 +401,15 @@ M2 – Push-Gate & Policy
 - Implement proposal/approval/grant flow
 - Add policy verify
 
-M3 – Message Bus
+M3 – Message Plane
 
-- Implement refs/gatos/mbus/* structure
-- Add message publish + subscribe RPC
-- Add at-least-once + idempotency support
-- Implement segmented topics
-- Implement TTL pruning
-- Add summary commits with Merkle roots
-- Add observability metrics
+- Implement `refs/gatos/messages/<topic>/head` parent chains
+- Implement `refs/gatos/consumers/<group>/<topic>` checkpoints (ULID + commit)
+- Define canonical Message Plane envelope + commit annotations (Event-Id/Content-Id)
+- Add `gatos-message-plane messages.read` RPC + CLI helper
+- Add consumer checkpoint management commands/tests (ULID monotonicity)
+- Auto-emit ledger & governance events into appropriate Message Plane topics
+- Add optional bridge to mirror Message Plane topics to external brokers
 
 M4 – Job Plane + PoE
 
@@ -421,8 +421,8 @@ M4 – Job Plane + PoE
 
 M5 – Opaque Pointers + Privacy
 
-- Implement pointer format (ciphertext_digest + bucketed size)
-- Implement encrypted meta store
+- Implement pointer envelope (kind/algo/digest/size/location/capability)
+- Implement private overlay store wired into capability URIs
 - Implement pointer resolver (JWT + Digest headers)
 - Integrate privacy projection into fold pipeline
 - Add projection determinism tests

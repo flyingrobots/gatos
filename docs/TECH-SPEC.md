@@ -75,7 +75,7 @@ graph TD
     subgraph gatos
         A(crates) --> A1(gatos-ledger-core)
         A --> A2(gatos-ledger-git)
-        A --> A3(gatos-mind)
+        A --> A3(gatos-message-plane)
         A --> A4(gatos-echo)
         A --> A5(gatos-policy)
         A --> A6(gatos-kv)
@@ -143,7 +143,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"
@@ -189,7 +189,7 @@ Note: “Policy/Trust Plane” includes the policy engine and trust artifacts (k
 | `gatos-ledger-core`   | `no_std` core logic, data structures, and traits for the ledger.                                          |
 | `gatos-ledger-git`    | `std`-dependent storage backend using `libgit2`.                                                          |
 | `gatos-ledger`        | Composes ledger components via feature flags.                                                             |
-| `gatos-mind`          | Asynchronous, commit-backed message bus (pub/sub).                                                        |
+| `gatos-message-plane`          | Asynchronous, commit-backed message bus (pub/sub).                                                        |
 | `gatos-echo`          | Deterministic state engine for processing events ("folds").                                               |
 | `gatos-policy`        | Deterministic policy engine for executing compiled rules and managing the Consensus Governance lifecycle. |
 | `gatos-kv`            | Git-backed key-value state cache.                                                                         |
@@ -649,7 +649,7 @@ sequenceDiagram
     GATOS (Ledger)->>Bus (Message Plane): 2. Publish Job message
     Worker->>Bus (Message Plane): 3. Subscribe to job topic
     Bus (Message Plane)->>Worker: 4. Receive Job message
-    Worker->>GATOS (Ledger): 5. Atomically create claim ref (update-ref zero→claim)
+    Worker->>GATOS (Ledger): 5. Atomically create claim ref (update-ref zero→claims/<worker>)
     GATOS (Ledger)-->>Worker: 6. Claim successful
     Worker->>Worker: 7. Execute Job
     Worker->>GATOS (Ledger): 8. Create Result commit
@@ -663,8 +663,8 @@ sequenceDiagram
 
 <a id="implementation-plan"></a>
 
-1. **Subscription:** The worker will use `gatos-mind` to subscribe to job topics.
-2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on a single lock ref `refs/gatos/jobs/<job-id>/claim`.
+1. **Subscription:** The worker will use `gatos-message-plane` to subscribe to job topics.
+2. **Claiming:** The worker will use `gatos-ledger` to atomically claim a job via compare-and-swap on `refs/gatos/jobs/<job-id>/claims/<worker-id>`. Policy rejects duplicate claims or unauthorized workers.
 3. **Execution:** The worker will execute the job's `command` in a sandboxed environment.
 4. **Result & Proof:** The worker will create a `Result` commit containing output artifacts and a `Proof-Of-Execution`.
 5. **Lifecycle Management:** The worker will handle timeouts, retries, and failures.
@@ -783,3 +783,23 @@ sequenceDiagram
         Ledger-->>Client: Pending (partial)
     end
 ```
+#### Message Plane RPC: `messages.read`
+
+The daemon exposes `messages.read` over the JSONL RPC channel so workers and bridges can page through commit-backed topics without parsing Git directly.
+
+- **Input envelope**
+  - `method`: `messages.read`
+  - `params`:
+    - `topic` (string, required) — logical topic name (e.g., `governance`).
+    - `since_ulid` (string, optional) — resume cursor; server starts from oldest when omitted or unknown.
+    - `limit` (integer, default 128) — max messages to return (1–512 enforced).
+- **Output envelope**
+  - `messages`: ordered list (oldest→newest). Each entry contains `ulid`, `commit`, `content_id`, `envelope_path` (always `message/envelope.json` unless overridden), and `canonical_json` (base64 of the canonical envelope bytes).
+  - `next_since`: ULID to use for the next page (empty array when fewer than `limit` rows remain).
+  - `checkpoint_hint` (optional): `{ "group": <string>, "topic": <string> }` so automated consumers can persist progress without issuing a second RPC.
+- **Errors**
+  - `topic_not_found` (404) — topic ref missing.
+  - `invalid_ulid` (400) — malformed resume cursor.
+  - `limit_out_of_range` (409) — `limit < 1`.
+
+`gatos-message-plane` is responsible for translating RPC calls to actual Git ref walks and enforcing ULID monotonicity per ADR-0005.

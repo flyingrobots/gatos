@@ -335,11 +335,11 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-4"></a>
 
-- Namespaced mbus:
+- Namespaced Message Plane topics:
 
-  `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<ulid>`
+  `refs/gatos/messages/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` with `refs/gatos/messages/<topic>/head` pointing at the latest segment.
 
-- QoS: **at-least-once + idempotency + ack/dedupe**.
+- QoS: **at-least-once + ULID/idempotency + checkpoint dedupe** via `refs/gatos/consumers/<group>/<topic>`.
 
 - Rotation thresholds:
   - max 100k messages **or** 192MB per segment
@@ -394,7 +394,7 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-5"></a>
 
-- Exclusive CAS lock ref: `refs/gatos/jobs/<id>/claim`.
+- Exclusive CAS lock refs: `refs/gatos/jobs/<job-id>/claims/<worker-id>` (expected old = zero OID; policy enforces exclusivity + retries).
 - Worker loop:
   - subscribe → claim → run → commit result.
 - PoE envelope: inputs\_root, program\_id, outputs\_root.
@@ -445,10 +445,11 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="deliverables-6"></a>
 
 - Public pointer schema:
-  - **ciphertext\_digest** REQUIRED
-  - NO plaintext digest for low-entropy data
-  - size bucketed (1k/4k/16k/64k)
-- Resolver: JWT + Digests; logs under audit.
+  - Canonical JSON envelope with `kind: "opaque_pointer"`, `algo`, `digest`, and optional bucketed `size` (1k/4k/16k/64k).
+  - `location` URI describing where to fetch private bytes (`gatos-node://`, `https://`, `s3://`, `ipfs://`, etc.).
+  - `capability` URI describing how to authorize/decrypt (`gatos-key://`, `kms://`, `age://`, etc.).
+  - `digest` is the BLAKE3 hash of the raw plaintext blob committed out-of-band; ciphertext hashes are not recorded in Git.
+- Resolver: JWT + Digest verification; logs under audit.
 - Projection engine performs pointerization deterministically.
 
 ### Done When

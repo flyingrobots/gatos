@@ -274,7 +274,7 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 <a id="f6-acceptance-criteria"></a>
 
-- [ ] Pointer includes plaintext hash, ciphertext hash, cipher meta
+- [ ] Pointer envelope is Canonical JSON with `kind`, `algo`, `digest`, bucketed `size`, `location`, and `capability`
 - [ ] Rekey operation available
 
 #### F6 Test Plan

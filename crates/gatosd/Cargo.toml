@@ -11,7 +11,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 gatos-ledger = { path = "../gatos-ledger" }
-gatos-mind = { path = "../gatos-mind" }
+gatos-message-plane = { path = "../gatos-message-plane" }
 gatos-echo = { path = "../gatos-echo" }
 gatos-policy = { path = "../gatos-policy" }
 serde_json = { workspace = true }

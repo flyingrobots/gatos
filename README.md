@@ -117,7 +117,7 @@ GATOS organizes the repository into five distinct planes using standard Git refe
 | **2. Policy/Trust** | `refs/gatos/policies/*`  | Executable policy (Lua/WASM), capabilities, quorum; **deny-audit** on violations. |
 |                     | `refs/gatos/trust/*`     | Keys, groups, grants, revocations. |
 | **3. State**        | `refs/gatos/state/*`     | Deterministic checkpoints derived from the ledger (**Proof-of-Fold**). |
-| **4. Message**      | `refs/gatos/mbus/*`      | Commit-backed pub/sub (at-least-once + idempotency). |
+| **4. Message**      | `refs/gatos/messages/*`  | Commit-backed message plane (topics served via `messages.read`). |
 | **5. Job**          | `refs/gatos/jobs/*`      | Jobs and **Proofs-of-Execution (PoE)**; exclusive claim via CAS. |
 
 -----

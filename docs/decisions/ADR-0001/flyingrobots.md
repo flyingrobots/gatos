@@ -24,7 +24,7 @@ Here’s a breakdown of how the new structure maps to the original goals:
 
 **Policy Plane**: This remains the clear responsibility of `gatos-policy`.
 
-**Message Plane**: This is now the clear responsibility of `gatos-mind`.
+**Message Plane**: This is now the clear responsibility of `gatos-message-plane`.
 
 ## It Strengthens the `no_std` and Portability Goal
 
@@ -41,7 +41,7 @@ The most significant change is splitting `gatos-ledger` into `gatos-ledger-core`
 
 `gatos-core` has evolved into the more sophisticated `gatos-ledger-*` structure.
 
-`gatos-bus` is now `gatos-mind`.
+`gatos-bus` is now `gatos-message-plane`.
 
 `gatos-session` is now `gatos-echo`, clarifying its implementation with the deterministic DPO engine.
 

@@ -29,7 +29,7 @@
 - [6. Policy & Decision Audit](#6-policy--decision-audit)
   - [6.1 Gate Contract](#61-gate-contract)
 - [7. Blob Pointers & Opaque Storage (Hybrid Privacy)](#7-blob-pointers--opaque-storage-hybrid-privacy)
-- [8. Message Bus (Commit-Backed Pub/Sub)](#8-message-bus-commit-backed-pubsub)
+- [8. Message Plane (Commit-Backed Pub/Sub)](#8-message-plane-commit-backed-pubsub)
 - [9. Sessions (Working Branches)](#9-sessions-working-branches)
 - [10. Proofs (Commitments / ZK)](#10-proofs-commitments--zk)
   - [10.x Proof-of-Experiment (PoX)](#10x-proof-of-experiment-pox)
@@ -157,7 +157,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"
@@ -224,7 +224,7 @@ graph TD
         A(refs) --> A1(gatos)
         A1 --> B1(journal)
         A1 --> B2(state)
-        A1 --> B3(mbus)
+        A1 --> B3(messages)
         A1 --> B4(jobs)
         A1 --> B5(sessions)
         A1 --> B6(audit)
@@ -251,11 +251,12 @@ The normative layout is as follows:
 │   └── gatos/
 │       ├── journal/
 │       ├── state/
-│       ├── mbus/
-│       ├── mbus-ack/
+│       ├── messages/
+│       ├── consumers/
 │       ├── jobs/
 │       │   └── <job-id>/
-│       │       └── claim
+│       │       └── claims/
+│       │           └── <worker-id>
 │       ├── proposals/
 │       ├── approvals/
 │       ├── grants/
@@ -711,63 +712,47 @@ classDiagram
         +Number size
     }
     class OpaquePointer {
-        +String kind: "opaque"
-        +String algo                // content cipher, e.g., "aes-256-gcm" or "chacha20poly1305"
-        +String ciphertext_hash     // BLAKE3 hex of ciphertext bytes (integrity check)
-        +Object encrypted_meta      // see schema below (REQUIRED for new pointers)
+        +String kind: "opaque_pointer"
+        +String algo            // hash algo for plaintext bytes (BLAKE3)
+        +String digest          // blake3:<hex> over plaintext
+        +Number size            // OPTIONAL bucketed size (1k/4k/16k/64k)
+        +String location        // URI describing where to fetch bytes
+        +String capability      // URI describing how to authorize/decrypt
     }
 ```
 
-Pointers **MUST** refer to bytes in `gatos/objects/<algo>/<hash>`. For opaque
-objects, no plaintext **MAY** be stored in Git. Public pointers in low-entropy
-classes **MUST NOT** reveal a plaintext digest; they **MUST** include a
-ciphertext digest. Pointer `size` **SHOULD** be bucketed (e.g.,
-1 KB/4 KB/16 KB/64 KB). If a plaintext commitment is required, use a hiding
-commitment and store it inside `encrypted_meta`.
+Pointers **MUST** refer to bytes addressed by `digest = blake3(plaintext)`; the plaintext bytes themselves never enter Git. Canonical opaque pointer envelopes follow ADR-0004 and MUST:
 
-`encrypted_meta` (Normative) — object fields:
+- use RFC 8785 Canonical JSON (UTF-8, sorted keys, no insignificant whitespace),
+- set `kind = "opaque_pointer"`,
+- include `algo` (currently `"blake3"`),
+- include `location` as a URI (`gatos-node://`, `https://`, `s3://`, `ipfs://`, `file:///` dev/test),
+- include `capability` as a URI describing how to authorize/decrypt (`gatos-key://`, `kms://`, `age://`, `sops://`, etc.),
+- optionally set `size` using coarse buckets to limit metadata leakage.
 
-- `enc`: string — cipher suite id, e.g., `aes-256-gcm` or `chacha20poly1305`.
-- `iv`: base64url — initialization vector/nonce bytes.
-- `salt`: base64url — KDF salt when deriving keys (RECOMMENDED when using passphrase KDFs).
-- `aad`: base64url — additional authenticated data bound to encryption (OPTIONAL; empty if unused).
-- `tag`: base64url — AEAD tag if not appended to ciphertext (omit when suite appends tag).
+`digest` is the BLAKE3 hash of the raw plaintext blob; ciphertext hashes are intentionally omitted from Git history. Implementations store encrypted bytes off-repo according to the `location` scheme and enforce authorization using the declared `capability`. A pointer envelope’s own `content_id` is `blake3(canonical_bytes)`.
 
-`ciphertext_hash` is an integrity hint only. Authenticity comes from the
-envelope signature and repository trust rules (see Sections 3 and 6). Verifiers
-**MUST** treat `ciphertext_hash` as unauthenticated unless covered by a
-signature.
+Pointer resolution flow:
 
-Compatibility note: previous drafts used `cipher_meta`. Parsers **SHOULD**
-accept inputs with `cipher_meta`; emit `encrypted_meta` going forward. A simple
-migration heuristic is: if `cipher_meta` exists and `encrypted_meta` is absent,
-rename `cipher_meta` → `encrypted_meta` (see `scripts/migrate_opaque_pointers.py`).
+1. Parse `location` and fetch the encrypted blob (e.g., `GET /.well-known/gatos/private/{digest}` for `gatos-node://` targets or the obvious client for HTTPS/S3/IPFS).
+2. Use `capability` to locate/derive the decryption capability (KMS key, shared secret, AGE recipient, etc.).
+3. Decrypt and verify that `blake3(plaintext) == digest`. Resolution MUST fail if the digest does not match.
 
-Before/after example:
-
-```jsonc
-// legacy
-{ "kind":"opaque", "algo":"aes-256-gcm", "ciphertext_hash":"blake3:…",
-  "cipher_meta": {"enc":"aes-256-gcm","iv":"…","salt":"…"} }
-
-// normalized
-{ "kind":"opaque", "algo":"aes-256-gcm", "ciphertext_hash":"blake3:…",
-  "encrypted_meta": {"enc":"aes-256-gcm","iv":"…","salt":"…"} }
-```
+Public state MAY include simple `blobptr` entries when plaintext data is safe to replicate. Opaque pointers are REQUIRED for low-entropy or private data. All pointer `size` metadata SHOULD use coarse buckets (1 KB/4 KB/16 KB/64 KB) to prevent leaking exact sizes.
 
 ---
 
-## 8. Message Bus (Commit-Backed Pub/Sub)
+## 8. Message Plane (Commit-Backed Pub/Sub)
 
-<a id="8-message-bus-commit-backed-pubsub"></a>
+<a id="8-message-plane-commit-backed-pubsub"></a>
 
-<a id="8-message-bus-commit-backed-pubsub"></a>
+<a id="8-message-plane-commit-backed-pubsub"></a>
 
-<a id="8.-message-bus-commit-backed-pub-sub"></a>
+<a id="8.-message-plane-commit-backed-pub-sub"></a>
 
-<a id="8-message-bus-commit-backed-pubsub"></a>
+<a id="8-message-plane-commit-backed-pubsub"></a>
 
-<a id="8"></a><a id="8-message-bus-commit-backed-pubsub"></a>
+<a id="8"></a><a id="8-message-plane-commit-backed-pubsub"></a>
 
 The message bus provides a pub/sub system built on Git commits.
 
@@ -785,7 +770,7 @@ sequenceDiagram
     GATOS->>GATOS: Create gmb.commit Event
 ```
 
-Messages are appended to `refs/gatos/mbus/<topic>/<shard>`. Delivery is **at-least-once**; consumers **MUST** dedupe on read using the message `ULID` (or content hash) as an idempotency key and **MAY** write `ack`s to `refs/gatos/mbus-ack/`. Producers **SHOULD** set idempotency keys.
+Messages are appended to `refs/gatos/messages/<topic>/head` (optionally sharded by date/size). Delivery is **at-least-once**; consumers **MUST** dedupe using the message `ULID` and persist checkpoints under `refs/gatos/consumers/<group>/<topic>`. Producers **SHOULD** set `ULID`s deterministically when mirroring external buses. `messages.read` (ADR-0005) exposes canonical envelopes plus commit ids for RPC/CLI clients.
 
 Retention and compaction:
 
@@ -954,7 +939,7 @@ Defaults (normative for this profile):
 - Fast-forward-only refs: `refs/gatos/policies/**`, `refs/gatos/state/**`, and `refs/gatos/audit/**`.
 - GC anchors: `refs/gatos/audit/**` and the latest `refs/gatos/state/**` checkpoints.
 - Message bus segmentation and TTL: rotate segments at 100k messages or \~192 MB; TTL 30 days; write summary commits for pruned windows.
-- Public pointer hardening: low-entropy classes MUST NOT expose plaintext digests; public pointers MUST include a ciphertext digest; sizes SHOULD be bucketed (e.g., 1 KB, 4 KB, 16 KB, 64 KB).
+- Public pointer hardening: low-entropy classes MUST use `opaque_pointer` envelopes with bucketed `size`, `location`/`capability` URIs, and `digest = blake3(plaintext)`; verifiers MUST refuse pointers whose fetched plaintext hash mismatches the digest.
 
 Nodes advertising the `research` profile MUST expose diagnostics for the above and SHOULD surface violations in `gatos doctor`.
 
@@ -1151,8 +1136,8 @@ graph TD
 
 - PoF required: state pushes to `refs/gatos/state/**` MUST include a verifiable Proof-of-Fold.
 - Policies FF-only: `refs/gatos/policies/**` MUST be fast-forward only.
-- Exclusive job claim: exactly one worker MUST succeed in creating `refs/gatos/jobs/<job-id>/claim` via compare-and-swap.
-- Pointer privacy: public pointers for low-entropy classes MUST NOT expose plaintext digests; ciphertext digest present; sizes bucketed.
+- Exclusive job claim: exactly one worker MUST succeed in creating `refs/gatos/jobs/<job-id>/claims/<worker-id>` via compare-and-swap (expected old zero; policy denies duplicates).
+- Pointer privacy: opaque pointer envelopes MUST include `location` + `capability` URIs, bucketed `size`, and a BLAKE3 `digest` over plaintext; verifiers MUST fetch/decrypt and recompute the digest before trusting data.
 - Exports: exporters MUST emit `Explorer-Root = blake3(ledger_head || policy_root || extractor_version)` and `gatos export verify` MUST validate it.
 
 ---
@@ -1224,7 +1209,7 @@ sequenceDiagram
     participant Client
     participant Daemon as gatosd
     participant Ledger as gatos-ledger
-    participant Bus as gatos-mind
+    participant Bus as gatos-message-plane
     participant State as gatos-echo
 
     Client->>Daemon: 1. Enqueue Job (Event)

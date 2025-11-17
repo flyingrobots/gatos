@@ -52,7 +52,7 @@ This document illustrates practical scenarios where GATOS provides unique value.
 |               |                                                                                         |
 | ------------- | --------------------------------------------------------------------------------------- |
 | **Goal**      | Multi-agent orchestration with exactly-once semantics and audit.                        |
-| **How**       | Git message bus (`refs/gatos/mbus/**`) with acks/commitments; capabilities gate topics. |
+| **How**       | Message Plane (`refs/gatos/messages/<topic>/head` + `messages.read`) with at-least-once delivery and checkpoint refs; capabilities gate topics. |
 | **Why GATOS** | Works without Kafka; merges cleanly; persists forever.                                  |
 
 ---
@@ -76,7 +76,7 @@ This document illustrates practical scenarios where GATOS provides unique value.
 |               |                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------- |
 | **Goal**      | Version large models/datasets with provenance and selective export.                      |
-| **How**       | Opaque pointers for ciphertext artifacts; policies for export; epochs bound repo growth. |
+| **How**       | Opaque pointer envelopes (digest+location+capability) guard private artifacts; policies for export; epochs bound repo growth. |
 | **Why GATOS** | Portable archives; verifiable lineage; offline friendly.                                 |
 
 ---

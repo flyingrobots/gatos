@@ -29,10 +29,13 @@ Normative default: Bearer JWT authentication; requests and decisions are audited
 
 <a id="request"></a>
 
+Resolvers MUST expose a `.well-known` endpoint for the `gatos-node://` scheme defined in ADR-0004:
+
 ```http
-GET /resolve/<algo>/<digest>
+GET /.well-known/gatos/private/<digest>
 Authorization: Bearer <JWT>
 Accept: application/octet-stream
+Capability: gatos-key://v1/aes-256-gcm/<key-id>   # OPTIONAL when policy demands it
 ```
 
 JWT claims:
@@ -41,6 +44,7 @@ JWT claims:
 - `aud` — audience (resolver/repo id)
 - `exp` — expiry (short-lived)
 - Optional `scope` — dataset/namespace scope
+- Optional `cap` — capability URI assertion (mirrors the pointer’s `capability`).
 
 ## Response
 
@@ -57,6 +61,8 @@ X-BLAKE3-Digest: <hex>
 Content-Type: application/octet-stream
 
 <bytes>
+
+Servers MUST recompute `blake3(plaintext)` and only return success when the digest matches the pointer envelope. Clients double-check using the `Digest` header.
 ```
 
 ## Audit
