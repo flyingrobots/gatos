@@ -80,6 +80,14 @@ scripts/setup-hooks.sh
 
 If the hook fails, fix the reported issues and retry the commit.
 
+> **ADR-0006 preview:** Once `git gatos install-hooks` lands, use it instead of `scripts/setup-hooks.sh`. It installs the managed `pre-commit`, `pre-push`, and `post-checkout/merge` hooks referenced in the spec, plus records bypasses under `refs/gatos/audit/locks/*`.
+
+### Watcher / Lock Testing
+
+- `git gatos watch --once` — run a single enforcement pass to verify `.gatos/policy.yaml` `locks[]` before committing docs.
+- `git gatos lock acquire path1 path2` — exercise the governance workflow locally; grants appear under `refs/gatos/grants/...` and the watcher should clear read-only bits automatically.
+- Event logs live in `~/.config/gatos/watch/events.log`; attach them to issues when debugging local enforcement.
+
 ### Docs Normalization (AST pipeline)
 
 We run a deterministic Markdown normalizer (unified/remark) as a prebuild check. It parses Markdown to an AST, applies project transforms (link fixes, SPEC/TECH-SPEC linkification), and stringifies back. This keeps formatting/linting idempotent without touching anchors.

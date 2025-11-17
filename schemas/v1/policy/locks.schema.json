@@ -1,87 +1,48 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://gatos.io/schemas/v1/policy/locks.schema.json",
-  "title": "GATOS Policy Locks & Watcher Configuration",
+  "title": "GATOS Policy Locks + Watcher Config (v1)",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "locks": {
       "type": "array",
-      "description": "Glob-based lock declarations bound to governance rules.",
       "items": {
         "type": "object",
         "required": ["match", "rule"],
-        "additionalProperties": false,
         "properties": {
-          "match": {
-            "type": "string",
-            "description": "Glob pattern (gitignore syntax) for files subject to the lock."
-          },
-          "rule": {
-            "type": "string",
-            "description": "ADR-0003 governance rule id controlling the lock lifecycle."
-          },
-          "read_only": {
-            "type": "boolean",
-            "description": "Whether the watcher should apply filesystem read-only bits.",
-            "default": true
-          }
+          "match": { "type": "string", "description": "Glob relative to repo root" },
+          "rule": { "type": "string", "description": "Governance rule id (ADR-0003)" },
+          "read_only": { "type": "boolean", "default": true }
         }
       }
     },
     "watcher": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
-        "poll_fallback_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Polling interval used when native filesystem notifications are unavailable."
-        },
+        "poll_fallback_ms": { "type": "integer", "minimum": 0, "default": 5000 },
         "tasks": {
           "type": "array",
-          "description": "Local automation tasks triggered by watcher events.",
           "items": {
             "type": "object",
             "required": ["when", "match"],
-            "additionalProperties": false,
             "properties": {
-              "when": {
-                "type": "string",
-                "enum": ["on_save", "on_fold", "on_change"],
-                "description": "Trigger condition."
-              },
-              "match": {
-                "type": "string",
-                "description": "Glob selecting files that activate this task."
-              },
-              "run_command": {
+              "when": { "enum": ["on_save", "on_fold" ] },
+              "match": { "type": "string" },
+              "run": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "Command (argv) executed locally."
+                "description": "Local command to run with deterministic args"
               },
-              "run_job": {
-                "type": "string",
-                "description": "Job Plane manifest id to execute in loopback mode."
-              },
-              "timeout_seconds": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "Per-task timeout override (defaults to 120 seconds)."
-              },
-              "concurrency": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "Max concurrent instances for this task (defaults to 2)."
-              }
+              "run_job": { "type": "string", "description": "Job manifest id to enqueue" },
+              "timeout_s": { "type": "integer", "minimum": 1, "default": 120 }
             },
-            "anyOf": [
-              { "required": ["run_command"] },
+            "oneOf": [
+              { "required": ["run"] },
               { "required": ["run_job"] }
             ]
           }
         }
       }
     }
-  }
+  },
+  "additionalProperties": false
 }

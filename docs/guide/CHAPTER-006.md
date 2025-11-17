@@ -148,4 +148,6 @@ Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the resul
 
 The Message and Job planes are what make GATOS a dynamic, living system. `gatos-message-plane` provides the nervous system, allowing for reliable, auditable communication. `gatos-compute` provides the motor function, enabling the system to perform work in a distributed and verifiable way.
 
+> **Local tie-in (ADR-0006):** When a policy declares `watcher.tasks[] run_job: <id>`, the watcher daemon publishes a Job as soon as a matching file changes. That job advertises itself on the Message Plane just like any other workload, so infrastructure tasks kicked off by local edits still flow through the normal Job/PoE lifecycle.
+
 Together, they transform the GATOS repository from a passive record of history into an active, programmable "Operating Surface" that can orchestrate complex, distributed workflows with an unprecedented level of trust and transparency.

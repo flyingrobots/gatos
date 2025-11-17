@@ -130,12 +130,17 @@ These are explicit non-goals until after the core truth machine is working:
 - Governance:
   - Proposals → approvals → grants mapped to signed events.
   - Grants bound to `policy_root`.
+- Local enforcement:
+  - Ship `gatos watch` daemon enforcing read-only locks from `.gatos/policy.yaml` until grants land.
+  - Managed Git hooks (`pre-commit`, `pre-push`, `post-merge`) installed via `gatos install-hooks` and logged under audit refs.
+  - Lock UX: `gatos lock acquire/release` wired to ADR-0003 so artists get Perforce-style flows.
 
 **Done when:**
 
 - Rewriting policy history via rebase is impossible.
 - Violating commits produce DENY entries with links back to the responsible ADR/policy.
 - Policy rules can enforce e.g. “no API changes without 2-of-3 quorum”.
+- Locked assets stay read-only locally until a Grant is available and hooks reject bypass attempts.
 
 ---
 

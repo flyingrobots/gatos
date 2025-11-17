@@ -82,6 +82,13 @@ By intercepting all writes, the Stargate can run powerful server-side **`pre-rec
 2. **Attestation & Validation:** For performance, GATOS clients can attach **attestation trailers** to their commits. These trailers contain pre-computed hashes of the proposed changes. The Stargate's `pre-receive` hook validates these trailers in constant time per push with respect to file count, given attestation trailers and object pinning—verifying integrity without walking every file.
 3. **Linear History:** The hook enforces that all journals are fast-forward only, preventing history rewrites and preserving the immutability of the ledger.
 
+### Local Guardrails for Humans
+
+- **Watcher (`git gatos watch`)** — runs on every workstation, consulting `.gatos/policy.yaml` `locks[]`. Files remain read-only until the required Grants land, giving artists a Perforce-style “read-only until lock” experience.
+- **Locks CLI** — `git gatos lock acquire assets/hero.obj` opens a governance proposal, waits for quorum, and tells the watcher to unmask the path once approved. `git gatos lock release` revokes the Grant when the work is done.
+- **Managed hooks** — `git gatos install-hooks` writes `pre-commit`, `pre-push`, and `post-checkout/merge` hooks. They reject accidental edits/pushes that would be denied later and record bypasses under `refs/gatos/audit/locks/*` if a user disables them.
+- **Automation** — `.gatos/policy.yaml` can declare `watcher.tasks[]` that run deterministic tools on save (formatters, lint) or enqueue Job Plane runs (`run_job: format.proto`). Each task inherits the lock + privacy policies defined elsewhere in the repo.
+
 This local-first enforcement provides low-latency, high-security writes that would be impossible on a public SaaS platform.
 
 ## The Magic Mirror

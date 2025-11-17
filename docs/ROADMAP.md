@@ -289,6 +289,10 @@ These are explicit non-goals until after the core truth machine is working:
 - DENY-audit under `refs/gatos/audit/policy/**`.
 - Governance MVP:
   - proposals → approvals → grants (N-of-M).
+- Local enforcement:
+  - `gatos watch` daemon enforces `.gatos/policy.yaml` locks and mirrors grants locally.
+  - Managed Git hooks (`pre-commit`, `pre-push`, `post-checkout`) installed via CLI and logged under `refs/gatos/audit/locks/*`.
+  - `gatos lock acquire/release` CLI bridges users to ADR-0003 grants.
 
 ### Done When
 
@@ -301,6 +305,7 @@ These are explicit non-goals until after the core truth machine is working:
 - Rebasing policy refs is impossible.
 - Violating commits produce DENY events.
 - Policy ADR-as-code works end-to-end.
+- Locked assets remain read-only locally until the matching Grant lands; hook bypasses are audited.
 
 ---
 

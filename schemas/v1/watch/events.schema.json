@@ -1,49 +1,29 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://gatos.io/schemas/v1/watch/events.schema.json",
-  "title": "GATOS Watcher Event",
+  "title": "GATOS Watcher Event (v1)",
   "type": "object",
-  "additionalProperties": false,
-  "required": ["ts", "rule", "actor", "path", "action"],
+  "required": ["ts", "actor", "path", "rule", "action"],
   "properties": {
-    "ts": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp in UTC."
-    },
-    "rule": {
-      "type": "string",
-      "description": "Governance rule id (ADR-0003)."
-    },
-    "actor": {
-      "type": "string",
-      "description": "Local actor identity (user:alice, agent:renderbot, etc.)."
-    },
-    "path": {
-      "type": "string",
-      "description": "Relative path within the repository."
-    },
+    "ts": { "type": "string", "format": "date-time" },
+    "actor": { "type": "string" },
+    "path": { "type": "string" },
+    "rule": { "type": "string" },
     "action": {
       "type": "string",
       "enum": [
-        "deny.write",
-        "deny.delete",
         "lock.applied",
         "lock.released",
+        "deny.write",
         "task.started",
-        "task.finished",
+        "task.succeeded",
         "task.failed"
-      ],
-      "description": "Event type emitted by the watcher."
+      ]
     },
-    "remediation": {
-      "type": "string",
-      "description": "User-facing remediation hint (optional)."
-    },
-    "details": {
-      "type": "object",
-      "description": "Additional context such as task id, error messages, or grant ids.",
-      "additionalProperties": true
-    }
-  }
+    "grant_id": { "type": "string" },
+    "proposal_id": { "type": "string" },
+    "task": { "type": "string" },
+    "remediation": { "type": "string" },
+    "details": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false
 }

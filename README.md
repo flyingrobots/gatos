@@ -105,6 +105,10 @@ git push
 
 Store sensitive data (PII, large datasets) in private stores, but commit their **cryptographic commitments** to the public graph — public commitments; private bytes behind a policy-gated resolver. ***Verify the integrity of the computation without revealing the raw bytes***.
 
+### 4. Local Guardrails (Watcher + Hooks)
+
+Artists and infra engineers get Perforce-style safety without leaving Git. The `gatos watch` daemon keeps locked files read-only until a governance Grant exists, `gatos lock acquire/release` walks you through the approval flow, and managed Git hooks (`gatos install-hooks`) block bad pushes before they ever hit the remote—while logging any bypass under `refs/gatos/audit/locks/*`.
+
 -----
 
 ## How it Works: The 5 Planes

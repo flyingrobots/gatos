@@ -1,5 +1,5 @@
 ---
-Status: Proposed
+Status: Accepted
 Date: 2025-11-09
 ADR: ADR-0006
 Authors: [flyingrobots]
