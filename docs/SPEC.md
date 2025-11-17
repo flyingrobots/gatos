@@ -759,18 +759,27 @@ The message bus provides a pub/sub system built on Git commits.
 ```mermaid
 sequenceDiagram
     participant Publisher
-    participant GATOS
+    participant Topic as refs/gatos/messages/<topic>/head
     participant Consumer
 
-    Publisher->>GATOS: Publish Message (QoS: at_least_once)
-    GATOS-->>Consumer: Deliver Message
-    Consumer->>Consumer: Process Message
-    Consumer->>GATOS: Send Ack
-    GATOS->>GATOS: Observe Ack Quorum
-    GATOS->>GATOS: Create gmb.commit Event
+    Publisher->>Topic: Write commit (message/envelope.json)
+    Topic-->>Publisher: Event-Id + Content-Id trailers
+    Consumer->>Topic: messages.read(topic, since_ulid)
+    Topic-->>Consumer: { ulid, commit, content_id, canonical_json }
+    Consumer->>Consumer: Process + dedupe by ULID
+    Consumer->>Topic: Update refs/gatos/consumers/<group>/<topic>
 ```
 
-Messages are appended to `refs/gatos/messages/<topic>/head` (optionally sharded by date/size). Delivery is **at-least-once**; consumers **MUST** dedupe using the message `ULID` and persist checkpoints under `refs/gatos/consumers/<group>/<topic>`. Producers **SHOULD** set `ULID`s deterministically when mirroring external buses. `messages.read` (ADR-0005) exposes canonical envelopes plus commit ids for RPC/CLI clients.
+Each topic is a Git ref `refs/gatos/messages/<topic>/head` whose commit history is the ordered event stream. Commits MUST contain a `message` directory with:
+
+- `message/envelope.json` — Canonical JSON conforming to `schemas/v1/message-plane/event_envelope.schema.json`.
+- optional `message/attachments/<name>` blobs referenced via the envelope `refs` map (do not influence the canonical identifier).
+
+Commits MUST include trailers `Event-Id: ulid:<26-char ULID>` (strictly monotonic per topic per publisher) and `Content-Id: blake3:<hex>` computed from the canonical envelope bytes. No additional files MAY appear at the tree root; implementations store extra artifacts under `message/attachments/`.
+
+Consumers fetch topics directly or page via the `messages.read` RPC. Responses include `ulid`, `commit`, `content_id`, `envelope_path` (defaults to `message/envelope.json`), `canonical_json` (base64), and optionally a `checkpoint_hint` advising which `refs/gatos/consumers/<group>/<topic>` entry to advance. Clients MUST persist checkpoints (ULID + optional commit) so they can resume idempotently on crash.
+
+Messages are **at-least-once**. Dedupe is performed using ULIDs + checkpoints; duplicates MUST be ignored, and out-of-order ULIDs for the same topic MUST be rejected. Producers SHOULD deterministically derive ULIDs when mirroring external brokers so replays remain stable.
 
 Retention and compaction:
 
@@ -1215,19 +1224,19 @@ sequenceDiagram
     Client->>Daemon: 1. Enqueue Job (Event)
     Daemon->>Ledger: 2. Append `jobs.enqueue` event
     Ledger-->>Daemon: 3. Success
-    Daemon->>Bus: 4. Publish `gmb.msg` to topic
-    Bus-->>Daemon: 5. Success
+    Daemon->>Bus: 4. Write Message Plane commit (`refs/gatos/messages/jobs.pending/head`)
+    Bus-->>Daemon: 5. Event-Id/Content-Id trailers recorded
     Daemon-->>Client: 6. Job Enqueued
 
     Note over Bus,State: Later, a worker consumes the job...
 
     participant Worker
-    Worker->>Bus: 7. Subscribe to topic
-    Bus->>Worker: 8. Delivers `gmb.msg`
+    Worker->>Bus: 7. Call messages.read(topic="jobs.pending", since_ulid)
+    Bus->>Worker: 8. Deliver envelope {ulid, commit, content_id, canonical_json}
     Worker->>Daemon: 9. Report Result (Event)
     Daemon->>Ledger: 10. Append `jobs.result` event
     Ledger-->>Daemon: 11. Success
-    Daemon->>Bus: 12. Write `gmb.ack`
+    Worker->>Bus: 12. Update refs/gatos/consumers/<group>/<topic>
     Daemon-->>Worker: 13. Result Recorded
 
     Note over Ledger,State: A fold process runs...

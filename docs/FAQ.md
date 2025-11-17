@@ -318,9 +318,9 @@ Consistent hashing keeps most keys stable when shards changes.
 Dual-write window:
 
 - Publishers write to both old and new shard maps for a configurable epoch.
-- Consumers subscribe to both maps; dedupe by (topic, ulid).
+- Consumers read from both shard maps via `messages.read` and persist checkpoints per topic/segment; dedupe by `(topic, ulid)`.
 
-When ack lag on the old map is zero for N minutes, flip the active version and retire the old.
+When checkpoint lag on the old map is zero for N minutes, flip the active version and retire the old.
 
 This gives smooth resharding with exactly-once semantics intact.
 
@@ -690,8 +690,8 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 <a id="4llm-multi-agent-orchestration"></a><a id="4.llm-multi-agent-orchestration"></a>
 
-- Needs: pub/sub, exactly-once, backpressure, capability tokens.
-- We meet: bus QoS + caps + acks/commit.
+- Needs: pub/sub, at-least-once with deterministic replay, capability tokens.
+- We meet: commit-backed Message Plane + capability-scoped topics + checkpoints (refs/gatos/consumers/*) for resume/dedupe.
 - Add: shard-map/versioning + subscription windows → ✅ at scale.
 
 ### 5. Cross-app data sharing (RLS-gated state)

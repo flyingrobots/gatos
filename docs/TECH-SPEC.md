@@ -433,7 +433,7 @@ graph TD
     subgraph "Metrics"
         M1(gatos_journal_append_latency_ms)
         M2(gatos_fold_latency_ms)
-        M3(gatos_bus_ack_lag)
+        M3(gatos_message_checkpoint_lag)
     end
     A --> M1
     B --> M2

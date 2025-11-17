@@ -9,16 +9,14 @@ distributed communication between GATOS components.
 > details, see [TECH-SPEC.md](../../docs/TECH-SPEC.md).
 
 Commit-backed means messages are persisted as Git commits to provide durability, auditability, and
-exactly-once semantics when combined with acknowledgements/commitments. See the architecture notes
-in [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and protocol details in
+at-least-once delivery with deterministic replay via ULID checkpoints. See the architecture notes in
+[ADR-0005](../../docs/decisions/ADR-0005/DECISION.md) and protocol details in
 [TECH-SPEC.md](../../docs/TECH-SPEC.md).
 
 ## Features
 
 - Asynchronous messaging: non-blocking publish/subscribe operations.
-- Commit-backed durability: persisted messages with auditability and exactly-once when combined
-
-  with acks/commitments.
+- Commit-backed durability: persisted messages with canonical envelopes (`message/envelope.json`).
 
 - Topic-based routing: logical message organization and filtering.
 - Sharding: horizontal scalability via topic partitioning.
@@ -55,8 +53,8 @@ GMP is the Message Plane in the GATOS hexagonal architecture. It coordinates mes
 ### Usage (API Sketch)
 
 - Depend on `gatos-message-plane` in your crate.
-- Use a `Publisher` to publish messages to a topic; use a `Subscriber` to consume.
-- Messages are persisted as Git commits to provide auditability and coordinate exactly-once when combined with acknowledgements/commitments.
+- Use a `Publisher` to append canonical envelopes under `refs/gatos/messages/<topic>/head`; use a `Subscriber` (or the `messages.read` RPC) to stream them oldest→newest.
+- Messages are persisted as Git commits and consumers store checkpoints in `refs/gatos/consumers/<group>/<topic>` so crashes can resume without duplication.
 
 > Note: This section reflects the intended usage; concrete APIs will be added as implementation proceeds.
 

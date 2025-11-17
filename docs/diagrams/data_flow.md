@@ -13,25 +13,25 @@ sequenceDiagram
     participant Client
     participant Daemon as gatosd
     participant Ledger as gatos-ledger
-    participant Bus as gatos-message-plane
+    participant Bus as Message Plane
     participant State as gatos-echo
 
     Client->>Daemon: 1. Enqueue Job (Event)
     Daemon->>Ledger: 2. Append `jobs.enqueue` event
     Ledger-->>Daemon: 3. Success
-    Daemon->>Bus: 4. Publish `gmb.msg` to topic
-    Bus-->>Daemon: 5. Success
+    Daemon->>Bus: 4. Write message commit (topic `jobs.pending`)
+    Bus-->>Daemon: 5. Event-Id / Content-Id recorded
     Daemon-->>Client: 6. Job Enqueued
 
     Note over Bus,State: Later, a worker consumes the job...
 
     participant Worker
-    Worker->>Bus: 7. Subscribe to topic
-    Bus->>Worker: 8. Delivers `gmb.msg`
+    Worker->>Bus: 7. `messages.read(jobs.pending, since_ulid)`
+    Bus->>Worker: 8. Deliver envelope {ulid, commit, content_id}
     Worker->>Daemon: 9. Report Result (Event)
     Daemon->>Ledger: 10. Append `jobs.result` event
     Ledger-->>Daemon: 11. Success
-    Daemon->>Bus: 12. Write `gmb.ack`
+    Worker->>Bus: 12. Update `refs/gatos/consumers/<group>/<topic>` checkpoint
     Daemon-->>Worker: 13. Result Recorded
 
     Note over Ledger,State: A fold process runs...

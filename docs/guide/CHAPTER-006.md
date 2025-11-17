@@ -135,7 +135,7 @@ Storage: `refs/gatos/jobs/<job-id>/result` (commit whose tree contains the resul
 - Segment topics: `refs/gatos/messages/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` (or numeric `0001`, `0002`, …) to bound ref sizes.
 - Rotation thresholds (defaults): rotate at 100k messages or \~192 MB per segment (whichever comes first).
 - TTL: retain segments for 30 days, then prune; write a summary commit (counts, Merkle root, last offsets) when pruning to preserve verifiability.
-- Offsets: snapshot consumer offsets; prune only segments older than the minimum acknowledged offset across active consumers.
+- Offsets: snapshot consumer checkpoints (refs/gatos/consumers/<group>/<topic>); prune only segments older than the minimum checkpointed ULID across active consumers.
 - Git optimization: enable `fetch.writeCommitGraph=true`, `repack.writeBitmaps=true`; consider partial clone/promisor remotes for `refs/gatos/messages/*` on busy installations.
 
 ## Summary

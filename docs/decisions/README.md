@@ -33,3 +33,4 @@ Each ADR will have a status, typically one of the following:
 | [ADR-0003](./ADR-0003/DECISION.md) | Consensus Governance for Gated Actions | Accepted | 2025-11-08 |
 | [ADR-0004](./ADR-0004/DECISION.md) | Hybrid Privacy Model (Public Projection + Private Overlay) | Accepted | 2025-11-09 |
 | [ADR-0005](./ADR-0005/DECISION.md) | Message Plane — A Git-Native, Commit-Backed Message Bus | Proposed | 2025-11-09 |
+| [ADR-0006](./ADR-0006/DECISION.md) | Local Enforcement — Watcher Daemon & Git Hooks | Proposed | 2025-11-09 |

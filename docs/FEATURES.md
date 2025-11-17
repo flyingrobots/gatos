@@ -36,7 +36,7 @@ anchors/TOC stable and idempotent.
   - [F4-US-PENG](#f4-us-peng)
     - [F4 Acceptance Criteria](#f4-acceptance-criteria)
     - [F4 Test Plan](#f4-test-plan)
-- [F5 — Message Bus (QoS with Acks/Commits)](#f5--message-bus-qos-with-ackscommits)
+- [F5 — Message Plane (Topics + Checkpoints)](#f5--message-plane-topics-checkpoints)
   - [F5-US-SRE](#f5-us-sre)
     - [F5 Acceptance Criteria](#f5-acceptance-criteria)
     - [F5 Test Plan](#f5-test-plan)
@@ -221,36 +221,38 @@ Each feature includes user stories per relevant stakeholders (format requested),
 
 ---
 
-## F5 — Message Bus (QoS with Acks/Commits)
+## F5 — Message Plane (Topics + Checkpoints)
 
-<a id="f5--message-bus-qos-with-ackscommits"></a>
+<a id="f5--message-plane-topics-checkpoints"></a>
 
-<a id="f5-message-bus-qos-with-acks-commits"></a>
+<a id="f5-message-plane-topics-checkpoints"></a>
 
 ### F5-US-SRE
 
 <a id="f5-us-sre"></a>
 
-|                |                                           |
-| -------------- | ----------------------------------------- |
-| **As a...**    | SRE                                       |
-| **I want..**   | exactly-once delivery for job dispatch    |
-| **So that...** | batch jobs don’t double-run under retries |
+|                |                                                                 |
+| -------------- | --------------------------------------------------------------- |
+| **As a...**    | SRE                                                             |
+| **I want..**   | at-least-once delivery with deterministic replay                |
+| **So that...** | workers can crash/restart without losing or duplicating events  |
 
 #### F5 Acceptance Criteria
 
 <a id="f5-acceptance-criteria"></a>
 
-- [ ] `gmb.msg` + `gmb.ack` + `gmb.commit` protocol
-- [ ] De-dup by (topic, ulid)
+- [ ] Topics live under `refs/gatos/messages/<topic>/head`; commits contain `message/envelope.json` plus optional attachments referenced via `message/attachments/`.
+- [ ] Envelopes obey `schemas/v1/message-plane/event_envelope.schema.json`; `content_id = blake3(canonical_bytes)` and commit trailers include `Event-Id: ulid:` + `Content-Id: blake3:`.
+- [ ] Consumers persist checkpoints at `refs/gatos/consumers/<group>/<topic>` (ULID + optional commit) and `messages.read` returns `ulid`, `commit`, `content_id`, `canonical_json`.
+- [ ] ULIDs are strictly monotonic per topic per publisher; duplicate ULIDs must be rejected.
 
 #### F5 Test Plan
 
 <a id="f5-test-plan"></a>
 
-- [ ] Golden: dup publishes + consumer crash → single effect
-- [ ] Edge: ack lag metrics emitted
-- [ ] Failure: commitment without acks → reject
+- [ ] Golden: publish N events, crash consumer mid-stream, restart → `messages.read` resumes from checkpoint and every `ulid` is processed exactly once.
+- [ ] Edge: request `messages.read` with stale `since_ulid` → server begins at oldest segment and returns a `checkpoint_hint` for automatic advancement.
+- [ ] Failure: out-of-order ULID attempt → commit rejected with deterministic error.
 
 ---
 
