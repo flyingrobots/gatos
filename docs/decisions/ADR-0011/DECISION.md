@@ -28,6 +28,17 @@ Teams want ad-hoc analytics without learning internals; SQL + columnar files cov
 3. **Incremental**: `--since` resumes from last exported commit.
 4. **Determinism**: Stable ordering; integrity table with exported root SHA.
 
+```mermaid
+flowchart LR
+    A[Ledger] -->|events| B[Exporter]
+    B --> C((SQLite))
+    B --> D((Parquet))
+    C --> E[BI/SQL]
+    D --> F[Analytics/Notebook]
+    B --> G{Integrity Record}
+    G --> H[Shape Root]
+```
+
 ## Consequences
 - Easy dashboards, BI, notebooks.
 - Must be careful not to leak private overlay data (only pointer metadata exported).

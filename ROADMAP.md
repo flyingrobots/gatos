@@ -47,6 +47,7 @@ These are explicit non-goals until after the core truth machine is working:
 | **M4** | Job Plane + Proof-of-Execution (PoE) |
 | **M5** | Opaque Pointers + privacy-preserving projection |
 | **M6** | Explorer off-ramp + Explorer-Root verification |
+| **M6.5** | GraphQL State API (read-only) |
 | **M7** | Proof-of-Experiment (PoX) + reproduce/verify CLI |
 | **M8** | Demos & examples (Bisect, ADR-as-policy, PoX) |
 | **M9** | Conformance suite + `gatos doctor` |
@@ -240,6 +241,26 @@ These are explicit non-goals until after the core truth machine is working:
 
 - Exports verify on clean machines.
 - Tampering with an export causes verification to fail.
+
+---
+
+## M6.5 — GraphQL State API
+
+**Goal:** Provide a typed, cache-friendly read surface for state snapshots.
+
+**Deliverables:**
+
+- API service (crate or module) exposing `POST /api/v1/graphql` with the schema defined in `api/graphql/schema.graphql`.
+- SDL publishing endpoint + CI check to keep schema + resolvers in sync.
+- Resolver contract honoring `stateRef` / `refPath`, Relay pagination (`first/last`, opaque cursors, max 500), opaque pointer nodes, and deterministic ordering.
+- Policy + privacy integration mirroring ADR-0003/0004 (return `POLICY_DENIED` errors; never auto-fetch private blobs).
+- Rate-limiting (600 req / 60s default) and caching semantics (`shapeRoot`, `stateRefResolved`, `Cache-Control`/`ETag`).
+
+**Done when:**
+
+- Clients can issue GraphQL queries against historical or live state and receive deterministic results tied to a specific `stateRef`.
+- SDL + schema live in-repo and the service passes conformance tests covering pagination, pointer handling, and error codes.
+- Docs (README, SPEC, Guide) describe how to target states, interpret errors, and respect policy filters.
 
 ---
 

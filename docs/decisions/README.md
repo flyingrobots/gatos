@@ -34,7 +34,7 @@ Each ADR will have a status, typically one of the following:
 | [ADR-0004](./ADR-0004/DECISION.md) | Hybrid Privacy Model (Public Projection + Private Overlay) | Accepted | 2025-11-09 |
 | [ADR-0005](./ADR-0005/DECISION.md) | Message Plane — A Git-Native, Commit-Backed Message Bus | Proposed | 2025-11-09 |
 | [ADR-0006](./ADR-0006/DECISION.md) | Local Enforcement — Watcher Daemon & Git Hooks | Accepted | 2025-11-09 |
-| [ADR-0007](./ADR-0007/DECISION.md) | GraphQL State API (Read-Only) | Draft | 2025-11-09 |
+| [ADR-0007](./ADR-0007/DECISION.md) | GraphQL State API (Read-Only) | Accepted | 2025-11-09 |
 | [ADR-0008](./ADR-0008/DECISION.md) | REST Commands & Webhooks | Draft | 2025-11-09 |
 | [ADR-0009](./ADR-0009/DECISION.md) | Real-Time Streams & Ref Subscriptions | Draft | 2025-11-09 |
 | [ADR-0010](./ADR-0010/DECISION.md) | First-Class GitHub App Integration | Draft | 2025-11-09 |

@@ -27,6 +27,16 @@ Large repos need sub-linear recomputation to stay responsive.
 5. **Concurrency**: Units may fold in parallel if dependencies permit; global join computes `Shape-Root`.
 6. **Telemetry**: Commit trailers: `Fold-Cache-Hit: <count>`, `Fold-Units: <n>`, `Fold-Duration: <ms>`.
 
+```mermaid
+graph TD
+    E1[Event Stream] --> P1[Plan Affected Units]
+    P1 --> U1[Unit Fold Cache]
+    U1 -->|hit| C1[Join]\n(Reuse digest)
+    U1 -->|miss| F1[Fold Unit]
+    F1 --> C1
+    C1 --> SR[Compute Shape-Root]
+```
+
 ## Consequences
 - Orders-of-magnitude faster folds; predictable latencies.
 - Requires dependency modeling and careful cache invalidation.

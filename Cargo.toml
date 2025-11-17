@@ -6,6 +6,7 @@ members = [
     "crates/gatos-ledger-git",
     "crates/gatos-ledger",
     "crates/gatos-message-plane",
+    "crates/gatos-graphql",
     "crates/gatos-echo",
     "crates/gatos-policy",
     "crates/gatos-kv",

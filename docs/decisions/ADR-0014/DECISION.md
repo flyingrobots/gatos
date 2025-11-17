@@ -37,6 +37,20 @@ Jobs already attest execution (ADR-0002 PoE). Folds need equivalent integrity gu
 3. **Storage**: Persist envelope under `refs/gatos/audit/proofs/folds/<state-ref>`.
 4. **Verification**: `gatos fold verify <state-ref>` checks engine key in trust graph, envelope hash, and output match.
 
+```mermaid
+sequenceDiagram
+    participant Fold as Fold Engine
+    participant Policy
+    participant Ledger
+    participant Audit
+    Fold->>Policy: resolve policy_root
+    Fold->>Ledger: read events/upstreams
+    Fold->>Fold: compute Shape-Root
+    Fold->>Fold: build envelope
+    Fold->>Fold: sign blake3(envelope)
+    Fold->>Audit: write refs/gatos/audit/proofs/folds/<state>
+```
+
 ## Consequences
 - Auditable state derivations; reproducibility at the protocol layer.
 - Requires key management for fold engines.

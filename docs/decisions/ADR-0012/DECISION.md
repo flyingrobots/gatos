@@ -37,6 +37,14 @@ Enables decentralized composition (e.g., central governance repo consumed by man
 5. **UI/API**:
    - GraphQL exposes mounts under a separate namespace; streams emit updates when mount advances.
 
+```mermaid
+graph TD
+    A[Local Repo] -->|mounts| B[Remote Governance Repo]
+    B -->|state ref| C[refs/gatos/remotes/governance]
+    C --> D[State Fold]
+    D --> E[Local Policy]
+```
+
 ## Consequences
 - Clean, verifiable cross-repo composition.
 - Requires remote availability and verification logic.

@@ -41,3 +41,5 @@ Message Plane envelopes
 - Local enforcement (ADR-0006):
   - `schemas/v1/policy/locks.schema.json` extends `.gatos/policy.yaml` with `locks[]` and `watcher` blocks.
   - `schemas/v1/watch/events.schema.json` defines the JSONL payload emitted by `gatos watch`.
+- GraphQL API (ADR-0007):
+  - `schemas/v1/api/graphql_state_mapping.schema.json` documents how GraphQL types map back to on-disk state paths.

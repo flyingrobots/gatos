@@ -120,6 +120,7 @@ These are explicit non-goals until after the core truth machine is working:
 | **M4**    | Job Plane + Proof-of-Execution (PoE)                   |
 | **M5**    | Opaque Pointers + privacy-preserving projection        |
 | **M6**    | Explorer off-ramp + Explorer-Root verification         |
+| **M6.5**  | GraphQL State API (read-only)                          |
 | **M7**    | Proof-of-Experiment (PoX) + reproduce/verify CLI       |
 | **M8**    | Demos & examples (Bisect, ADR-as-policy, PoX)          |
 | **M9**    | Conformance suite + `gatos doctor`                     |
@@ -515,6 +516,32 @@ These are explicit non-goals until after the core truth machine is working:
 
 - Exports verify on clean machines.
 - Mutations → `verify` fails.
+
+---
+
+## **M6.5 — GraphQL State API (Read-Only)**
+
+<a id="m65--graphql-state-api-read-only"></a>
+
+**3–4 weeks**
+
+### Goals
+
+- Typed, single-roundtrip read access to any committed state snapshot.
+
+### Deliverables
+
+- Gateway crate/binary exposing `POST /api/v1/graphql` plus `GET /api/v1/graphql/schema` (SDL published from `api/graphql/schema.graphql`).
+- Resolver layer honoring `stateRef` / `refPath`, enforcing Relay pagination (opaque cursors, `[1,500]` bounds, deterministic ordering), and returning `OpaquePointerNode` objects when policy hides data.
+- Integration with policy/privacy planes so denied paths surface as GraphQL errors with `POLICY_DENIED` codes and never fetch private blobs automatically.
+- Rate limiting (default 600 requests / 60s) with `X-RateLimit-*` headers, plus caching semantics (`shapeRoot`, `stateRefResolved`, `ETag`).
+- Schema + conformance tests checked into the repo (SDL diff, pagination/authorization fixtures).
+
+### Done When
+
+- Clients can query historical (`stateRef`) or head (`refPath`) state and get stable JSON tied to a `shapeRoot`.
+- SDL + resolver contract pass automated tests covering pagination limits, pointer handling, and error codes.
+- Docs (README, SPEC, Guide) teach developers how to call the API and interpret `POLICY_DENIED` responses.
 
 ---
 

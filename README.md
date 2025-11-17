@@ -109,6 +109,10 @@ Store sensitive data (PII, large datasets) in private stores, but commit their *
 
 Artists and infra engineers get Perforce-style safety without leaving Git. The `gatos watch` daemon keeps locked files read-only until a governance Grant exists, `gatos lock acquire/release` walks you through the approval flow, and managed Git hooks (`gatos install-hooks`) block bad pushes before they ever hit the remote—while logging any bypass under `refs/gatos/audit/locks/*`.
 
+### 5. GraphQL Truth Service
+
+Need a typed API for dashboards or custom UIs? The GraphQL endpoint (`POST /api/v1/graphql`) lets you query any state snapshot by commit (`stateRef`) or ref (`refPath`), with Relay pagination, rate limiting, and automatic policy filtering. Opaque pointers surface private blobs without leaking bytes, so you can build richly typed clients on top of verified state.
+
 -----
 
 ## How it Works: The 5 Planes

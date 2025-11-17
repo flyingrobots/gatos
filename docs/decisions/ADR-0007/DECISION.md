@@ -1,5 +1,5 @@
 ---
-Status: Draft
+Status: Accepted
 Date: 2025-11-09
 ADR: ADR-0007
 Authors: [flyingrobots]
@@ -39,6 +39,27 @@ State is hierarchical and interlinked; GraphQL matches the access pattern and av
    - `INTERNAL_ERROR` (500, last resort)
    Each error entry includes `extensions.code` and `extensions.ref` (support ULID).
 10. **Rate Limits**: Default 600 requests / 60s window per actor, enforced via shared limiter. Policy rules may override per namespace/project; responses include `X-RateLimit-Remaining` headers.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as GraphQL API
+    participant Resolver
+    participant Policy as Policy Filter
+    participant State as State Store
+
+    Client->>API: POST /api/v1/graphql (stateRef, query)
+    API->>Resolver: resolve fields
+    Resolver->>State: load shape nodes
+    Resolver->>Policy: check access
+    alt allowed
+        Policy-->>Resolver: allow / pointerize
+    else denied
+        Policy-->>Resolver: deny (POLICY_DENIED)
+    end
+    Resolver-->>API: data + shapeRoot
+    API-->>Client: JSON (data, errors, shapeRoot)
+```
 
 ## Consequences
 - Clients can build efficient UIs without bespoke endpoints.

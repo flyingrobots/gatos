@@ -31,6 +31,26 @@ Most teams live on GitHub; native enforcement and UX reduce friction.
 5. **Security**:
    - Rotate app secrets, least-privilege scopes, per-repo installation.
 
+```mermaid
+sequenceDiagram
+    participant Dev as GitHub Developer
+    participant GH as GitHub
+    participant App as GATOS App
+    participant API as GATOS API
+    participant Ledger
+
+    Dev->>GH: Open/Update PR
+    GH->>App: Webhook (pr.opened)
+    App->>Ledger: record event
+    Dev->>GH: /gatos lock acquire
+    GH->>App: Command comment
+    App->>API: POST /api/v1/commands {request_id}
+    API-->>App: ack/job
+    App-->>GH: PR comment + status check
+    Ledger-->>API: merge gate satisfied
+    App-->>GH: mark check success
+```
+
 ## Consequences
 - One consistent control point for GitHub-centric teams.
 - Another moving part to maintain (secrets, webhooks, scale).

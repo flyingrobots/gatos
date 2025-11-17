@@ -40,6 +40,31 @@ Provide **local enforcement** of governance policy via (a) a cross-platform Watc
 ```
 - Watches `refs/gatos/grants/**` for updates so that newly approved locks are released immediately without requiring a restart.
 - The daemon MUST persist state (e.g., last applied masks, pending lock requests) under `~/.config/gatos/watch/` to survive restarts. State files are advisory; corruption or tampering MUST trigger a full resync from Git policy data before enforcement resumes.
+- The daemon MUST persist state (e.g., last applied masks, pending lock requests) under `~/.config/gatos/watch/` to survive restarts. State files are advisory; corruption or tampering MUST trigger a full resync from Git policy data before enforcement resumes.
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Hook as Git Hooks
+    participant Watch as gatos watch
+    participant Repo as Repo/Policy
+
+    Dev->>Hook: git commit/push
+    Hook->>Watch: query lock cache
+    Watch->>Repo: read refs/gatos/grants
+    Repo-->>Watch: grant status
+    alt grant missing
+        Watch-->>Hook: deny (POLICY)
+        Hook-->>Dev: fail commit/push
+    else grant exists
+        Hook-->>Dev: allow
+    end
+    Dev->>Watch: edit file
+    Watch->>Repo: verify grant
+    alt violation
+        Watch-->>Dev: notification + reapply readonly
+    end
+```
 
 ### 2. Git Hooks (managed surface)
 
