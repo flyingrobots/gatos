@@ -91,6 +91,19 @@ By intercepting all writes, the Stargate can run powerful server-side **`pre-rec
 
 This local-first enforcement provides low-latency, high-security writes that would be impossible on a public SaaS platform.
 
+## Sessions: Scratch Space With Policy Guarantees
+
+<a id="sessions-scratch-space"></a>
+
+Not every edit is ready for the ledger. ADR-0015 introduces **sessions** – ephemeral refs under `refs/gatos/sessions/<actor>/<ulid>` – so you can iterate locally without bypassing governance:
+
+- `git gatos session start` snapshots the base ref, `policy_root`, and `fold_root`, then spins up a dedicated branch for your experiments.
+- `session checkpoint`, `undo`, and `fork` stay inside that sandbox while watcher/hooks continue to enforce locks.
+- When you’re ready, `session publish` feeds the entire diff through the Policy Gate. If policy denies the publish, the denial is logged under `refs/gatos/audit/sessions/<ulid>/deny/*` so nothing disappears silently.
+- Idle sessions auto-expire after 30 days (configurable), but their audit trail lives on forensics.
+
+Sessions feel like private Git branches, but they inherit all the determinism guarantees—folds you run inside a session record their `Session-Shape-Root`, so anyone can reproduce your intermediate states before you promote them.
+
 ## The Magic Mirror
 
 <a id="the-magic-mirror"></a>

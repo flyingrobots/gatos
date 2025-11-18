@@ -856,3 +856,40 @@ The daemon exposes `messages.read` over the JSONL RPC channel so workers and bri
   - `limit_out_of_range` (409) — `limit < 1`.
 
 `gatos-message-plane` is responsible for translating RPC calls to actual Git ref walks and enforcing ULID monotonicity per ADR-0005.
+
+---
+
+## 18. Sessions & PoX Tooling
+
+### Sessions (ADR-0015)
+
+- **RPC surface**
+  - `session.start { base_ref?, actor? }` → daemon validates actor key, resolves base ref (default `refs/heads/main`), generates ULID, creates `refs/gatos/sessions/<actor>/<ulid>` pointing to base, and writes metadata JSON.
+  - `session.checkpoint { session_id }` → daemon shells out to Git to create a commit with required trailers.
+  - `session.undo/fork/publish` map 1:1 to CLI subcommands; publish calls the Policy API using the aggregated diff.
+- **Storage**
+  - Metadata file `.gatos/session/<ulid>.json` structure:
+    ```json
+    {
+      "session_id": "01H...",
+      "actor": "ed25519:...",
+      "base_ref": "refs/heads/main",
+      "policy_root": "<commit>",
+      "fold_root": "sha256:<hex>",
+      "created_at": "2025-11-18T18:00:00Z"
+    }
+    ```
+  - Session-local folds live in `refs/gatos/sessions/<actor>/<ulid>/state/<ns>/<channel>` so Echo can diff shapes.
+- **GC job**
+  - `gatos gc sessions` scans metadata, deletes sessions idle >30 days after logging to `refs/gatos/audit/sessions/<ulid>/expired`.
+
+### Proof-of-Experiment (ADR-0016)
+
+- **Schema**: `schemas/v1/proofs/pox_envelope.schema.json` (RFC 8785). CLI ensures `program_id` accepts `wasm:`, `oci:`, or `exec:` prefixes.
+- **Workflow**
+  1. `pox create` collects pointer manifests (`inputs_root`), Explorer outputs, PoE/PoF links.
+  2. `pox sign` signs BLAKE3 digest with ed25519; supports hardware keys via `gatos key use`.
+  3. `pox publish` writes commit to `refs/gatos/audit/proofs/experiments/<ulid>`.
+  4. `pox verify` checks signatures + linked proofs; if missing, returns structured errors.
+  5. `reproduce` drives workers + folds; writes audit logs under `refs/gatos/audit/pox/<ulid>/repro/<run-ulid>`.
+- **GitHub App**: exposes `gatos/pox` status check by calling `pox.status` RPC, ensuring experiments touching governed namespaces reference an existing PoX ULID.

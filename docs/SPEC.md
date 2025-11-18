@@ -811,7 +811,13 @@ Retention and compaction:
 
 <a id="9"></a><a id="9-sessions-working-branches"></a>
 
-`gatos/sessions/<actor>/<ulid>` represents an ephemeral branch for interactive mutation.
+`gatos/sessions/<actor>/<ulid>` represents an ephemeral branch for interactive mutation (see ADR-0015).
+
+- Session refs are **actor-scoped**; `<actor>` resolves via the trust graph and inherits watcher locks + policy grants from ADR-0003/0006.
+- `git gatos session start [--from <ref>]` records metadata (`base_ref`, `policy_root`, `fold_root`) under `.gatos/session/<ulid>.json` so later publishes can detect drift.
+- Checkpoints are plain Git commits that MUST include trailers `Session-Id`, `Policy-Root`, and `Fold-Root`.
+- Undo/fork operations stay within the session ref; publishes rebase onto governed namespaces and route through the Policy Gate. Denials are recorded under `refs/gatos/audit/sessions/<ulid>/deny/*`.
+- Idle sessions expire after 30 days by default; pruning writes an audit event before deleting the ref.
 
 ```mermaid
 graph TD
@@ -873,7 +879,7 @@ Proofs **MUST** be stored under `refs/gatos/audit/proofs/<ns>`.
 
 <a id="10.x"></a><a id="10x-proof-of-experiment-pox"></a>
 
-A **PoX** envelope ties together a scientific artifact’s inputs, program, policy, and outputs:
+A **PoX** envelope (ADR-0016) ties together a scientific artifact’s inputs, program, policy, and outputs:
 
 - `inputs_root` — commitment to input datasets/pointers
 - `program_id` — canonical hash of the analysis program/container
@@ -882,6 +888,13 @@ A **PoX** envelope ties together a scientific artifact’s inputs, program, poli
 - Links to associated PoE (jobs) and PoF (state) where applicable
 
 PoX envelopes **MUST** be stored under `refs/gatos/audit/proofs/experiments/<ulid>`.
+
+CLI flow:
+
+- `git gatos pox create` collects input/output manifests plus PoE/PoF digests.
+- `git gatos pox sign` signs the canonical envelope and writes it to `refs/gatos/audit/proofs/experiments/<ulid>`.
+- `git gatos pox verify` checks signatures, policy ancestry, and linked proofs.
+- `git gatos reproduce` pulls inputs via opaque pointers, replays PoE jobs, refolds state, and logs results under `refs/gatos/audit/pox/<ulid>/repro/<run-ulid>`.
 
 ---
 
