@@ -72,6 +72,27 @@ Most teams live on GitHub; native enforcement and UX reduce friction.
    - All outbound calls to GitHub use conditional requests (`If-None-Match`) to stay within rate limits.
    - The App MUST verify GitHub webhook signatures (SHA256) before processing.
 
+## Approvals Mapping & Multi-Repo Operations
+1. **PR Approvals ↔ Governance Approvals**
+   - Disabled by default. `.gatos/github.yaml` may enable bridging via:
+     ```yaml
+     approvals:
+       map_pull_request_reviews: true
+       reviewers:
+         - github:team/leads -> trust:@leads
+         - github:user:alice -> trust:actor:alice
+       ttl: PT72H
+     ```
+   - When enabled, each `APPROVED` review counts as a `grant.approval` envelope for the mapped trust actor **only if** the reviewer’s GitHub identity resolves in the trust graph. Revoked/rotated keys invalidate outstanding approvals immediately.
+   - Bridged approvals inherit quorum rules from ADR-0003; if the governance policy requires 2-of-3, the App must see two distinct mapped actors before marking `gatos/policy` passing. Non-mapped reviewers contribute comments only.
+   - Removal of a mapped approval (e.g., reviewer changes mind) creates a compensating `grant.revocation` event and forces re-evaluation.
+
+2. **Multi-Repo Queue Partitioning**
+   - Each installation maintains a shard per repository consisting of: `watcher-queue`, `command-queue`, `check-queue`. Shards are weighted by outstanding PR count (≥1 queue per 50 open PRs).
+   - Worker pods pull from shards using weighted fair scheduling: latency-sensitive queues (`command-queue`) get 50% of slots, `check-queue` 30%, `watcher-queue` 20% by default; operators can override via `.gatos/github.yaml queues { weights: ... }`.
+   - Cross-repo storms are mitigated by backpressure: when a shard exceeds 5k pending items or 2 minutes of lag, the App emits `gatos.github.queue.backpressure` events and temporarily downgrades lower-priority shards until lag <30s.
+   - Audit commits under `refs/gatos/audit/github/queues/<repo>/<ulid>` capture rebalancing operations so SREs can trace why work moved across shards.
+
 ```mermaid
 sequenceDiagram
     participant Dev as GitHub Developer

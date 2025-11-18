@@ -68,7 +68,7 @@ Pretend you run a multi-node ref streaming service. Explain for ADR-0009:
 
 ## ADR-0010 – Resolve PR approvals & multi-repo watcher strategy
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 >
