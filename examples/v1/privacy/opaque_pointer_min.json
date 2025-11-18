@@ -1,0 +1,8 @@
+{
+  "kind": "opaque_pointer",
+  "algo": "blake3",
+  "digest": "blake3:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "size": 4096,
+  "location": "https://vault.example.com/blob/123",
+  "capability": "kms://aws/alias/gatos/fold"
+}

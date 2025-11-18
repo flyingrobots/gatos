@@ -1,0 +1,11 @@
+{
+  "ts": "2025-11-17T12:01:00Z",
+  "actor": "git:alice",
+  "path": "refs/gatos/state/public/main",
+  "rule": "state.requires-proof",
+  "action": "deny.write",
+  "remediation": "Run gatos fold verify before pushing",
+  "details": {
+    "state_ref": "89abcdef0123456789abcdef0123456789abcdef"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/message-plane/event_envelope.schema.json",
+  "title": "Message Plane Envelope",
+  "description": "Schema for a Message Plane event envelope.",
+  "type": "object",
+  "required": [
+    "ulid",
+    "ns",
+    "type",
+    "payload"
+  ],
+  "properties": {
+    "ulid": {
+      "type": "string",
+      "description": "The 26-character ULID of the event.",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "ns": {
+      "type": "string",
+      "description": "The namespace of the event (e.g., 'governance')."
+    },
+    "type": {
+      "type": "string",
+      "description": "The type of the event (e.g., 'proposal.created')."
+    },
+    "payload": {
+      "type": "object",
+      "description": "The event payload, which should be canonical JSON.",
+      "additionalProperties": true
+    },
+    "refs": {
+      "type": "object",
+      "description": "Optional cross-references to other objects.",
+      "properties": {
+        "state": {
+          "type": "string",
+          "pattern": "^blake3:[0-9a-fA-F]{64}$"
+        },
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^blake3:[0-9a-fA-F]{64}$"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

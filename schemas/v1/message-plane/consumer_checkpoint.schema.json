@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/message-plane/consumer_checkpoint.schema.json",
+  "title": "Message Plane Consumer Checkpoint",
+  "description": "Schema for a Message Plane consumer checkpoint.",
+  "type": "object",
+  "required": [
+    "ulid"
+  ],
+  "properties": {
+    "ulid": {
+      "type": "string",
+      "description": "The ULID of the last processed event.",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "commit": {
+      "type": "string",
+      "description": "The Git commit hash of the last processed event.",
+      "pattern": "^[0-9a-f]{40}$"
+    }
+  },
+  "additionalProperties": false
+}

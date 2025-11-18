@@ -57,15 +57,15 @@
 - [ ] Tests:
   - [ ] exactly-once torture
 
-## EPIC-5: Sessions
+## EPIC-5: Sessions (ADR-0015)
 
 <a id="epic-5-sessions"></a>
 
-- [ ] start
+- [ ] start (CLI + RPC per ADR-0015)
 - [ ] undo
 - [ ] fork
 - [ ] merge
-- [ ] lattice/DPO joins for conflicts
+- [ ] lattice/DPO joins for conflicts (tie into ADR-0013 concurrency rules)
 
 ## EPIC-6: CAS & Opaque Pointers
 

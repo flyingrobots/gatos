@@ -1,0 +1,10 @@
+{
+  "type": "locks.acquire",
+  "args": {
+    "path": "docs/plan.md",
+    "grant": "gto_grant_ulid"
+  },
+  "expect_state": "0123456789abcdef0123456789abcdef01234567",
+  "request_id": "01HZY6QF7PC2VF9R8Y9YH6F4Q2",
+  "sync": true
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GATOS Policy Locks + Watcher Config (v1)",
+  "type": "object",
+  "properties": {
+    "locks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["match", "rule"],
+        "properties": {
+          "match": { "type": "string", "description": "Glob relative to repo root" },
+          "rule": { "type": "string", "description": "Governance rule id (ADR-0003)" },
+          "read_only": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "watcher": {
+      "type": "object",
+      "properties": {
+        "poll_fallback_ms": { "type": "integer", "minimum": 0, "default": 5000 },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["when", "match"],
+            "properties": {
+              "when": { "enum": ["on_save", "on_fold" ] },
+              "match": { "type": "string" },
+              "run": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Local command to run with deterministic args"
+              },
+              "run_job": { "type": "string", "description": "Job manifest id to enqueue" },
+              "timeout_s": { "type": "integer", "minimum": 1, "default": 120 }
+            },
+            "oneOf": [
+              { "required": ["run"] },
+              { "required": ["run_job"] }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

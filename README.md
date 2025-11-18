@@ -105,6 +105,14 @@ git push
 
 Store sensitive data (PII, large datasets) in private stores, but commit their **cryptographic commitments** to the public graph — public commitments; private bytes behind a policy-gated resolver. ***Verify the integrity of the computation without revealing the raw bytes***.
 
+### 4. Local Guardrails (Watcher + Hooks)
+
+Artists and infra engineers get Perforce-style safety without leaving Git. The `gatos watch` daemon keeps locked files read-only until a governance Grant exists, `gatos lock acquire/release` walks you through the approval flow, and managed Git hooks (`gatos install-hooks`) block bad pushes before they ever hit the remote—while logging any bypass under `refs/gatos/audit/locks/*`.
+
+### 5. GraphQL Truth Service
+
+Need a typed API for dashboards or custom UIs? The GraphQL endpoint (`POST /api/v1/graphql`) lets you query any state snapshot by commit (`stateRef`) or ref (`refPath`), with Relay pagination, rate limiting, and automatic policy filtering. Opaque pointers surface private blobs without leaking bytes, so you can build richly typed clients on top of verified state.
+
 -----
 
 ## How it Works: The 5 Planes
@@ -117,7 +125,7 @@ GATOS organizes the repository into five distinct planes using standard Git refe
 | **2. Policy/Trust** | `refs/gatos/policies/*`  | Executable policy (Lua/WASM), capabilities, quorum; **deny-audit** on violations. |
 |                     | `refs/gatos/trust/*`     | Keys, groups, grants, revocations. |
 | **3. State**        | `refs/gatos/state/*`     | Deterministic checkpoints derived from the ledger (**Proof-of-Fold**). |
-| **4. Message**      | `refs/gatos/mbus/*`      | Commit-backed pub/sub (at-least-once + idempotency). |
+| **4. Message**      | `refs/gatos/messages/*`  | Commit-backed message plane (topics served via `messages.read`). |
 | **5. Job**          | `refs/gatos/jobs/*`      | Jobs and **Proofs-of-Execution (PoE)**; exclusive claim via CAS. |
 
 -----
@@ -212,7 +220,7 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 
 ## Contributing
 
-🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./ROADMAP.md). 🗺️
+🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./docs/ROADMAP.md). 🗺️
 
 **Currently Working On:** Conceptualization & Planning Phase
 
@@ -238,7 +246,7 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 > We are looking for design partners in **scientific research**, **regulated fintech**, and **AI alignment**. If you're interested in GATOS, please get in touch. [james@flyingrobots.dev](mailto:james@flyingrobots.dev)
 
 * [Read the Specification](./docs/SPEC.md)
-* [View the Roadmap](./ROADMAP.md)
+* [View the Roadmap](./docs/ROADMAP.md)
 * [Join the Discussion](https://github.com/flyingrobots/gatos/discussions)
 
 ---

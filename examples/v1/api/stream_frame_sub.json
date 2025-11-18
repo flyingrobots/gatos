@@ -1,0 +1,6 @@
+{
+  "op": "sub",
+  "refs": ["refs/gatos/state/public/main"],
+  "topics": ["governance"],
+  "sinceSeq": 0
+}

@@ -1,6 +1,6 @@
-# GATOS Mind (Message Bus)
+# GATOS Message Plane (Message Bus)
 
-This crate implements the GATOS Message Bus (GMB), an asynchronous, commit-backed publish/subscribe
+This crate implements the GATOS Message Plane (GMP), an asynchronous, commit-backed publish/subscribe
 system. It handles topics, sharding, and different Quality of Service (QoS) guarantees for
 distributed communication between GATOS components.
 
@@ -9,16 +9,14 @@ distributed communication between GATOS components.
 > details, see [TECH-SPEC.md](../../docs/TECH-SPEC.md).
 
 Commit-backed means messages are persisted as Git commits to provide durability, auditability, and
-exactly-once semantics when combined with acknowledgements/commitments. See the architecture notes
-in [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and protocol details in
+at-least-once delivery with deterministic replay via ULID checkpoints. See the architecture notes in
+[ADR-0005](../../docs/decisions/ADR-0005/DECISION.md) and protocol details in
 [TECH-SPEC.md](../../docs/TECH-SPEC.md).
 
 ## Features
 
 - Asynchronous messaging: non-blocking publish/subscribe operations.
-- Commit-backed durability: persisted messages with auditability and exactly-once when combined
-
-  with acks/commitments.
+- Commit-backed durability: persisted messages with canonical envelopes (`message/envelope.json`).
 
 - Topic-based routing: logical message organization and filtering.
 - Sharding: horizontal scalability via topic partitioning.
@@ -36,7 +34,7 @@ in [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and protocol details in
 > For the evolving design and protocol, see [TECH-SPEC.md](../../docs/TECH-SPEC.md).
 
 ```text
-// use gatos_mind::{Publisher, Subscriber};
+// use gatos_message_plane::{Publisher, Subscriber};
 // #[tokio::main]
 // async fn main() { /* publish/subscribe */ }
 ```
@@ -45,7 +43,7 @@ Examples are coming once the API lands.
 
 ## Integration
 
-GMB is the Message Plane in the GATOS hexagonal architecture. It coordinates messaging across:
+GMP is the Message Plane in the GATOS hexagonal architecture. It coordinates messaging across:
 
 - `crates/gatos-ledger-core` and `crates/gatos-ledger-git`: ledger state events
 - `crates/gatos-policy`: policy decision events
@@ -54,11 +52,21 @@ GMB is the Message Plane in the GATOS hexagonal architecture. It coordinates mes
 
 ### Usage (API Sketch)
 
-- Depend on `gatos-mind` in your crate.
-- Use a `Publisher` to publish messages to a topic; use a `Subscriber` to consume.
-- Messages are persisted as Git commits to provide auditability and coordinate exactly-once when combined with acknowledgements/commitments.
+- Depend on `gatos-message-plane` in your crate.
+- Use a `Publisher` to append canonical envelopes under `refs/gatos/messages/<topic>/head`; use a `Subscriber` (or the `messages.read` RPC) to stream them oldest→newest.
+- Messages are persisted as Git commits and consumers store checkpoints in `refs/gatos/consumers/<group>/<topic>` so crashes can resume without duplication.
 
 > Note: This section reflects the intended usage; concrete APIs will be added as implementation proceeds.
+
+## Current API Skeleton
+
+The crate currently exports lightweight traits and structs so downstream crates can start wiring integrations:
+
+- `TopicRef` — identifies the repository + logical topic (`refs/gatos/messages/<topic>`).
+- `MessageEnvelope` — holds the canonical JSON bytes (per `schemas/v1/message-plane/event_envelope.schema.json`) and can be built via `MessageEnvelope::from_json_str` to enforce canonicalization/validation.
+- `MessagePublisher`, `MessageSubscriber`, `CheckpointStore` — traits implemented by `gatosd` once the Message Plane RPC lands. They expose `publish`, `read`, and checkpoint persistence hooks mapped to ADR-0005’s `messages.read` contract.
+
+These types intentionally omit concrete transport plumbing; they document the expected shape so ADR work and downstream SDKs can evolve in parallel.
 
 For protocol details, architecture rationale, and design patterns, see
 [ADR-0001](../../docs/decisions/ADR-0001/DECISION.md) and

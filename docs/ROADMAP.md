@@ -120,6 +120,7 @@ These are explicit non-goals until after the core truth machine is working:
 | **M4**    | Job Plane + Proof-of-Execution (PoE)                   |
 | **M5**    | Opaque Pointers + privacy-preserving projection        |
 | **M6**    | Explorer off-ramp + Explorer-Root verification         |
+| **M6.5**  | GraphQL State API (read-only)                          |
 | **M7**    | Proof-of-Experiment (PoX) + reproduce/verify CLI       |
 | **M8**    | Demos & examples (Bisect, ADR-as-policy, PoX)          |
 | **M9**    | Conformance suite + `gatos doctor`                     |
@@ -140,6 +141,8 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m0--repository-skeleton--governance"></a>
 
 **1–2 weeks**
+
+**Status:** ✅ Completed (2025-11-08). Repo scaffold, ADR log, and the SPEC/guide skeletons already live in this repository.
 
 ### Goals
 
@@ -205,6 +208,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–5 weeks**
 
+**Status:** 🟡 In Progress — ADR-0014 (Draft) plus SPEC §5 define PoF; EchoLua runtime + CLI wiring are still underway.
+
 ### Goals
 
 <a id="goals-1"></a>
@@ -264,6 +269,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–4 weeks**
 
+**Status:** ✅ Accepted — ADR-0003 (Policy Plane) and ADR-0006 (Local Enforcement) are merged; current work focuses on implementation hardening and tooling.
+
 ### Goals
 
 <a id="goals-2"></a>
@@ -289,6 +296,10 @@ These are explicit non-goals until after the core truth machine is working:
 - DENY-audit under `refs/gatos/audit/policy/**`.
 - Governance MVP:
   - proposals → approvals → grants (N-of-M).
+- Local enforcement:
+  - `gatos watch` daemon enforces `.gatos/policy.yaml` locks and mirrors grants locally.
+  - Managed Git hooks (`pre-commit`, `pre-push`, `post-checkout`) installed via CLI and logged under `refs/gatos/audit/locks/*`.
+  - `gatos lock acquire/release` CLI bridges users to ADR-0003 grants.
 
 ### Done When
 
@@ -301,6 +312,7 @@ These are explicit non-goals until after the core truth machine is working:
 - Rebasing policy refs is impossible.
 - Violating commits produce DENY events.
 - Policy ADR-as-code works end-to-end.
+- Locked assets remain read-only locally until the matching Grant lands; hook bypasses are audited.
 
 ---
 
@@ -316,6 +328,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="m3-message-bus-commit-backed-pubsub"></a>
 **3–5 weeks**
+
+**Status:** 🟠 Proposed — ADR-0005 documents the Message Plane but remains Proposed; crates, daemons, and tests still need to land.
 
 ### Goals
 
@@ -335,11 +349,11 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-4"></a>
 
-- Namespaced mbus:
+- Namespaced Message Plane topics:
 
-  `refs/gatos/mbus/<topic>/<yyyy>/<mm>/<dd>/<ulid>`
+  `refs/gatos/messages/<topic>/<yyyy>/<mm>/<dd>/<segment-ulid>` with `refs/gatos/messages/<topic>/head` pointing at the latest segment.
 
-- QoS: **at-least-once + idempotency + ack/dedupe**.
+- QoS: **at-least-once + ULID/idempotency + checkpoint dedupe** via `refs/gatos/consumers/<group>/<topic>`.
 
 - Rotation thresholds:
   - max 100k messages **or** 192MB per segment
@@ -376,6 +390,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **4–6 weeks**
 
+**Status:** ✅ Accepted — ADR-0002 locks the Job Plane + PoE design; integration into the daemon/CLI is queued behind Message Plane delivery.
+
 ### Goals
 
 <a id="goals-4"></a>
@@ -394,7 +410,7 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="deliverables-5"></a>
 
-- Exclusive CAS lock ref: `refs/gatos/jobs/<id>/claim`.
+- Exclusive CAS lock refs: `refs/gatos/jobs/<job-id>/claims/<worker-id>` (expected old = zero OID; policy enforces exclusivity + retries).
 - Worker loop:
   - subscribe → claim → run → commit result.
 - PoE envelope: inputs\_root, program\_id, outputs\_root.
@@ -426,6 +442,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **4–6 weeks**
 
+**Status:** ✅ Accepted — ADR-0004 establishes the hybrid privacy model; `docs/opaque-pointers.md` and SPEC sections are ready for implementation polish.
+
 ### Goals
 
 <a id="goals-5"></a>
@@ -445,10 +463,11 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="deliverables-6"></a>
 
 - Public pointer schema:
-  - **ciphertext\_digest** REQUIRED
-  - NO plaintext digest for low-entropy data
-  - size bucketed (1k/4k/16k/64k)
-- Resolver: JWT + Digests; logs under audit.
+  - Canonical JSON envelope with `kind: "opaque_pointer"`, `algo`, `digest`, and optional bucketed `size` (1k/4k/16k/64k).
+  - `location` URI describing where to fetch private bytes (`gatos-node://`, `https://`, `s3://`, `ipfs://`, etc.).
+  - `capability` URI describing how to authorize/decrypt (`gatos-key://`, `kms://`, `age://`, etc.).
+  - `digest` is the BLAKE3 hash of the raw plaintext blob committed out-of-band; ciphertext hashes are not recorded in Git.
+- Resolver: JWT + Digest verification; logs under audit.
 - Projection engine performs pointerization deterministically.
 
 ### Done When
@@ -476,6 +495,8 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m6--explorer-off-ramp--explorer-root"></a>
 
 **3–4 weeks**
+
+**Status:** 🟡 In Progress — ADR-0011 (Draft) and `docs/exporter.md` define Explorer-Root + export flows; CLI + verifier code remains to be written.
 
 ### Goals
 
@@ -512,6 +533,34 @@ These are explicit non-goals until after the core truth machine is working:
 
 ---
 
+## **M6.5 — GraphQL State API (Read-Only)**
+
+<a id="m65--graphql-state-api-read-only"></a>
+
+**3–4 weeks**
+
+**Status:** ✅ Accepted — ADR-0007 plus API docs describe the GraphQL gateway; next steps are wiring it into `gatosd` and hardening pagination/rate limits.
+
+### Goals
+
+- Typed, single-roundtrip read access to any committed state snapshot.
+
+### Deliverables
+
+- Gateway crate/binary exposing `POST /api/v1/graphql` plus `GET /api/v1/graphql/schema` (SDL published from `api/graphql/schema.graphql`).
+- Resolver layer honoring `stateRef` / `refPath`, enforcing Relay pagination (opaque cursors, `[1,500]` bounds, deterministic ordering), and returning `OpaquePointerNode` objects when policy hides data.
+- Integration with policy/privacy planes so denied paths surface as GraphQL errors with `POLICY_DENIED` codes and never fetch private blobs automatically.
+- Rate limiting (default 600 requests / 60s) with `X-RateLimit-*` headers, plus caching semantics (`shapeRoot`, `stateRefResolved`, `ETag`).
+- Schema + conformance tests checked into the repo (SDL diff, pagination/authorization fixtures).
+
+### Done When
+
+- Clients can query historical (`stateRef`) or head (`refPath`) state and get stable JSON tied to a `shapeRoot`.
+- SDL + resolver contract pass automated tests covering pagination limits, pointer handling, and error codes.
+- Docs (README, SPEC, Guide) teach developers how to call the API and interpret `POLICY_DENIED` responses.
+
+---
+
 ## **M7 — Proof-of-Experiment (PoX) & Reproduce/Verify**
 
 <a id="m7--proof-of-experiment-pox--reproduceverify"></a>
@@ -524,6 +573,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="m7-proof-of-experiment-pox-reproduceverify"></a>
 **4–6 weeks**
+
+**Status:** 🟡 In Progress — ADR-0016 (Draft) defines PoX envelopes; CLI + verifier/reproducer tooling remains to be built.
 
 ### Goals
 
@@ -578,6 +629,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **1–2 weeks**
 
+**Status:** 🔜 Planned — Demo content depends on Message Plane, PoE, and PoX shipping; nothing beyond outlines exists yet.
+
 ### Deliverables
 
 <a id="deliverables-8"></a>
@@ -615,6 +668,8 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m9--conformance--gatos-doctor"></a>
 
 **3–4 weeks**
+
+**Status:** 🔜 Planned — Conformance tooling hinges on exporter/policy maturity; no ADR currently covers `gatos doctor`.
 
 ### Goals
 

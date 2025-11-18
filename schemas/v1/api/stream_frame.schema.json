@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/api/stream_frame.schema.json",
+  "title": "GATOS Stream Frame",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/definitions/sub" },
+    { "$ref": "#/definitions/unsub" },
+    { "$ref": "#/definitions/refUpdate" },
+    { "$ref": "#/definitions/busEvent" },
+    { "$ref": "#/definitions/ping" },
+    { "$ref": "#/definitions/pong" },
+    { "$ref": "#/definitions/error" }
+  ],
+  "definitions": {
+    "sub": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": { "const": "sub" },
+        "refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sinceSeq": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "unsub": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": { "const": "unsub" },
+        "refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "refUpdate": {
+      "type": "object",
+      "required": ["kind", "ref", "old", "new", "seq", "ts"],
+      "properties": {
+        "kind": { "const": "ref.update" },
+        "ref": { "type": "string" },
+        "old": { "type": ["string", "null"] },
+        "new": { "type": ["string", "null"] },
+        "seq": { "type": "integer", "minimum": 0 },
+        "ts": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "busEvent": {
+      "type": "object",
+      "required": ["kind", "topic", "payload", "seq", "ts"],
+      "properties": {
+        "kind": { "const": "bus.event" },
+        "topic": { "type": "string" },
+        "payload": { "type": "object" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "ts": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": true
+    },
+    "ping": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "ping" } },
+      "additionalProperties": false
+    },
+    "pong": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "pong" } },
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "required": ["kind", "code", "message"],
+      "properties": {
+        "kind": { "const": "error" },
+        "code": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

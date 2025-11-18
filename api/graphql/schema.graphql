@@ -1,0 +1,8 @@
+"""
+Placeholder SDL for the GraphQL state API (ADR-0007).
+Actual schema will be generated once resolvers land.
+"""
+
+type Query {
+  _placeholder: Boolean!
+}

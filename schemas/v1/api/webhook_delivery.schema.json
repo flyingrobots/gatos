@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/api/webhook_delivery.schema.json",
+  "title": "GATOS Webhook Delivery",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "event", "ts", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Delivery ULID"
+    },
+    "event": {
+      "type": "string",
+      "description": "Event name (proposal.created, job.succeeded, etc.)."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific body." },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Delivery attempt number."
+    },
+    "signature": {
+      "type": "string",
+      "description": "HMAC-SHA256 signature of body (hex)."
+    }
+  }
+}

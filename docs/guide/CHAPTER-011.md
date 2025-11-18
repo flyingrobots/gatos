@@ -148,7 +148,7 @@ git config --global repack.writeBitmaps true
 git config --global repack.packKeptObjects false
 ```
 
-Consider partial clone and promisor remotes for `refs/gatos/mbus/*`.
+Consider partial clone and promisor remotes for `refs/gatos/messages/*`.
 
 #### Cache Invalidation Strategy
 

@@ -28,7 +28,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"

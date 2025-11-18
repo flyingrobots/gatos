@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/export/export_manifest.schema.json",
+  "title": "GATOS Export Manifest",
+  "type": "object",
+  "required": ["format", "state_ref", "commit_range", "tables"],
+  "properties": {
+    "format": { "enum": ["sqlite", "parquet"] },
+    "state_ref": { "type": "string", "pattern": "^[0-9a-fA-F]{40}$" },
+    "commit_range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "pattern": "^[0-9a-fA-F]{40}$" },
+        "end": { "type": "string", "pattern": "^[0-9a-fA-F]{40}$" }
+      }
+    },
+    "tables": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commits": { "type": "boolean", "default": true },
+        "events": { "type": "boolean", "default": true },
+        "state_nodes": { "type": "boolean", "default": true },
+        "pointers": { "type": "boolean", "default": true },
+        "jobs": { "type": "boolean", "default": true },
+        "governance": { "type": "boolean", "default": true }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

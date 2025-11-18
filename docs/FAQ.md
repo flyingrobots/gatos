@@ -300,7 +300,7 @@ Add `fold_root` to proof envelope and make proof field type-tagged:
 <a id="4"></a><a id="4-message-bus-scaling--changing-shard-count"></a><a id="4-message-bus-scaling-changing-shard-count"></a>
 Use a versioned shard map + dual-write migration.
 
-- Store topic config at `refs/gatos/mbus-config/<topic>.json`:
+- Store topic config at `refs/gatos/messages-config/<topic>.json`:
 
 ```json
 {
@@ -318,9 +318,9 @@ Consistent hashing keeps most keys stable when shards changes.
 Dual-write window:
 
 - Publishers write to both old and new shard maps for a configurable epoch.
-- Consumers subscribe to both maps; dedupe by (topic, ulid).
+- Consumers read from both shard maps via `messages.read` and persist checkpoints per topic/segment; dedupe by `(topic, ulid)`.
 
-When ack lag on the old map is zero for N minutes, flip the active version and retire the old.
+When checkpoint lag on the old map is zero for N minutes, flip the active version and retire the old.
 
 This gives smooth resharding with exactly-once semantics intact.
 
@@ -647,7 +647,7 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 <a id="2supply-chain--deploy-attestation"></a><a id="2.supply-chain-deploy-attestation"></a>
 
 - Needs: signed events, multi-sig policy changes, human/JSON logs, offline verify.
-- We meet: Shiplog DNA + proof envelopes v1.
+- We meet: Message Plane DNA + proof envelopes v1.
 - Add: “evidence pack” command that bundles logs + proof → ✅ audit-ready.
 
 ### 3. Air-gapped ML registry
@@ -690,8 +690,8 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 
 <a id="4llm-multi-agent-orchestration"></a><a id="4.llm-multi-agent-orchestration"></a>
 
-- Needs: pub/sub, exactly-once, backpressure, capability tokens.
-- We meet: bus QoS + caps + acks/commit.
+- Needs: pub/sub, at-least-once with deterministic replay, capability tokens.
+- We meet: commit-backed Message Plane + capability-scoped topics + checkpoints (refs/gatos/consumers/*) for resume/dedupe.
 - Add: shard-map/versioning + subscription windows → ✅ at scale.
 
 ### 5. Cross-app data sharing (RLS-gated state)
@@ -930,8 +930,8 @@ Grant chain fields (prev, revokes) and a rotation checklist in spec.
 - **Gate**:
   - finalize `.rgs` grammar + deterministic interpreter;
   - emit rule ids in Deny.
-- **Bus**:
-  - `mbus-config/<topic>.json` with versioned shard maps + dual-write migration.
+- **Message Plane**:
+  - `messages-config/<topic>.json` with versioned shard maps + dual-write migration.
 - **Proofs**:
   - implement commitment proofs today;
   - leave ZK behind a trait.

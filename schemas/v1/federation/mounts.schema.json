@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gatos.io/schemas/v1/federation/mounts.schema.json",
+  "title": "GATOS Federation Mounts",
+  "type": "object",
+  "required": ["mounts"],
+  "properties": {
+    "mounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source", "verify"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          },
+          "source": {
+            "type": "string",
+            "description": "git+https://...#refs/..."
+          },
+          "verify": {
+            "type": "string",
+            "description": "ed25519:<pubkey>"
+          },
+          "refresh": {
+            "type": "string",
+            "description": "ISO-8601 duration (e.g., PT5M)",
+            "default": "PT5M"
+          },
+          "auth": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["none", "token", "ssh"] },
+              "token_env": { "type": "string" },
+              "ssh_key_path": { "type": "string" }
+            }
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "trusted_refs": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "max_depth": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

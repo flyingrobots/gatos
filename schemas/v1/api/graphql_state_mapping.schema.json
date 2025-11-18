@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GraphQL State Mapping (v1)",
+  "type": "object",
+  "required": ["types"],
+  "properties": {
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["graphqlType", "statePath"],
+        "properties": {
+          "graphqlType": { "type": "string" },
+          "statePath": { "type": "string", "description": "Dot-path into state JSON" },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,13 +1,16 @@
 [package]
-name = "gatos-mind"
+name = "gatos-message-plane"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Placeholder for GATOS Message Bus implementation"
+description = "Placeholder for the GATOS Message Plane (message bus) implementation"
 # NOTE: Placeholder metadata until implementation lands; do not publish.
-keywords = ["gatos", "message-bus", "git"]
+keywords = ["gatos", "message-plane", "git"]
 categories = ["network-programming", "data-structures"]
 
 [dependencies]
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+hex = { workspace = true }

@@ -33,12 +33,13 @@ Opaque Pointers allow public verification with private bytes.
 
 <a id="public-pointer-rules-normative"></a>
 
-See \[\[\[\[\[[SPEC §7](/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(/SPEC#7) and Research Profile §12.1.
+See [[[[[SPEC §7](/SPEC#7)](/SPEC#7)](/SPEC#7)](/SPEC#7)](/SPEC#7) and Research Profile §12.1.
 
-- Low-entropy classes: public pointers **MUST NOT** expose plaintext digests.
-- Public pointers **MUST** include a `ciphertext_digest`.
-- Pointer `size` **SHOULD** be bucketed (e.g., 1 KB, 4 KB, 16 KB, 64 KB).
-- Plaintext commitments, if needed, MUST be hidden (stored in `encrypted_meta`).
+- Pointer envelopes **MUST** use Canonical JSON with `kind: "opaque_pointer"`, `algo: "blake3"`, `digest: blake3:<hex>`, optional bucketed `size`, and URIs for `location` + `capability`.
+- `digest` is the BLAKE3 hash of the raw plaintext blob. Plaintext bytes never enter Git; digest collisions or dictionary attacks are mitigated by policy (use opaque pointers for any low-entropy data).
+- `location` declares where to fetch the blob (`gatos-node://`, `https://`, `s3://`, `ipfs://`, `file:///` dev/test). `capability` declares how to authorize/decrypt (`gatos-key://`, `kms://`, `age://`, etc.).
+- Pointer `size` metadata **SHOULD** use coarse buckets (e.g., 1 KB, 4 KB, 16 KB, 64 KB) to avoid leaking exact lengths.
+- Envelope `content_id = blake3(canonical_bytes)` and MUST be stable across projections.
 
 ## Availability & Resolver
 
@@ -51,23 +52,11 @@ See \[\[\[\[\[[SPEC §7](/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(/SPEC#7)]\(
 <a id="availability--resolver"></a>
 
 <a id="availability--resolver"></a><a id="availability-resolver"></a>
-Resolvers serve private bytes to authorized clients.
+Resolvers serve private bytes to authorized clients. They MUST:
 
-Headers:
-
-- `Digest: blake3=<hex>`
-- `X-BLAKE3-Digest: <hex>` (duplicate for intermediaries)
-
-Auth (normative default): Bearer JWT; log decisions under `refs/gatos/audit/`.
-
-Required JWT claims:
-
-- `sub` — subject (requesting principal)
-- `aud` — audience (resolver/repo id)
-- `exp` — expiry (short-lived)
-- Optional `scope` — dataset/namespace scope
-
-Optional extensions: HTTP Message Signatures and/or mTLS may be supported; they are not required for the Research profile.
+1. Parse the `location` URI to determine how to fetch the encrypted blob. For `gatos-node://ed25519:<pubkey>`, resolve the node via the trust graph and fetch `GET /.well-known/gatos/private/{digest}`. For HTTP/S3/IPFS/file URIs, use the obvious client.
+2. Require authorization via the declared `capability` (default profile: Bearer JWT). Log every decision under `refs/gatos/audit/` and enforce JWT claims (`sub`, `aud`, `exp`, optional `scope`). Other schemes like KMS, AGE, or HTTP message signatures MAY be layered on.
+3. After decrypting, compute `blake3(plaintext)` and compare against the pointer’s `digest`. Respond with `Digest: blake3=<hex>`/`X-BLAKE3-Digest: <hex>` headers so clients can double-check integrity. Resolution MUST fail on any mismatch.
 
 ## Projection Determinism
 

@@ -1,0 +1,12 @@
+{
+  "ulid": "01HZY74CE0R9X5ZG9S7B5MQG9S",
+  "ns": "governance",
+  "type": "proposal.created",
+  "payload": {
+    "proposal_id": "blake3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "title": "Add proof-of-fold checks"
+  },
+  "refs": {
+    "state": "blake3:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

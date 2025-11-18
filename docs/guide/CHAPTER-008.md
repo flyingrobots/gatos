@@ -188,6 +188,30 @@ The CLI is the primary tool for human operators and for scripting simple GATOS i
 
 While not part of the core GATOS system, the JSONL RPC protocol makes it straightforward to build gateway services that expose GATOS functionality over more traditional web protocols like **REST** or **GraphQL**.
 
+### GraphQL State API (ADR-0007)
+
+```
+POST /api/v1/graphql
+Headers: { "x-gatos-api": "v1" }
+Body: { "query": "query($stateRef: ID!,$first:Int){
+  state(stateRef:$stateRef){
+    shapeRoot
+    inventory(first:$first){
+      edges{ node { id sku quantity } cursor }
+      pageInfo{ hasNextPage endCursor }
+    }
+  }
+}",
+  "variables": {"stateRef": "7bc8...", "first": 50 }
+}
+```
+
+- **Targeting:** Supply either `stateRef` (commit) or `refPath`. The server returns `stateRefResolved` so clients know which commit was read.
+- **Pagination:** Relay-style connections (`edges`, `pageInfo`); cursors are opaque. Servers clamp page sizes to `[1,500]`.
+- **Privacy:** Fields projected as opaque pointers appear as `OpaquePointerNode { kind, algo, digest, location, capability }`; the client can decide whether to resolve them.
+- **Errors:** Denied fields append GraphQL errors with `POLICY_DENIED`. Always read the `errors[]` array even if `data` is non-null.
+- **Caching:** Responses include `shapeRoot` and `ETag` so you can safely memoize historical snapshots; moving refs respond with `Cache-Control: no-cache` so you revalidate.
+
 A simple Node.js or Go service could listen for HTTP requests, translate them into JSONL RPC commands to `gatosd`, and then format the JSONL responses back into HTTP responses. This allows web frontends and other standard web clients to interact with a GATOS node without needing a dedicated GATOS SDK.
 
 ### End-to-End Example (JSONL)

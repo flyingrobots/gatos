@@ -85,7 +85,7 @@ graph TD
         end
 
         subgraph "Message Plane"
-            Mind("gatos-mind");
+            Mind("gatos-message-plane");
         end
 
         subgraph "Job Plane"
@@ -248,7 +248,7 @@ See the full step-by-step guides:
   - **Objective:**
     - To cover the components that enable GATOS to orchestrate communication and asynchronous tasks in a distributed environment.
   - **Key Concepts:**
-    - Commit-Backed Message Bus (`gatos-mind`)
+    - Commit-Backed Message Bus (`gatos-message-plane`)
     - Pub/Sub on Git Refs
     - Job Lifecycle (`gatos-compute`)
     - Proof-of-Execution (PoE)
@@ -337,6 +337,17 @@ See the full step-by-step guides:
     - Confluence
   - **Read this if:**
     - You are interested in the future direction of GATOS and its potential to change how we build distributed and AI-integrated systems.
+
+- [Chapter 13: Operations & Observability](./CHAPTER-013.md)
+  - **Objective:**
+    - To guide operators through health probes, SLOs, metrics, and incident response using the audit surfaces built into GATOS.
+  - **Key Concepts:**
+    - Profiles & Guardrails, `/healthz` vs `/readyz`, stream lag, PoX backlogs
+    - Metrics (policy gate latency, message lag, proof coverage)
+    - Audit references for sessions, locks, federation, PoX
+    - Troubleshooting playbooks (mirror lag, policy spikes, pointer drift)
+  - **Read this if:**
+    - You deploy or operate GATOS nodes and need concrete runbooks and observability patterns.
 
 ## Glossary (Quick Reference)
 
