@@ -90,7 +90,7 @@ Pretend you run a multi-node ref streaming service. Explain for ADR-0009:
 
 ## ADR-0011 – Add security/scale envelope for exports
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 > 

@@ -38,6 +38,42 @@ Teams want ad-hoc analytics without learning internals; SQL + columnar files cov
    - Rows sorted by primary key; SQLite `PRAGMA user_version` stores the exporter version.
    - Integrity table `export_info(state_ref TEXT, commit_start TEXT, commit_end TEXT, shape_root TEXT, exported_at TEXT)`.
 
+## Security & Resource Envelope
+1. **Data Boundaries**
+   - Exporter walks only canonical ledger/state; private overlays stay pointerized. Any blob referenced by an opaque pointer is emitted as metadata (`digest`, `location`, `capability`) and never dereferenced; attempts to pull bytes result in a hard failure logged under `refs/gatos/audit/export/<ulid>`.
+   - IAM: the CLI/daemon requires a dedicated `state.export` capability grant scoped to the target namespace. S3/GCS destinations must enforce bucket policies preventing public reads; parquet exports inherit those credentials via short-lived federated tokens (≤1h).
+
+2. **Resource Planning**
+   - Guidance: expect ~2.5× repo size for Parquet (due to columnar replication) and ~1.2× for SQLite. A repo with 1M events / 200k state nodes consumes ~15 GB Parquet, ~7 GB SQLite. The exporter caps memory use at 1 GB by chunking rows per table; operators can override via `--batch-size`.
+   - Latency budget: 1 minute per 100k events on SSD-backed runners. Long-running exports emit `export.progress` events every 30s so CI can enforce SLAs.
+
+3. **Example Artifacts**
+   - Manifest snippet:
+     ```json
+     {
+       "$schema": "https://gatos.io/schemas/v1/export/export_manifest.schema.json",
+       "format": "sqlite",
+       "state_ref": "0123456789abcdef0123456789abcdef01234567",
+       "commit_range": { "start": "0000...0000", "end": "fedcba9876543210fedcba9876543210fedcba98" },
+       "tables": { "commits": true, "events": true, "state_nodes": true, "pointers": true, "jobs": false, "governance": true },
+       "created_at": "2025-11-17T12:00:00Z"
+     }
+     ```
+   - Canonical table definition (SQLite):
+     ```sql
+     CREATE TABLE commits (
+       id TEXT PRIMARY KEY,
+       parent_id TEXT,
+       author TEXT NOT NULL,
+       ts INTEGER NOT NULL,
+       message TEXT NOT NULL,
+       trailers JSON NOT NULL,
+       shape_root TEXT NOT NULL,
+       created_ts INTEGER NOT NULL,
+       updated_ts INTEGER NOT NULL
+     );
+     ```
+
 ```mermaid
 flowchart LR
     A[Ledger] -->|events| B[Exporter]
