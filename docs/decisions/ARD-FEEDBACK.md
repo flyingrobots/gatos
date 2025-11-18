@@ -111,7 +111,7 @@ Pretend you run a multi-node ref streaming service. Explain for ADR-0009:
 
 ## ADR-0012 – Decide on federation discovery/gossip
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 >

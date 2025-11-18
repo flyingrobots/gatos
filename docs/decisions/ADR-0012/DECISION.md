@@ -54,6 +54,15 @@ Enables decentralized composition (e.g., central governance repo consumed by man
    - If mount fetch fails (auth/network), mark mount `degraded` and emit an event to `refs/gatos/audit/federation/<name>/<ulid>`.
    - Policy MUST support forcing a mount to `offline` when `max_depth` is exceeded to avoid cycles.
 
+## Discovery Policy
+1. **Manual-Only Mount Registry**
+   - v1 explicitly rejects automatic discovery/gossip. All mounts MUST be declared in `.gatos/federation.yaml` and land via reviewed commits. This guarantees every cross-repo dependency is auditable and subject to policy review.
+   - Nodes ignore unsolicited mount advertisements; received gossip packets trigger `federation.discovery.ignored` audit events for visibility.
+2. **Rationale & Future Hooks**
+   - Trust graph coupling: accepting federated state implies extending the verification surface. Manual declaration ensures the `verify` key is pinned to a known trust anchor and that `policy.trusted_refs` is curated.
+   - Rate limiting & abuse: gossip traffic can be abused for DoS; the manual approach keeps mount changes at git-speed, with existing review/approval flows.
+   - Operators who need semi-automatic behavior can script `gatos mount inspect <remote>` → YAML patch, but the resulting diff still requires review. A future ADR may revisit gossip once we define signed advertisements + quota enforcement.
+
 ```mermaid
 graph TD
     A[Local Repo] -->|mounts| B[Remote Governance Repo]
