@@ -338,6 +338,17 @@ See the full step-by-step guides:
   - **Read this if:**
     - You are interested in the future direction of GATOS and its potential to change how we build distributed and AI-integrated systems.
 
+- [Chapter 13: Operations & Observability](./CHAPTER-013.md)
+  - **Objective:**
+    - To guide operators through health probes, SLOs, metrics, and incident response using the audit surfaces built into GATOS.
+  - **Key Concepts:**
+    - Profiles & Guardrails, `/healthz` vs `/readyz`, stream lag, PoX backlogs
+    - Metrics (policy gate latency, message lag, proof coverage)
+    - Audit references for sessions, locks, federation, PoX
+    - Troubleshooting playbooks (mirror lag, policy spikes, pointer drift)
+  - **Read this if:**
+    - You deploy or operate GATOS nodes and need concrete runbooks and observability patterns.
+
 ## Glossary (Quick Reference)
 
 <a id="glossary-quick-reference"></a>
