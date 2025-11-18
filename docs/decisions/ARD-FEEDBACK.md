@@ -131,7 +131,7 @@ Pretend you run a multi-node ref streaming service. Explain for ADR-0009:
 
 ## ADR-0013 – Decide on prewarming & shared caches
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 >

@@ -48,6 +48,16 @@ Large repos need sub-linear recomputation to stay responsive.
    - Commit trailers include `Fold-Cache-Hit`, `Fold-Cache-Miss`, `Fold-Units`, `Fold-Duration`, `Fold-Parallelism`.
    - Metrics exported via Prometheus: `gatos_fold_unit_duration_ms`, `gatos_fold_cache_utilization`.
 
+## Prewarming & Shared Cache Policy
+1. **Background Prewarming**
+   - Allowed only when `--prewarm` flag is explicitly set or `fold.prewarm=true` in `.gatos/fold_units.yaml`. Prewarm jobs enqueue idle-time recomputation for units touched in the last 24h and MUST honor global concurrency limits to avoid starving foreground folds.
+   - Policy gate: if governance rules forbid speculative compute (e.g., sensitive namespaces), the fold daemon skips prewarming automatically and logs `fold.prewarm.skipped`.
+   - Prewarm runs emit `Fold-Prewarm` trailers with the list of units warmed so auditors can correlate CPU usage.
+2. **Shared Cache Stores**
+   - Default path: `${GATOS_CACHE_ROOT:-.gatos/cache}/fold-units`. Multi-worktree setups point `GATOS_CACHE_ROOT` to a shared volume; locks are implemented via `flock` on `cache.lock` plus per-unit `.lck` files to prevent double writes.
+   - Eviction policy: LRU capped at 50k units or 200 GB, whichever comes first. Operators may override via env vars `GATOS_CACHE_MAX_UNITS` / `GATOS_CACHE_MAX_BYTES`.
+   - When multiple nodes share the cache (e.g., NFS), cache metadata includes the producing host ID; stale entries older than `policy_root` or with missing blobs are purged during startup sweep, and the purge is recorded under `refs/gatos/audit/fold-cache/<ulid>`.
+
 ```mermaid
 graph TD
     E1[Event Stream] --> P1[Plan Affected Units]
