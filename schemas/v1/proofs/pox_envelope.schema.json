@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GATOS Proof-of-Experiment Envelope",
+  "type": "object",
+  "required": [
+    "type",
+    "ulid",
+    "inputs_root",
+    "program_id",
+    "policy_root",
+    "policy_code_root",
+    "outputs_root",
+    "links",
+    "sig_alg",
+    "sig"
+  ],
+  "properties": {
+    "type": { "const": "pox" },
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "inputs_root": { "type": "string", "pattern": "^[a-z0-9]+:[a-f0-9]+$" },
+    "program_id": { "type": "string" },
+    "policy_root": { "type": "string" },
+    "policy_code_root": { "type": "string" },
+    "outputs_root": { "type": "string", "pattern": "^[a-z0-9]+:[a-f0-9]+$" },
+    "metadata": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } },
+    "links": {
+      "type": "object",
+      "required": ["poe", "pof"],
+      "properties": {
+        "poe": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9]+:[a-f0-9]+$" }
+        },
+        "pof": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9]+:[a-f0-9]+$" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sig_alg": { "type": "string", "enum": ["ed25519"] },
+    "sig": { "type": "string" }
+  },
+  "additionalProperties": false
+}

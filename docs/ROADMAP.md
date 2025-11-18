@@ -574,7 +574,7 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m7-proof-of-experiment-pox-reproduceverify"></a>
 **4–6 weeks**
 
-**Status:** 🔜 Planned — PoX tooling is still conceptual (see `docs/proofs/proof-of-experiment.md`); no ADR has been authored yet.
+**Status:** 🟡 In Progress — ADR-0016 (Draft) defines PoX envelopes; CLI + verifier/reproducer tooling remains to be built.
 
 ### Goals
 

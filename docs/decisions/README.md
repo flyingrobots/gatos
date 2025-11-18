@@ -42,3 +42,5 @@ Each ADR will have a status, typically one of the following:
 | [ADR-0012](./ADR-0012/DECISION.md) | Federated Repositories & Mounts | Draft | 2025-11-09 |
 | [ADR-0013](./ADR-0013/DECISION.md) | Partial & Lazy Folds | Draft | 2025-11-09 |
 | [ADR-0014](./ADR-0014/DECISION.md) | Proof-Of-Fold (Attestation of State) | Draft | 2025-11-09 |
+| [ADR-0015](./ADR-0015/DECISION.md) | Sessions (Ephemeral Working Branches) | Draft | 2025-11-18 |
+| [ADR-0016](./ADR-0016/DECISION.md) | Proof-of-Experiment (PoX) | Draft | 2025-11-18 |

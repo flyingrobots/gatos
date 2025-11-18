@@ -1,10 +1,10 @@
 # Task Backlog
 
-- [ ] **ADR Coverage: Sessions & PoX**
+- [x] **ADR Coverage: Sessions & PoX**
   - *Summary*: Author ADRs that define the Sessions feature set and the Proof-of-Experiment workflow so roadmap items have specs.
   - *Problem Statement*: `docs/TASKS.md` references Sessions without any ADR, and PoX (M7) lacks a normative document; engineers cannot implement without an agreed contract.
-  - *Acceptance Criteria*: (1) Two ADRs merged (Sessions, PoX) with IDs in the canonical log; (2) Each ADR documents scope, decision, consequences, and diagrams; (3) Roadmap/TASKS link to the new ADR IDs.
-  - *Test Plan*: Lint ADR markdown (mdformat/dprint), ensure `docs/decisions/README.md` table updates; run `rg` to confirm no TODO placeholders remain.
+  - *Acceptance Criteria*: ✅ ADR-0015 (Sessions) and ADR-0016 (PoX) exist with diagrams + consequences; roadmap/task references updated.
+  - *Test Plan*: ✅ Markdown lint + `rg` show new ADR ids in README/ROADMAP.
   - *LLM Prompt*: “You are drafting an Architecture Decision Record. Produce an ADR that specifies the GATOS Sessions feature (start/undo/fork/merge with lattice/DPO joins) aligned with existing policy/state planes, including decision, diagrams, and consequences.”
 
 - [ ] **Message Plane Implementation**
@@ -62,4 +62,3 @@
   - *Acceptance Criteria*: (1) CLI command `gatos doctor` runs a battery of checks (policy FF-only refs, exporter manifests, proof coverage); (2) Reports actionable errors; (3) Tests cover healthy vs failing repos.
   - *Test Plan*: Integration tests against synthetic repos with intentional corruption; verify output codes and messages.
   - *LLM Prompt*: “Implement a `gatos doctor` CLI that validates repo invariants (policy FF-only branches, PoF/PoE coverage, exporter manifests) and reports actionable diagnostics.”
-
