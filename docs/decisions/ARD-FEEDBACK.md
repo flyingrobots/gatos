@@ -24,7 +24,7 @@
 
 ## ADR-0008 – Flesh out auth scopes & webhook DLQ operations
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 >

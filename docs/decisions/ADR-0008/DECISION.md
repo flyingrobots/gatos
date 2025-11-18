@@ -36,6 +36,26 @@ Commands are side-effecting; REST is adequate and tool-friendly. Integrations ne
 4. **AuthN/Z**: OAuth2/JWT bearer tokens, validated against ADR-0003 policy. Scopes map to command prefixes (e.g., `locks:*`, `jobs:*`). Webhook secrets are per subscription; rotation takes effect immediately and old secrets expire after 5 minutes.
 5. **HTTP Codes**: `202` (async ack), `200` (sync success), `400` (schema validation error), `401/403` (auth failures), `409` (`EXPECT_STATE_MISMATCH`), `422` (`COMMAND_UNSUPPORTED`), `500` (unhandled).
 
+## Auth Scopes & Webhook DLQ Operations
+1. **OAuth2 Scope Matrix**
+
+| Scope | Command Prefixes / Resources | Notes |
+| :--- | :--- | :--- |
+| `locks:*` | `locks.acquire`, `locks.release`, `locks.status` | Required for any mutation touching refs guarded by the watcher plane. |
+| `jobs:*` | `jobs.claim`, `jobs.complete`, `jobs.retry` | Grants access to job lifecycle commands plus Message Plane job topics. |
+| `policy:*` | `policy.evaluate`, `policy.override` | High-privilege scope gated by ADR-0003 trust rules; only issued to governance automation. |
+| `state.export` | `state.export`, `state.fold.force` | Limited-use scope for export/fold operators; cannot touch locks/jobs. |
+| `webhooks:*` | `GET/POST/DELETE /api/v1/webhooks*` | Needed to CRUD webhook subscriptions and manage DLQ entries. |
+
+Servers MUST reject commands whose prefix is not covered by the caller’s scope set; errors return `401` with `WWW-Authenticate: scope="missing-scope"`.
+
+2. **Dead-Letter Queue Management**
+   - **Visibility**: `GET /api/v1/webhooks/{id}/dlq` lists parked deliveries newest-first, capped at 500 entries. Each entry includes `delivery_id`, `event`, `attempts`, `last_error`, and `expires_at`.
+   - **Replay**: `POST /api/v1/webhooks/{id}/dlq/{delivery_id}/replay` moves the entry back to the active queue immediately and increments an `operator_replay` counter recorded under `refs/gatos/audit/webhooks/<id>/<ulid>`.
+   - **Purge**: `DELETE /api/v1/webhooks/{id}/dlq/{delivery_id}` permanently removes the entry (audited with the same trail as replay). Full purge requires `webhooks:*` scope and emits a governance event when more than 50 entries are deleted at once.
+   - **Retention**: Entries auto-expire after 30 days; the DLQ sweeper emits a `webhook.dlq.expired` event for observability.
+   - **Alerting**: When a DLQ exceeds 100 entries or the oldest entry is >24h, the system emits `state.failed` + `webhook.dlq.threshold` events so operators can wire alerts without polling.
+
 ```mermaid
 sequenceDiagram
     participant Client
