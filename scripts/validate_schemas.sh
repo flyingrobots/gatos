@@ -36,14 +36,25 @@ if [ "$DO_COMPILE" -eq 1 ]; then
 echo "[schemas] Compiling JSON Schemas (v1)…"
 SCHEMAS=(
   "schemas/v1/common/ids.schema.json"
-  "schemas/v1/job/job_manifest.schema.json"
-  "schemas/v1/job/proof_of_execution_envelope.schema.json"
+  "schemas/v1/api/command_envelope.schema.json"
+  "schemas/v1/api/graphql_state_mapping.schema.json"
+  "schemas/v1/api/stream_frame.schema.json"
+  "schemas/v1/api/webhook_delivery.schema.json"
+  "schemas/v1/export/export_manifest.schema.json"
+  "schemas/v1/federation/mounts.schema.json"
   "schemas/v1/governance/proposal.schema.json"
   "schemas/v1/governance/approval.schema.json"
   "schemas/v1/governance/grant.schema.json"
   "schemas/v1/governance/revocation.schema.json"
   "schemas/v1/governance/proof_of_consensus_envelope.schema.json"
+  "schemas/v1/job/job_manifest.schema.json"
+  "schemas/v1/job/proof_of_execution_envelope.schema.json"
+  "schemas/v1/message-plane/event_envelope.schema.json"
+  "schemas/v1/message-plane/consumer_checkpoint.schema.json"
   "schemas/v1/policy/governance_policy.schema.json"
+  "schemas/v1/privacy/opaque_pointer.schema.json"
+  "schemas/v1/state/proof_of_fold_envelope.schema.json"
+  "schemas/v1/watch/events.schema.json"
 )
 
 for schema in "${SCHEMAS[@]}"; do
@@ -59,13 +70,24 @@ fi
 if [ "$DO_VALIDATE" -eq 1 ]; then
 echo "[schemas] Validating example documents (v1)…"
 declare -A EXAMPLES=(
-  ["schemas/v1/job/job_manifest.schema.json"]="examples/v1/job/manifest_min.json"
-  ["schemas/v1/job/proof_of_execution_envelope.schema.json"]="examples/v1/job/poe_min.json"
+  ["schemas/v1/api/command_envelope.schema.json"]="examples/v1/api/command_envelope_min.json"
+  ["schemas/v1/api/graphql_state_mapping.schema.json"]="examples/v1/api/graphql_state_mapping_min.json"
+  ["schemas/v1/api/stream_frame.schema.json"]="examples/v1/api/stream_frame_sub.json"
+  ["schemas/v1/api/webhook_delivery.schema.json"]="examples/v1/api/webhook_delivery_min.json"
+  ["schemas/v1/export/export_manifest.schema.json"]="examples/v1/export/export_manifest_min.json"
+  ["schemas/v1/federation/mounts.schema.json"]="examples/v1/federation/mounts_min.json"
   ["schemas/v1/governance/proposal.schema.json"]="examples/v1/governance/proposal_min.json"
   ["schemas/v1/governance/approval.schema.json"]="examples/v1/governance/approval_min.json"
   ["schemas/v1/governance/grant.schema.json"]="examples/v1/governance/grant_min.json"
   ["schemas/v1/governance/revocation.schema.json"]="examples/v1/governance/revocation_min.json"
   ["schemas/v1/governance/proof_of_consensus_envelope.schema.json"]="examples/v1/governance/poc_envelope_min.json"
+  ["schemas/v1/job/job_manifest.schema.json"]="examples/v1/job/manifest_min.json"
+  ["schemas/v1/job/proof_of_execution_envelope.schema.json"]="examples/v1/job/poe_min.json"
+  ["schemas/v1/message-plane/event_envelope.schema.json"]="examples/v1/message-plane/event_envelope_min.json"
+  ["schemas/v1/message-plane/consumer_checkpoint.schema.json"]="examples/v1/message-plane/consumer_checkpoint_min.json"
+  ["schemas/v1/privacy/opaque_pointer.schema.json"]="examples/v1/privacy/opaque_pointer_min.json"
+  ["schemas/v1/state/proof_of_fold_envelope.schema.json"]="examples/v1/state/proof_of_fold_envelope_min.json"
+  ["schemas/v1/watch/events.schema.json"]="examples/v1/watch/event_min.json"
 )
 
 for schema in "${!EXAMPLES[@]}"; do

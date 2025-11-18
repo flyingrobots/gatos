@@ -1,0 +1,11 @@
+{
+  "id": "01HZY6R8DTN97Z6AV1ZK1X6QGQ",
+  "event": "proposal.created",
+  "ts": "2025-11-17T12:00:00Z",
+  "payload": {
+    "proposal_id": "blake3:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "title": "Increase fold memory"
+  },
+  "attempt": 1,
+  "signature": "4f8b0c1d2e3f4a5b6c7d8e9f0a1b2c3d"
+}

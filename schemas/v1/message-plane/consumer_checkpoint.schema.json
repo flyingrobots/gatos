@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://gatos.io/schemas/v1/message-plane/consumer_checkpoint.schema.json",
   "title": "Message Plane Consumer Checkpoint",
   "description": "Schema for a Message Plane consumer checkpoint.",

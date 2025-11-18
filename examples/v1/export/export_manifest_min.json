@@ -1,0 +1,17 @@
+{
+  "format": "sqlite",
+  "state_ref": "89abcdef0123456789abcdef0123456789abcdef",
+  "commit_range": {
+    "start": "0123456789abcdef0123456789abcdef01234567",
+    "end": "fedcba9876543210fedcba9876543210fedcba98"
+  },
+  "tables": {
+    "commits": true,
+    "events": true,
+    "state_nodes": true,
+    "pointers": false,
+    "jobs": false,
+    "governance": true
+  },
+  "created_at": "2025-11-17T11:59:00Z"
+}

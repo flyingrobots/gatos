@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://gatos.io/schemas/v1/privacy/opaque_pointer.schema.json",
   "title": "Opaque Pointer",
   "description": "Schema for an opaque pointer envelope, referencing private data.",

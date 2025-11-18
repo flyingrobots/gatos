@@ -40,6 +40,16 @@ State is hierarchical and interlinked; GraphQL matches the access pattern and av
    Each error entry includes `extensions.code` and `extensions.ref` (support ULID).
 10. **Rate Limits**: Default 600 requests / 60s window per actor, enforced via shared limiter. Policy rules may override per namespace/project; responses include `X-RateLimit-Remaining` headers.
 
+## Schema Evolution & Error Surfacing
+1. **Deprecation Cadence**
+   - *Announce (0–4 weeks)*: SDL publishes `@deprecated(reason: "removal in 4w")`, release notes summarize the change, and responses add `X-GATOS-Deprecations`. No behavior change beyond warnings.
+   - *Dual-Serve (4–12 weeks)*: Legacy + successor fields resolve in parallel. Requests for the old field append `errors[]` entries with `extensions.code="FIELD_DEPRECATED"`; dashboards track usage daily so teams can confirm adoption.
+   - *Removal (>12 weeks)*: Field disappears from SDL/introspection. Queries referencing it return `USER_INPUT_ERROR` with an `extensions.ref` ULID pointing to the removal notice. A 1-week emergency rollback window exists; after that, reintroducing the field requires a fresh ADR.
+2. **Error Propagation**
+   - *Policy Denied*: Resolver emits partial data with an error `{code:"POLICY_DENIED", path:[...], ref:<ulid>}` while still returning HTTP 200 and a `shapeRoot`. The auxiliary diagram highlights the `Policy` participant sending `deny/pointerize` before the response.
+   - *Invalid Ref / Missing State*: When `stateRef` or `refPath` cannot be resolved, Resolver emits `{code:"STATE_NOT_FOUND"}` (404 when the top-level ref fails, 200 otherwise) or `{code:"INVALID_STATE_REF"}` (400). The auxiliary diagram’s second branch shows `State Store` returning a miss and Resolver surfacing the error bubble before writing the response.
+   - *Diagram Note*: Add a companion Mermaid sequence titled “Error Paths” with two `alt` blocks—`Policy DENY` (shows pointerized/null field plus error) and `State MISS` (shows Resolver handling a missing ref). This diagram supplements the happy-path diagram above so operators see both flows.
+
 ```mermaid
 sequenceDiagram
     participant Client
