@@ -35,7 +35,7 @@ Exports let you analyze GATOS state outside the repo (e.g., Parquet/SQLite) whil
 <a id="explorer-root-normative"></a>
 
 <a id="explorer-root-normative"></a><a id="explorerroot-normative"></a>
-See \[\[\[\[\[[SPEC §15.1](/SPEC#15.1)]\(/SPEC#15.1)]\(/SPEC#15.1)]\(/SPEC#15.1)]\(/SPEC#15.1)]\(/SPEC#15.1). Exporters **MUST** compute `Explorer-Root`.
+See [SPEC §15.1](/SPEC#15.1). Exporters **MUST** compute `Explorer-Root`.
 
 Derived state exports (from folds) include `state_root`:
 

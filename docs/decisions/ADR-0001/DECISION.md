@@ -1,6 +1,14 @@
 ---
 Status: Accepted
 Date: 2025-11-08
+ADR: ADR-0001
+Authors: [flyingrobots]
+Requires: []
+Related: []
+Tags: [Ledger, ObjectStore, Architecture]
+Schemas: []
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0001: Split gatos-ledger into `no_std` Core and `std` Backends

@@ -8,6 +8,8 @@ Related: []
 Tags: [Federation, Mounts, Cross-Repo]
 Schemas:
   - schemas/v1/federation/mounts.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0012: Federated Repositories & Mounts
@@ -76,4 +78,4 @@ graph TD
 - Requires remote availability and verification logic.
 
 ## Open Questions
-- Federation gossip: do we allow automatic mount discovery, or keep `.gatos/federation.yaml` manual only?
+- Future ADR: Define the signed gossip/advertisement protocol (trust anchor format, TTL, quota) required before we can safely enable any automatic mount discovery.

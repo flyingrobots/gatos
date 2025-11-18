@@ -9,6 +9,8 @@ Tags: [API, REST, Commands, Webhooks]
 Schemas:
   - schemas/v1/api/command_envelope.schema.json
   - schemas/v1/api/webhook_delivery.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0008: REST Commands & Webhooks

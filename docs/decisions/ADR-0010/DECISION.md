@@ -6,6 +6,9 @@ Authors: [flyingrobots]
 Requires: [ADR-0002, ADR-0003, ADR-0007, ADR-0008]
 Related: []
 Tags: [Integration, GitHub App, CI/CD, Governance]
+Schemas: []
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0010: First-Class GitHub App Integration

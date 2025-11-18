@@ -8,6 +8,8 @@ Related: [ADR-0002]
 Tags: [Attestation, Proofs, State Engine]
 Schemas:
   - schemas/v1/state/proof_of_fold_envelope.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0014: Proof-Of-Fold (Attestation of State)

@@ -6,6 +6,9 @@ Authors: [flyingrobots]
 Requires: [ADR-0001, ADR-0005]
 Related: []
 Tags: [Performance, State Engine, Caching]
+Schemas: []
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0013: Partial & Lazy Folds

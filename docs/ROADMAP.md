@@ -142,6 +142,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **1–2 weeks**
 
+**Status:** ✅ Completed (2025-11-08). Repo scaffold, ADR log, and the SPEC/guide skeletons already live in this repository.
+
 ### Goals
 
 <a id="goals"></a>
@@ -206,6 +208,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–5 weeks**
 
+**Status:** 🟡 In Progress — ADR-0014 (Draft) plus SPEC §5 define PoF; EchoLua runtime + CLI wiring are still underway.
+
 ### Goals
 
 <a id="goals-1"></a>
@@ -265,6 +269,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–4 weeks**
 
+**Status:** ✅ Accepted — ADR-0003 (Policy Plane) and ADR-0006 (Local Enforcement) are merged; current work focuses on implementation hardening and tooling.
+
 ### Goals
 
 <a id="goals-2"></a>
@@ -322,6 +328,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="m3-message-bus-commit-backed-pubsub"></a>
 **3–5 weeks**
+
+**Status:** 🟠 Proposed — ADR-0005 documents the Message Plane but remains Proposed; crates, daemons, and tests still need to land.
 
 ### Goals
 
@@ -382,6 +390,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **4–6 weeks**
 
+**Status:** ✅ Accepted — ADR-0002 locks the Job Plane + PoE design; integration into the daemon/CLI is queued behind Message Plane delivery.
+
 ### Goals
 
 <a id="goals-4"></a>
@@ -431,6 +441,8 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m5--opaque-pointers--privacy-projection"></a>
 
 **4–6 weeks**
+
+**Status:** ✅ Accepted — ADR-0004 establishes the hybrid privacy model; `docs/opaque-pointers.md` and SPEC sections are ready for implementation polish.
 
 ### Goals
 
@@ -484,6 +496,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–4 weeks**
 
+**Status:** 🟡 In Progress — ADR-0011 (Draft) and `docs/exporter.md` define Explorer-Root + export flows; CLI + verifier code remains to be written.
+
 ### Goals
 
 <a id="goals-6"></a>
@@ -525,6 +539,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **3–4 weeks**
 
+**Status:** ✅ Accepted — ADR-0007 plus API docs describe the GraphQL gateway; next steps are wiring it into `gatosd` and hardening pagination/rate limits.
+
 ### Goals
 
 - Typed, single-roundtrip read access to any committed state snapshot.
@@ -557,6 +573,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 <a id="m7-proof-of-experiment-pox-reproduceverify"></a>
 **4–6 weeks**
+
+**Status:** 🔜 Planned — PoX tooling is still conceptual (see `docs/proofs/proof-of-experiment.md`); no ADR has been authored yet.
 
 ### Goals
 
@@ -611,6 +629,8 @@ These are explicit non-goals until after the core truth machine is working:
 
 **1–2 weeks**
 
+**Status:** 🔜 Planned — Demo content depends on Message Plane, PoE, and PoX shipping; nothing beyond outlines exists yet.
+
 ### Deliverables
 
 <a id="deliverables-8"></a>
@@ -648,6 +668,8 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m9--conformance--gatos-doctor"></a>
 
 **3–4 weeks**
+
+**Status:** 🔜 Planned — Conformance tooling hinges on exporter/policy maturity; no ADR currently covers `gatos doctor`.
 
 ### Goals
 

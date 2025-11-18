@@ -8,6 +8,8 @@ Related: [ADR-0007, ADR-0008]
 Tags: [API, WebSocket, Streaming, Refs]
 Schemas:
   - schemas/v1/api/stream_frame.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0009: Real-Time Streams & Ref Subscriptions

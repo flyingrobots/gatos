@@ -8,6 +8,8 @@ Related: [ADR-0008, ADR-0009]
 Tags: [API, GraphQL, State]
 Schemas:
   - schemas/v1/api/graphql_state_mapping.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0007: GraphQL State API (Read-Only)
@@ -76,4 +78,4 @@ sequenceDiagram
 - Server complexity moves into resolvers and policy filters.
 
 ## Open Questions
-- Field deprecation cadence.
+- None (cadence + error surfacing policy defined above).

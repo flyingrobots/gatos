@@ -12,7 +12,7 @@ Supersedes: []
 Superseded-By: []
 ---
 
-# ADR‑0004: Hybrid Privacy Model (Public Projection + Private Overlay)
+# ADR-0004: Hybrid Privacy Model (Public Projection + Private Overlay)
 
 ## Scope
 
@@ -22,7 +22,7 @@ Define a **hybrid privacy** model in which the State Plane produces:
 
 ## Rationale
 
-The original model envisioned using a local, out‑of‑repo directory for private data and committing only redacted or pointerized state to Git. This ADR makes that pattern **normative** and **deterministic**:
+The original model envisioned using a local, out-of-repo directory for private data and committing only redacted or pointerized state to Git. This ADR makes that pattern **normative** and **deterministic**:
 - Public state remains globally verifiable.
 - Sensitive details live in a private overlay but are **addressable** and **auditable** via content hashes.
 
@@ -52,22 +52,22 @@ Several alternative approaches to managing privacy and sensitive data were consi
 
 ## Decision
 
-### 1. Actor‑Anchored Private Namespace (normative)
+### 1. Actor-Anchored Private Namespace (normative)
 
-Private overlays are rooted in an **actor identity**, not an ad‑hoc “session”.
+Private overlays are rooted in an **actor identity**, not an ad-hoc “session”.
 
 - **Actor ID:** `ed25519:<pubkey>` that resolves in the trust graph.
-- **On‑disk refs (private):**
+- **On-disk refs (private):**
   ```
   refs/gatos/private/<actor-id>/<ns>/<channel>
   refs/gatos/private/<actor-id>/sessions/<ulid>/<ns>/<channel>   # OPTIONAL ephemeral overlays
   ```
-- **On‑disk refs (public):**
+- **On-disk refs (public):**
   ```
   refs/gatos/state/public/<ns>/<channel>
   ```
 
-> The prior “`<session-id>` at namespace root” concept is deprecated. If you need per‑process isolation, use `sessions/<ulid>` under the owning `<actor-id>`.
+> The prior “`<session-id>` at namespace root” concept is deprecated. If you need per-process isolation, use `sessions/<ulid>` under the owning `<actor-id>`.
 
 ### 2. Opaque Pointers (normative)
 
@@ -88,13 +88,13 @@ Where private data is elided from PublicState, emit a canonical JSON **opaque po
   - `gatos-node://ed25519:<pubkey>` — resolve endpoint(s) via trust graph.
   - `file:///...` — local file path (dev/test only).
   - `https://...` — HTTPS object store.
-  - `s3://bucket/key` — S3‑style store.
+  - `s3://bucket/key` — S3-style store.
   - `ipfs://<cid>` — IPFS address.
 - `capability` MUST be a URI. Reserved schemes include:
   - `gatos-key://v1/aes-256-gcm/<key-id>`
   - `kms://aws/<region>/keys/<uuid>`
   - `age://<recipient>` / `sops://<profile>`
-- Canonical JSON (UTF‑8, sorted keys, no insignificant whitespace). The digest of the pointer envelope itself (its **content_id**) is `blake3(canonical_bytes)`.
+- Canonical JSON (UTF-8, sorted keys, no insignificant whitespace). The digest of the pointer envelope itself (its **content_id**) is `blake3(canonical_bytes)`.
 
 **Schema:** `schemas/v1/privacy/opaque_pointer.schema.json` (see repo changes below).
 
@@ -125,7 +125,7 @@ A resolver MUST:
    - Use scheme to select decryption/authorization mechanism.
    - Fetch and decrypt the content. Verify that the `blake3` hash of the resulting plaintext bytes matches the `digest` from the pointer. If it does not match, the resolution **MUST FAIL**.
 
-> This ADR standardizes **envelopes and verification**. The `.well-known` fetch API shape is reserved for a future ADR; implementations may use compatible private APIs short‑term.
+> This ADR standardizes **envelopes and verification**. The `.well-known` fetch API shape is reserved for a future ADR; implementations may use compatible private APIs short-term.
 
 ### 5. Policy Hooks (normative)
 
@@ -155,13 +155,13 @@ privacy:
 ### 7. Security Considerations
 
 - Never embed plaintext secrets in PublicState. Pointer envelopes do **not** leak bytes.
-- If `location` is remote and `capability` is non‑null, deny fetch if capability can’t be resolved or verified.
+- If `location` is remote and `capability` is non-null, deny fetch if capability can’t be resolved or verified.
 - The trust graph entry for a node SHOULD declare endpoint URIs and allowed capability schemes.
 - The `capability` mechanism implies a dependency on a robust and secure key management system. This ADR does not specify the architecture of such a system, but implementations MUST ensure that key access is strictly controlled and auditable.
 
 ### 8. Compatibility
 
-- Existing per‑process “session” overlays can migrate to `refs/gatos/private/<actor-id>/sessions/<ulid>/...` with no behavioral change to the projection.
+- Existing per-process “session” overlays can migrate to `refs/gatos/private/<actor-id>/sessions/<ulid>/...` with no behavioral change to the projection.
 
 ### Diagrams
 

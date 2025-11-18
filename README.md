@@ -220,7 +220,7 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 
 ## Contributing
 
-🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./ROADMAP.md). 🗺️
+🚧 GATOS is currently under construction, but you can check out the [ROADMAP](./docs/ROADMAP.md). 🗺️
 
 **Currently Working On:** Conceptualization & Planning Phase
 
@@ -246,7 +246,7 @@ See also: Deterministic Lua profile for policies/folds: [docs/deterministic-lua.
 > We are looking for design partners in **scientific research**, **regulated fintech**, and **AI alignment**. If you're interested in GATOS, please get in touch. [james@flyingrobots.dev](mailto:james@flyingrobots.dev)
 
 * [Read the Specification](./docs/SPEC.md)
-* [View the Roadmap](./ROADMAP.md)
+* [View the Roadmap](./docs/ROADMAP.md)
 * [Join the Discussion](https://github.com/flyingrobots/gatos/discussions)
 
 ---

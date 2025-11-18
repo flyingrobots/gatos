@@ -6,6 +6,10 @@ Authors: [flyingrobots]
 Requires: [ADR-0001, ADR-0005]
 Related: []
 Tags: [Analytics, Export, SQL, Parquet]
+Schemas:
+  - schemas/v1/export/export_manifest.schema.json
+Supersedes: []
+Superseded-By: []
 ---
 
 # ADR-0011: GATOS-to-SQL/Parquet Exporter
@@ -85,9 +89,18 @@ flowchart LR
     G --> H[Shape Root]
 ```
 
+## Query Pushdown (v1 Behaviour)
+1. **Range-Scoped Runs**
+   - `--since <sha>` + optional `--until <sha>` bound the export window. The exporter walks topo order between the commits and skips events outside the window; this is the only supported history filter to keep proofs simple.
+2. **Table/Column Filters**
+   - `--tables commits,events,...` narrows participating tables (already part of the CLI). Additionally, v1 adds `--columns <table>:col1,col2` so operators can omit high-churn blobs (e.g., large JSON payloads) and shrink exports without losing keys needed for joins.
+3. **Row Predicates**
+   - Deterministic WHERE-like filters expressed as canonical JSON DSL: `--where commits='{"ns":"gatos/jobs"}'`. Predicates only support conjunctions of equality/range comparisons and are hashed into the export manifest so downstream consumers can validate which subset they received. Unsupported operators cause the exporter to fail fast with `UNSUPPORTED_FILTER` and leave an audit record.
+4. **Auditability**
+   - Every pushdown option is materialized into `export_info.filters` inside the manifest. Consumers recompute the digest of `(state_ref, commit_range, tables, columns, where)` to verify they read from the same logical slice. This closes the open question—yes, we support limited pushdown scoped to deterministic filters, and we document every filter for reproducibility.
+
 ## Consequences
 - Easy dashboards, BI, notebooks.
 - Must be careful not to leak private overlay data (only pointer metadata exported).
-
 ## Open Questions
-- Do we support query pushdown (pre-filtered exports) in v1?
+- None (pushdown semantics defined above).
