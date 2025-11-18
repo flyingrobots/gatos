@@ -40,6 +40,17 @@ UIs and workers need near-real-time updates without wasteful polling.
 
 8. **Errors & Close Codes**: Protocol errors result in immediate close with WebSocket code `1008`. The final frame MAY include `{kind:"error", code:"INVALID_SUB", message:"..."}`.
 
+## Federated Streaming Semantics
+1. **Seq & Credit Propagation**
+   - Federation proxies treat their upstream node as a virtual client: they forward `sub` frames and maintain a local `seq_proxy` counter while the origin node keeps `seq_origin`. Frames forwarded downstream include both values (`seq_origin` inside payload, `seq_proxy` in the envelope) so clients can dedupe after failover.
+   - Backpressure travels hop-by-hop. When a client sends `credit: N`, the proxy immediately decrements its local window and only propagates a refreshed credit upstream once it drains the buffered frames. This prevents head-of-line blocking across tenants.
+   - If a proxy exhausts credit while waiting on the downstream client, it pauses reads from the upstream socket and emits `kind:"ping", credit:0` every 5s to signal stalling. Upstream nodes close idle links after 30s with `1001`.
+2. **Replay Windows Across Hops**
+   - On reconnect, clients include `sinceSeq=<last seq_proxy>`. The proxy first replays from its buffer; if the requested range predates its retention, it escalates to the origin via `sinceSeq=<mapped seq_origin>`. Should the origin also lack history, the proxy emits `{kind:"error", code:"REPLAY_EXPIRED", missingSeq:<id>}` to the client and instructs it to fall back to a full ref sync before resubscribing.
+   - Proxies cache up to 10k frames or 15 minutes (whichever is smaller). When upstream expiry occurs mid-hop, the proxy logs `refs/gatos/audit/stream/replay_miss/<ulid>` and publishes a `stream.replay.miss` message so ops teams can tune buffers.
+3. **Diagram Update**
+   - Add an auxiliary Mermaid diagram titled "Federated Stream" introducing a `Proxy` participant between Client and Stream. Show credit propagation (`Client -> Proxy -> Stream`) and two `alt` blocks: `Replay hit` (Proxy responds locally) and `Replay expired` (Proxy requests upstream, receives miss, emits error). This supplements the base diagram without duplicating it.
+
 ```mermaid
 sequenceDiagram
     participant Client

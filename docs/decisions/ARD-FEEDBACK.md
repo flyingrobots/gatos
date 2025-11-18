@@ -47,7 +47,7 @@ You are documenting a REST command surface. Produce a subsection for ADR-0008 co
 
 ## ADR-0009 – Clarify replay/backpressure across federated nodes
 
-- [ ] Resolved
+- [x] Resolved
 
 > [!WARNING]- **Recommendation**
 >
