@@ -119,6 +119,23 @@ pub struct PublishReceipt {
     pub commit_id: String,
     /// Canonical `content_id` (BLAKE3 hex digest of the envelope bytes).
     pub content_id: String,
+    /// ULID supplied in the envelope.
+    pub ulid: String,
+}
+
+/// Full record returned by `MessageSubscriber::read`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MessageRecord {
+    /// Commit hash containing the message.
+    pub commit_id: String,
+    /// Canonical `content_id` (BLAKE3 digest of the envelope).
+    pub content_id: String,
+    /// Path to `message/envelope.json` inside the commit tree.
+    pub envelope_path: String,
+    /// Canonical JSON bytes (base64 when serialized for RPC).
+    pub canonical_envelope: Vec<u8>,
+    /// ULID used for ordering/dedupe.
+    pub ulid: String,
 }
 
 /// Errors encountered during publish/subscribe workflows.
@@ -132,6 +149,8 @@ pub enum MessagePlaneError {
     HeadConflict,
     /// Subscriber checkpoint could not be stored.
     Checkpoint(String),
+    /// Client supplied an invalid range/limit.
+    InvalidLimit,
 }
 
 impl std::fmt::Display for MessagePlaneError {
@@ -141,6 +160,7 @@ impl std::fmt::Display for MessagePlaneError {
             Self::InvalidEnvelope(e) => write!(f, "invalid envelope: {}", e),
             Self::HeadConflict => write!(f, "topic head moved while publishing"),
             Self::Checkpoint(e) => write!(f, "checkpoint error: {}", e),
+            Self::InvalidLimit => write!(f, "invalid range/limit"),
         }
     }
 }
@@ -162,7 +182,7 @@ pub trait MessageSubscriber {
         topic: &TopicRef,
         since_ulid: Option<&str>,
         limit: usize,
-    ) -> Result<Vec<PublishReceipt>, MessagePlaneError>;
+    ) -> Result<Vec<MessageRecord>, MessagePlaneError>;
 }
 
 /// Persistence for consumer checkpoints (refs/gatos/consumers/**).
@@ -204,5 +224,62 @@ fn canonicalize_json(value: Value) -> Value {
         }
         Value::Array(arr) => Value::Array(arr.into_iter().map(canonicalize_json).collect()),
         other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    const GOOD_ULID: &str = "01HAF6ZZZ8Q1EXAMPLEFUNAAA";
+
+    #[test]
+    fn ulid_validation_accepts_uppercase_crockford() {
+        assert!(validate_ulid_str(GOOD_ULID).is_ok());
+    }
+
+    #[test]
+    fn ulid_validation_rejects_bad_values() {
+        assert!(matches!(
+            validate_ulid_str("short"),
+            Err(MessagePlaneError::InvalidEnvelope(_))
+        ));
+        assert!(matches!(
+            validate_ulid_str("01HAF6zzzzzzzzzzzzzzzzzzz"),
+            Err(MessagePlaneError::InvalidEnvelope(_))
+        ));
+    }
+
+    #[test]
+    fn envelope_canonicalization_sorts_keys() {
+        let envelope_json = json!({
+            "payload": {"b": 1, "a": 2},
+            "type": "demo",
+            "ns": "tests",
+            "ulid": GOOD_ULID,
+            "refs": {"x": "blake3:1234"}
+        });
+        let envelope = MessageEnvelope::from_value(envelope_json).expect("valid envelope");
+        let canonical_str = String::from_utf8(envelope.canonical_bytes.clone()).unwrap();
+        assert!(canonical_str.find("\"ns\"") < canonical_str.find("\"payload\""));
+        assert_eq!(
+            envelope.content_id(),
+            envelope.content_id(),
+            "content id should be deterministic"
+        );
+    }
+
+    #[test]
+    fn envelope_requires_payload() {
+        let broken = json!({
+            "type": "demo",
+            "ns": "tests",
+            "ulid": GOOD_ULID
+        });
+        assert!(matches!(
+            MessageEnvelope::from_value(broken),
+            Err(MessagePlaneError::InvalidEnvelope(_))
+        ));
     }
 }
