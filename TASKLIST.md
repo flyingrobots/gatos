@@ -10,9 +10,9 @@
 - [ ] **Message Plane Implementation**
   - *Summary*: Build the segmented Git-backed pub/sub system defined in ADR-0005 so M3 can move from Proposed to Accepted.
   - *Problem Statement*: ADR-0005 is still Proposed; without actual crates and tests, Job Plane and downstream integrations are blocked.
-  - *Acceptance Criteria*: (1) New crate/service exposes publish/subscribe APIs with `refs/gatos/messages/**` segment rotation; (2) Consumer checkpoints persist under `refs/gatos/consumers/**`; (3) Integration tests cover at-least-once delivery, rotation, and pruning; (4) ADR-0005 status flipped to Accepted.
-  - *Test Plan*: Rust unit tests for envelope serialization; end-to-end test spinning up two publishers/consumers verifying dedupe; regression test ensuring pruning respects checkpoints.
-  - *LLM Prompt*: “Implement a Git-backed message bus per ADR-0005: create a Rust module that writes message topics under `refs/gatos/messages/<topic>/<date>/<ulid>` with rotation at 100k messages or 192MB and checkpoints under `refs/gatos/consumers/...`. Include tests for publish, subscribe, rotation, and pruning.”
+  - *Acceptance Criteria*: (1) `gatos-message-plane` exposes publish/read/checkpoint APIs writing to `refs/gatos/messages/**` with rotation + TTL summaries; (2) CLI/RPC `messages.publish/read` implemented in `gatosd`; (3) Consumer checkpoints stored under `refs/gatos/consumers/**`; (4) Integration tests cover publishing, reading from ULIDs, rotation, pruning, and checkpoint persistence; (5) ADR-0005 status updated to Accepted with notes; (6) SPEC/TECH-SPEC reference the shipped implementation.
+  - *Test Plan*: Rust unit tests for envelope canonicalization + ULID validation; git-based integration tests that publish messages, enforce CAS ordering, verify checkpoint refs, and simulate rotation/pruning; end-to-end tests hitting the JSONL `messages.read` RPC.
+  - *LLM Prompt*: “Implement a Git-backed message bus per ADR-0005: create a Rust module that writes message topics under `refs/gatos/messages/<topic>/<date>/<segment-ulid>` with rotation at 100k messages or 192MB and checkpoints under `refs/gatos/consumers/...`. Include daemon RPCs, CLI, and tests for publish, subscribe, rotation, and pruning.”
 
 - [ ] **Job Plane + PoE Integration**
   - *Summary*: Wire ADR-0002’s Job Plane into `gatosd`, enabling CAS claims, worker loops, and Proof-of-Execution commits.
@@ -62,3 +62,14 @@
   - *Acceptance Criteria*: (1) CLI command `gatos doctor` runs a battery of checks (policy FF-only refs, exporter manifests, proof coverage); (2) Reports actionable errors; (3) Tests cover healthy vs failing repos.
   - *Test Plan*: Integration tests against synthetic repos with intentional corruption; verify output codes and messages.
   - *LLM Prompt*: “Implement a `gatos doctor` CLI that validates repo invariants (policy FF-only branches, PoF/PoE coverage, exporter manifests) and reports actionable diagnostics.”
+
+### Message Plane Implementation Checklist
+- [ ] Flesh out `gatos-message-plane` core types (TopicRef, MessageEnvelope, MessageRecord, errors) with canonicalization + ULID validation tests.
+- [ ] Implement Git publisher module: write `message/envelope.json`, add trailers, manage segment refs and `head` ref with CAS.
+- [ ] Add rotation logic (threshold-based segment ULIDs) and summary commits for pruned segments.
+- [ ] Implement checkpoint store writing `refs/gatos/consumers/<group>/<topic>` with ULID+commit payloads.
+- [ ] Implement subscriber/reader returning canonical JSON + commit ids, honoring `since_ulid` and `limit`.
+- [ ] Wire `messages.publish`/`messages.read` RPC handlers into `gatosd` JSONL protocol and add CLI commands.
+- [ ] Write integration tests covering publish/read/rotation/checkpoint flows.
+- [ ] Implement TTL/pruning task for old segments and checkpoint-aware pruning safety checks.
+- [ ] Update docs (SPEC/TECH-SPEC/guide) and flip ADR-0005 to Accepted once tests pass.
