@@ -8,7 +8,9 @@
 use std::path::{Path, PathBuf};
 
 use blake3::Hasher;
+use chrono::{DateTime, Utc};
 use git2::{Commit, Oid, Repository, Signature, Tree};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 /// Placeholder export so downstream builds keep working while the real API
@@ -42,6 +44,13 @@ impl TopicRef {
 
     pub fn head_ref(&self) -> Result<String, MessagePlaneError> {
         Ok(format!("refs/gatos/messages/{}/head", self.sanitized_name()?))
+    }
+
+    fn segment_prefix(&self, ts: &SegmentTime) -> Result<String, MessagePlaneError> {
+        Ok(format!(
+            "{}/{:04}/{:02}/{:02}/{:02}",
+            self.sanitized_name()?, ts.year, ts.month, ts.day, ts.hour
+        ))
     }
 }
 
@@ -216,6 +225,8 @@ pub trait CheckpointStore {
 pub struct GitMessagePublisher {
     repo: Repository,
     signature: Signature<'static>,
+    max_messages_per_segment: u64,
+    max_bytes_per_segment: u64,
 }
 
 impl GitMessagePublisher {
@@ -224,28 +235,30 @@ impl GitMessagePublisher {
         let repo = Repository::open(path).map_err(map_git_err)?;
         let signature = Signature::now("gatos-message-plane", "message-plane@gatos.local")
             .map_err(map_git_err)?;
-        Ok(Self { repo, signature })
+        Ok(Self {
+            repo,
+            signature,
+            max_messages_per_segment: 100_000,
+            max_bytes_per_segment: 192 * 1024 * 1024,
+        })
     }
 
     fn repo(&self) -> &Repository {
         &self.repo
     }
 
-    fn read_head_oid(&self, topic: &TopicRef) -> Result<Option<Oid>, MessagePlaneError> {
-        match topic.head_ref().and_then(|head| {
-            match self.repo().find_reference(&head) {
-                Ok(reference) => Ok(reference.target()),
-                Err(err) if err.code() == git2::ErrorCode::NotFound => Ok(None),
-                Err(err) => Err(map_git_err(err)),
-            }
-        }) {
-            Ok(result) => Ok(result),
-            Err(e) => Err(e),
+    fn read_head(&self, topic: &TopicRef) -> Result<Option<git2::Reference<'_>>, MessagePlaneError> {
+        let head_ref = topic.head_ref()?;
+        match self.repo().find_reference(&head_ref) {
+            Ok(reference) => Ok(Some(reference)),
+            Err(err) if err.code() == git2::ErrorCode::NotFound => Ok(None),
+            Err(err) => Err(map_git_err(err)),
         }
     }
 
-    fn build_tree(&self, envelope: &MessageEnvelope) -> Result<Tree<'_>, MessagePlaneError> {
+    fn build_tree(&self, envelope: &MessageEnvelope, meta: &SegmentMeta) -> Result<Tree<'_>, MessagePlaneError> {
         let repo = self.repo();
+        let meta_bytes = serde_json::to_vec(meta).map_err(|e| MessagePlaneError::Repo(e.to_string()))?;
         let blob_oid = repo
             .blob(&envelope.canonical_bytes)
             .map_err(map_git_err)?;
@@ -254,9 +267,18 @@ impl GitMessagePublisher {
             .insert("envelope.json", blob_oid, 0o100644)
             .map_err(map_git_err)?;
         let message_tree_oid = message_dir.write().map_err(map_git_err)?;
+        let meta_blob = repo.blob(&meta_bytes).map_err(map_git_err)?;
+        let mut meta_dir = repo.treebuilder(None).map_err(map_git_err)?;
+        meta_dir
+            .insert("meta.json", meta_blob, 0o100644)
+            .map_err(map_git_err)?;
+        let meta_tree_oid = meta_dir.write().map_err(map_git_err)?;
         let mut root_builder = repo.treebuilder(None).map_err(map_git_err)?;
         root_builder
             .insert("message", message_tree_oid, git2::FileMode::Tree as i32)
+            .map_err(map_git_err)?;
+        root_builder
+            .insert("meta", meta_tree_oid, git2::FileMode::Tree as i32)
             .map_err(map_git_err)?;
         let tree_oid = root_builder.write().map_err(map_git_err)?;
         repo.find_tree(tree_oid).map_err(map_git_err)
@@ -276,12 +298,13 @@ impl GitMessagePublisher {
         topic: &TopicRef,
         new_oid: Oid,
         expected_old: Option<Oid>,
+        segment_desc: &str,
     ) -> Result<(), MessagePlaneError> {
         let head_ref = topic.head_ref()?;
         match expected_old {
             Some(old) => self
                 .repo()
-                .reference_matching(&head_ref, new_oid, true, old, "message-plane append")
+                .reference_matching(&head_ref, new_oid, true, old, segment_desc)
                 .map(|_| ())
                 .map_err(|err| {
                     if err.code() == git2::ErrorCode::NotFound {
@@ -292,7 +315,7 @@ impl GitMessagePublisher {
                 }),
             None => self
                 .repo()
-                .reference(&head_ref, new_oid, true, "init message topic")
+                .reference(&head_ref, new_oid, true, segment_desc)
                 .map(|_| ())
                 .map_err(map_git_err),
         }
@@ -305,17 +328,28 @@ impl MessagePublisher for GitMessagePublisher {
         topic: &TopicRef,
         envelope: MessageEnvelope,
     ) -> Result<PublishReceipt, MessagePlaneError> {
-        let tree = self.build_tree(&envelope)?;
-        let head_oid = self.read_head_oid(topic)?;
-        let mut parent_commits = Vec::new();
+        let now = chrono::Utc::now();
+        let segment_time = SegmentTime::from_datetime(&now);
+        let segment_prefix = topic.segment_prefix(&segment_time)?;
+        let segment_ulid = envelope.ulid.clone();
+        let metadata = SegmentMeta {
+            message_count: 1,
+            approximate_bytes: envelope.canonical_bytes.len() as u64,
+            segment_ulid: segment_ulid.clone(),
+            started_at: now.to_rfc3339(),
+        };
+        let tree = self.build_tree(&envelope, &metadata)?;
+        let head_ref = self.read_head(topic)?;
+        let head_oid = head_ref.as_ref().and_then(|r| r.target());
+        let mut parents = Vec::new();
         if let Some(oid) = head_oid {
-            parent_commits.push(
+            parents.push(
                 self.repo()
                     .find_commit(oid)
                     .map_err(map_git_err)?,
             );
         }
-        let parent_refs: Vec<&Commit<'_>> = parent_commits.iter().collect();
+        let parent_refs: Vec<&Commit<'_>> = parents.iter().collect();
         let message = Self::build_commit_message(&envelope);
         let commit_oid = self
             .repo()
@@ -328,7 +362,7 @@ impl MessagePublisher for GitMessagePublisher {
                 &parent_refs,
             )
             .map_err(map_git_err)?;
-        self.update_head(topic, commit_oid, head_oid)?;
+        self.update_head(topic, commit_oid, head_oid, &segment_prefix)?;
         Ok(PublishReceipt {
             commit_id: commit_oid.to_string(),
             content_id: envelope.content_id(),
