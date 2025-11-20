@@ -6,6 +6,7 @@
 //! crates depend on the semantics without needing the daemon.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use blake3::Hasher;
 use chrono::{DateTime, Datelike, Timelike, Utc};
@@ -227,19 +228,28 @@ pub struct GitMessagePublisher {
     signature: Signature<'static>,
     max_messages_per_segment: u64,
     max_bytes_per_segment: u64,
+    clock: Arc<dyn SegmentClock>,
 }
 
 impl GitMessagePublisher {
     /// Open a repository at `path`.
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MessagePlaneError> {
+        Self::with_config(path, GitMessagePublisherConfig::default())
+    }
+
+    pub fn with_config<P: AsRef<Path>>(
+        path: P,
+        config: GitMessagePublisherConfig,
+    ) -> Result<Self, MessagePlaneError> {
         let repo = Repository::open(path).map_err(map_git_err)?;
         let signature = Signature::now("gatos-message-plane", "message-plane@gatos.local")
             .map_err(map_git_err)?;
         Ok(Self {
             repo,
             signature,
-            max_messages_per_segment: 100_000,
-            max_bytes_per_segment: 192 * 1024 * 1024,
+            max_messages_per_segment: config.max_messages_per_segment,
+            max_bytes_per_segment: config.max_bytes_per_segment,
+            clock: config.clock,
         })
     }
 
@@ -274,11 +284,12 @@ impl GitMessagePublisher {
             .map_err(map_git_err)?;
         let meta_tree_oid = meta_dir.write().map_err(map_git_err)?;
         let mut root_builder = repo.treebuilder(None).map_err(map_git_err)?;
+        const TREE_MODE: i32 = 0o040000;
         root_builder
-            .insert("message", message_tree_oid, git2::FileMode::Tree as i32)
+            .insert("message", message_tree_oid, TREE_MODE)
             .map_err(map_git_err)?;
         root_builder
-            .insert("meta", meta_tree_oid, git2::FileMode::Tree as i32)
+            .insert("meta", meta_tree_oid, TREE_MODE)
             .map_err(map_git_err)?;
         let tree_oid = root_builder.write().map_err(map_git_err)?;
         repo.find_tree(tree_oid).map_err(map_git_err)
@@ -320,6 +331,84 @@ impl GitMessagePublisher {
                 .map_err(map_git_err),
         }
     }
+
+    fn update_segment_ref(
+        &self,
+        segment_ref: &str,
+        new_oid: Oid,
+        expected_old: Option<Oid>,
+    ) -> Result<(), MessagePlaneError> {
+        match expected_old {
+            Some(old) => self
+                .repo()
+                .reference_matching(segment_ref, new_oid, true, old, "segment append")
+                .map(|_| ())
+                .map_err(|err| {
+                    if err.code() == git2::ErrorCode::NotFound {
+                        MessagePlaneError::HeadConflict
+                    } else {
+                        map_git_err(err)
+                    }
+                }),
+            None => self
+                .repo()
+                .reference(segment_ref, new_oid, true, "segment init")
+                .map(|_| ())
+                .map_err(map_git_err),
+        }
+    }
+
+    fn read_segment_meta(&self, commit: &Commit) -> Option<SegmentMeta> {
+        let tree = commit.tree().ok()?;
+        let meta_tree_entry = tree.get_name("meta")?;
+        let meta_tree = self.repo().find_tree(meta_tree_entry.id()).ok()?;
+        let meta_blob_entry = meta_tree.get_name("meta.json")?;
+        let blob = self.repo().find_blob(meta_blob_entry.id()).ok()?;
+        serde_json::from_slice(blob.content()).ok()
+    }
+
+    fn derive_segment_meta(
+        &self,
+        topic: &TopicRef,
+        now: DateTime<Utc>,
+        payload_len: usize,
+        previous: Option<&SegmentMeta>,
+        envelope_ulid: &str,
+    ) -> Result<(SegmentMeta, bool), MessagePlaneError> {
+        let prefix = topic.segment_prefix(&SegmentTime::from_datetime(&now))?;
+        if let Some(prev) = previous {
+            if !self.should_rotate(prev, &prefix, payload_len) {
+                let mut updated = prev.clone();
+                updated.message_count += 1;
+                updated.approximate_bytes += payload_len as u64;
+                return Ok((updated, true));
+            }
+        }
+        Ok((
+            SegmentMeta::new(
+                prefix,
+                envelope_ulid.to_string(),
+                now.timestamp(),
+                payload_len as u64,
+            ),
+            false,
+        ))
+    }
+
+    fn should_rotate(
+        &self,
+        existing: &SegmentMeta,
+        new_prefix: &str,
+        payload_len: usize,
+    ) -> bool {
+        if existing.segment_prefix != new_prefix {
+            return true;
+        }
+        if existing.message_count >= self.max_messages_per_segment {
+            return true;
+        }
+        existing.approximate_bytes + payload_len as u64 > self.max_bytes_per_segment
+    }
 }
 
 impl MessagePublisher for GitMessagePublisher {
@@ -328,29 +417,27 @@ impl MessagePublisher for GitMessagePublisher {
         topic: &TopicRef,
         envelope: MessageEnvelope,
     ) -> Result<PublishReceipt, MessagePlaneError> {
-        let now = chrono::Utc::now();
-        let segment_time = SegmentTime::from_datetime(&now);
-        let segment_prefix = topic.segment_prefix(&segment_time)?;
-        let segment_ulid = envelope.ulid.clone();
-        let metadata = SegmentMeta {
-            version: 1,
-            message_count: 1,
-            approximate_bytes: envelope.canonical_bytes.len() as u64,
-            segment_ulid: segment_ulid.clone(),
-            started_at_epoch: now.timestamp(),
-        };
-        let tree = self.build_tree(&envelope, &metadata)?;
+        let now = self.clock.now();
+        let payload_len = envelope.canonical_bytes.len();
         let head_ref = self.read_head(topic)?;
         let head_oid = head_ref.as_ref().and_then(|r| r.target());
-        let mut parents = Vec::new();
-        if let Some(oid) = head_oid {
-            parents.push(
-                self.repo()
-                    .find_commit(oid)
-                    .map_err(map_git_err)?,
-            );
-        }
-        let parent_refs: Vec<&Commit<'_>> = parents.iter().collect();
+        let parent_commit = if let Some(oid) = head_oid {
+            Some(self.repo().find_commit(oid).map_err(map_git_err)?)
+        } else {
+            None
+        };
+        let previous_meta = parent_commit
+            .as_ref()
+            .and_then(|commit| self.read_segment_meta(commit));
+        let (segment_meta, continuing) = self.derive_segment_meta(
+            topic,
+            now,
+            payload_len,
+            previous_meta.as_ref(),
+            &envelope.ulid,
+        )?;
+        let tree = self.build_tree(&envelope, &segment_meta)?;
+        let parent_refs: Vec<&Commit<'_>> = parent_commit.iter().collect();
         let message = Self::build_commit_message(&envelope);
         let commit_oid = self
             .repo()
@@ -363,7 +450,11 @@ impl MessagePublisher for GitMessagePublisher {
                 &parent_refs,
             )
             .map_err(map_git_err)?;
-        self.update_head(topic, commit_oid, head_oid, &segment_prefix)?;
+        let segment_path = segment_meta.segment_path();
+        let segment_ref = format!("refs/gatos/messages/{}", segment_path);
+        let old_segment_oid = if continuing { head_oid } else { None };
+        self.update_segment_ref(&segment_ref, commit_oid, old_segment_oid)?;
+        self.update_head(topic, commit_oid, head_oid, &segment_path)?;
         Ok(PublishReceipt {
             commit_id: commit_oid.to_string(),
             content_id: envelope.content_id(),
@@ -426,13 +517,65 @@ fn map_git_err(err: git2::Error) -> MessagePlaneError {
     MessagePlaneError::Repo(err.to_string())
 }
 
+pub(crate) trait SegmentClock: Send + Sync {
+    fn now(&self) -> DateTime<Utc>;
+}
+
+struct SystemClock;
+
+impl SegmentClock for SystemClock {
+    fn now(&self) -> DateTime<Utc> {
+        Utc::now()
+    }
+}
+
+#[derive(Clone)]
+pub struct GitMessagePublisherConfig {
+    pub max_messages_per_segment: u64,
+    pub max_bytes_per_segment: u64,
+    pub(crate) clock: Arc<dyn SegmentClock>,
+}
+
+impl Default for GitMessagePublisherConfig {
+    fn default() -> Self {
+        Self {
+            max_messages_per_segment: 100_000,
+            max_bytes_per_segment: 192 * 1024 * 1024,
+            clock: Arc::new(SystemClock),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct SegmentMeta {
+pub(crate) struct SegmentMeta {
     version: u32,
-    message_count: u64,
-    approximate_bytes: u64,
+    segment_prefix: String,
     segment_ulid: String,
     started_at_epoch: i64,
+    message_count: u64,
+    approximate_bytes: u64,
+}
+
+impl SegmentMeta {
+    fn new(
+        segment_prefix: String,
+        segment_ulid: String,
+        started_at_epoch: i64,
+        first_bytes: u64,
+    ) -> Self {
+        Self {
+            version: 1,
+            segment_prefix,
+            segment_ulid,
+            started_at_epoch,
+            message_count: 1,
+            approximate_bytes: first_bytes,
+        }
+    }
+
+    fn segment_path(&self) -> String {
+        format!("{}/{}", self.segment_prefix, self.segment_ulid)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -457,7 +600,10 @@ impl SegmentTime {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{TimeZone, Utc};
     use serde_json::json;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
 
     const GOOD_ULID: &str = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
@@ -516,5 +662,133 @@ mod tests {
         assert!(sanitize_topic("../evil").is_err());
         assert!(sanitize_topic("foo//bar").is_err());
         assert!(sanitize_topic("bad*segment").is_err());
+    }
+
+    #[test]
+    fn rotates_when_hour_changes() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let clock = Arc::new(MockClock::new(vec![
+            dt(2025, 11, 20, 13),
+            dt(2025, 11, 20, 13),
+            dt(2025, 11, 20, 14),
+        ]));
+        let config = GitMessagePublisherConfig { clock, ..Default::default() };
+        let publisher = GitMessagePublisher::with_config(dir.path(), config).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBB");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBC");
+
+        let repo = Repository::open(dir.path()).unwrap();
+        let head_oid = repo
+            .refname_to_id("refs/gatos/messages/jobs/pending/head")
+            .unwrap();
+        let head_commit = repo.find_commit(head_oid).unwrap();
+        let latest_meta = read_meta(&repo, &head_commit);
+        assert_eq!(latest_meta.message_count, 1);
+        assert!(latest_meta.segment_prefix.ends_with("/14"));
+
+        let second_commit = head_commit.parent(0).unwrap();
+        let second_meta = read_meta(&repo, &second_commit);
+        assert_eq!(second_meta.message_count, 2);
+        assert!(second_meta.segment_prefix.ends_with("/13"));
+        assert_ne!(second_meta.segment_prefix, latest_meta.segment_prefix);
+
+        assert_ref_points_to(
+            &repo,
+            format!("refs/gatos/messages/{}", second_meta.segment_path()),
+            second_commit.id(),
+        );
+        assert_ref_points_to(
+            &repo,
+            format!("refs/gatos/messages/{}", latest_meta.segment_path()),
+            head_commit.id(),
+        );
+    }
+
+    #[test]
+    fn rotates_when_message_limit_exceeded() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let clock = Arc::new(MockClock::new(vec![
+            dt(2025, 11, 20, 10),
+            dt(2025, 11, 20, 10),
+            dt(2025, 11, 20, 10),
+        ]));
+        let config = GitMessagePublisherConfig {
+            max_messages_per_segment: 2,
+            clock,
+            ..Default::default()
+        };
+        let publisher = GitMessagePublisher::with_config(dir.path(), config).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBD");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBE");
+        publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBF");
+
+        let repo = Repository::open(dir.path()).unwrap();
+        let head_oid = repo
+            .refname_to_id("refs/gatos/messages/jobs/pending/head")
+            .unwrap();
+        let head_commit = repo.find_commit(head_oid).unwrap();
+        let latest_meta = read_meta(&repo, &head_commit);
+        assert_eq!(latest_meta.message_count, 1);
+        let second_commit = head_commit.parent(0).unwrap();
+        let second_meta = read_meta(&repo, &second_commit);
+        assert_eq!(second_meta.message_count, 2);
+        assert_eq!(second_meta.segment_prefix, latest_meta.segment_prefix);
+        assert_ne!(second_meta.segment_ulid, latest_meta.segment_ulid);
+    }
+
+    fn publish(publisher: &GitMessagePublisher, topic: &TopicRef, ulid: &str) {
+        publisher
+            .publish(topic, make_envelope(ulid))
+            .expect("publish");
+    }
+
+    fn make_envelope(ulid: &str) -> MessageEnvelope {
+        let raw = format!(
+            "{{\"ulid\":\"{}\",\"ns\":\"tests\",\"type\":\"demo\",\"payload\":{{}}}}",
+            ulid
+        );
+        MessageEnvelope::from_json_str(&raw).expect("valid envelope")
+    }
+
+    fn dt(year: i32, month: u32, day: u32, hour: u32) -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(year, month, day, hour, 0, 0).unwrap()
+    }
+
+    fn read_meta(repo: &Repository, commit: &Commit) -> SegmentMeta {
+        let tree = commit.tree().unwrap();
+        let meta_tree = tree.get_name("meta").unwrap();
+        let meta_tree = repo.find_tree(meta_tree.id()).unwrap();
+        let meta_blob = meta_tree.get_name("meta.json").unwrap();
+        let blob = repo.find_blob(meta_blob.id()).unwrap();
+        serde_json::from_slice(blob.content()).unwrap()
+    }
+
+    fn assert_ref_points_to(repo: &Repository, refname: String, expected: Oid) {
+        let oid = repo.refname_to_id(&refname).unwrap();
+        assert_eq!(oid, expected);
+    }
+
+    struct MockClock {
+        times: Mutex<Vec<DateTime<Utc>>>,
+    }
+
+    impl MockClock {
+        fn new(times: Vec<DateTime<Utc>>) -> Self {
+            Self {
+                times: Mutex::new(times),
+            }
+        }
+    }
+
+    impl SegmentClock for MockClock {
+        fn now(&self) -> DateTime<Utc> {
+            let mut guard = self.times.lock().unwrap();
+            guard.remove(0)
+        }
     }
 }
