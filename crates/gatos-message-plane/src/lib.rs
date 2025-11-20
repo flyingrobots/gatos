@@ -337,7 +337,7 @@ impl MessagePublisher for GitMessagePublisher {
             message_count: 1,
             approximate_bytes: envelope.canonical_bytes.len() as u64,
             segment_ulid: segment_ulid.clone(),
-            started_at: now.to_rfc3339(),
+            started_at_epoch: now.timestamp(),
         };
         let tree = self.build_tree(&envelope, &metadata)?;
         let head_ref = self.read_head(topic)?;
@@ -432,7 +432,7 @@ struct SegmentMeta {
     message_count: u64,
     approximate_bytes: u64,
     segment_ulid: String,
-    started_at: String,
+    started_at_epoch: i64,
 }
 
 #[derive(Debug, Clone)]
