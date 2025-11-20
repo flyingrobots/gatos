@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 
 use blake3::Hasher;
-use git2::{Commit, FileMode, Oid, Repository, Signature, Tree};
+use git2::{Commit, Oid, Repository, Signature, Tree};
 use serde_json::{Map, Value};
 
 /// Placeholder export so downstream builds keep working while the real API
@@ -89,14 +89,17 @@ impl MessageEnvelope {
             .and_then(Value::as_str)
             .ok_or_else(|| MessagePlaneError::InvalidEnvelope("missing 'ulid'".into()))?;
         validate_ulid_str(ulid)?;
+        let ulid = ulid.to_string();
         let namespace = value
             .get("ns")
             .and_then(Value::as_str)
-            .ok_or_else(|| MessagePlaneError::InvalidEnvelope("missing 'ns'".into()))?;
+            .ok_or_else(|| MessagePlaneError::InvalidEnvelope("missing 'ns'".into()))?
+            .to_string();
         let event_type = value
             .get("type")
             .and_then(Value::as_str)
-            .ok_or_else(|| MessagePlaneError::InvalidEnvelope("missing 'type'".into()))?;
+            .ok_or_else(|| MessagePlaneError::InvalidEnvelope("missing 'type'".into()))?
+            .to_string();
         if !value.get("payload").is_some() {
             return Err(MessagePlaneError::InvalidEnvelope(
                 "missing 'payload'".into(),
@@ -106,9 +109,9 @@ impl MessageEnvelope {
         let canonical_bytes = serde_json::to_vec(&canonical)
             .map_err(|e| MessagePlaneError::InvalidEnvelope(format!("serialize error: {e}")))?;
         Ok(Self {
-            ulid: ulid.to_string(),
-            namespace: namespace.to_string(),
-            event_type: event_type.to_string(),
+            ulid,
+            namespace,
+            event_type,
             canonical_bytes,
         })
     }
@@ -253,7 +256,7 @@ impl GitMessagePublisher {
         let message_tree_oid = message_dir.write().map_err(map_git_err)?;
         let mut root_builder = repo.treebuilder(None).map_err(map_git_err)?;
         root_builder
-            .insert("message", message_tree_oid, git2::FileMode::Tree as u32)
+            .insert("message", message_tree_oid, git2::FileMode::Tree as i32)
             .map_err(map_git_err)?;
         let tree_oid = root_builder.write().map_err(map_git_err)?;
         repo.find_tree(tree_oid).map_err(map_git_err)
@@ -278,7 +281,7 @@ impl GitMessagePublisher {
         match expected_old {
             Some(old) => self
                 .repo()
-                .reference_matching(&head_ref, new_oid, true, old)
+                .reference_matching(&head_ref, new_oid, true, old, "message-plane append")
                 .map(|_| ())
                 .map_err(|err| {
                     if err.code() == git2::ErrorCode::NotFound {
@@ -393,7 +396,7 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    const GOOD_ULID: &str = "01HAF6ZZZ8Q1EXAMPLEFUNAAA";
+    const GOOD_ULID: &str = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
     #[test]
     fn ulid_validation_accepts_uppercase_crockford() {

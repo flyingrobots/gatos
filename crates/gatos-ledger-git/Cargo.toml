@@ -5,12 +5,10 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Git-backed storage backend for gatos-ledger (no_std core)"
-keywords = ["ledger", "git", "storage", "backend"]
-categories = ["filesystem", "database", "data-structures"]
+description = "Temporary stub for the git-backed ledger backend"
+
+[lib]
+name = "gatos_ledger_git"
+path = "src/lib.rs"
 
 [dependencies]
-git2 = { workspace = true }
-gatos-ledger-core = { path = "../gatos-ledger-core" }
-hex = { workspace = true }
-blake3 = { workspace = true }

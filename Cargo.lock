@@ -510,18 +510,13 @@ dependencies = [
 [[package]]
 name = "gatos-ledger-git"
 version = "0.1.0"
-dependencies = [
- "blake3",
- "gatos-ledger-core",
- "git2",
- "hex",
-]
 
 [[package]]
 name = "gatos-message-plane"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "git2",
  "hex",
  "serde_json",
 ]

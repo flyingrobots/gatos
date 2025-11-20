@@ -1,31 +1,5 @@
-# GATOS Ledger Git Backend
+# gatos-ledger-git (stub)
 
-This crate provides a `std`-dependent storage backend for the GATOS ledger that uses `libgit2`. It implements the `ObjectStore` trait from `gatos-ledger-core`, acting as an adapter to connect the core ledger logic to a real Git repository on a filesystem.
+This crate temporarily satisfies the workspace dependency on the Git-backed ledger backend. The real implementation was removed and will be rebuilt to align with ADR-0001 and the Ledger-Kernel spec. For now, the crate simply exposes a placeholder API so other crates (e.g., Message Plane, gatosd) can compile and run tests.
 
-## Usage
-
-```rust
-use git2::Repository;
-use gatos_ledger_git::GitStore;
-use gatos_ledger_core::{ObjectStore, Hash};
-use blake3;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Open an existing repository
-    let repo = Repository::open("/path/to/repo")?;
-    let mut store = GitStore::new(repo);
-
-    // Put some bytes under their blake3 hash
-    let data = b"hello";
-    let id: Hash = blake3::hash(data).into_bytes();
-    store.put_object(&id, data)?;
-
-    // Retrieve them later
-    if let Some(bytes) = store.get_object(&id)? {
-        assert_eq!(bytes, data);
-    }
-    Ok(())
-}
-```
-
-For more details on the overall architecture, see the main [GATOS Technical Specification](../../docs/TECH-SPEC.md).
+See `LEDGER-COMPARE.md` for the roadmap toward the full implementation.
