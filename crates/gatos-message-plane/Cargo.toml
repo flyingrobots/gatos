@@ -14,3 +14,4 @@ categories = ["network-programming", "data-structures"]
 serde_json = { workspace = true }
 blake3 = { workspace = true }
 hex = { workspace = true }
+git2 = { workspace = true }

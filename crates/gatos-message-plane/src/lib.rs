@@ -5,9 +5,10 @@
 //! ADR-0005 is fully implemented. Keeping these definitions here lets other
 //! crates depend on the semantics without needing the daemon.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use blake3::Hasher;
+use git2::{Commit, FileMode, Oid, Repository, Signature, Tree};
 use serde_json::{Map, Value};
 
 /// Placeholder export so downstream builds keep working while the real API
@@ -33,6 +34,14 @@ impl TopicRef {
             repo: repo.into(),
             name: name.into(),
         }
+    }
+
+    fn sanitized_name(&self) -> Result<String, MessagePlaneError> {
+        sanitize_topic(&self.name)
+    }
+
+    pub fn head_ref(&self) -> Result<String, MessagePlaneError> {
+        Ok(format!("refs/gatos/messages/{}/head", self.sanitized_name()?))
     }
 }
 
@@ -151,6 +160,8 @@ pub enum MessagePlaneError {
     Checkpoint(String),
     /// Client supplied an invalid range/limit.
     InvalidLimit,
+    /// Topic name used invalid characters.
+    InvalidTopic(String),
 }
 
 impl std::fmt::Display for MessagePlaneError {
@@ -161,6 +172,7 @@ impl std::fmt::Display for MessagePlaneError {
             Self::HeadConflict => write!(f, "topic head moved while publishing"),
             Self::Checkpoint(e) => write!(f, "checkpoint error: {}", e),
             Self::InvalidLimit => write!(f, "invalid range/limit"),
+            Self::InvalidTopic(t) => write!(f, "invalid topic name: {t}"),
         }
     }
 }
@@ -197,6 +209,131 @@ pub trait CheckpointStore {
     ) -> Result<(), MessagePlaneError>;
 }
 
+/// Git-backed implementation of [`MessagePublisher`].
+pub struct GitMessagePublisher {
+    repo: Repository,
+    signature: Signature<'static>,
+}
+
+impl GitMessagePublisher {
+    /// Open a repository at `path`.
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MessagePlaneError> {
+        let repo = Repository::open(path).map_err(map_git_err)?;
+        let signature = Signature::now("gatos-message-plane", "message-plane@gatos.local")
+            .map_err(map_git_err)?;
+        Ok(Self { repo, signature })
+    }
+
+    fn repo(&self) -> &Repository {
+        &self.repo
+    }
+
+    fn read_head_oid(&self, topic: &TopicRef) -> Result<Option<Oid>, MessagePlaneError> {
+        match topic.head_ref().and_then(|head| {
+            match self.repo().find_reference(&head) {
+                Ok(reference) => Ok(reference.target()),
+                Err(err) if err.code() == git2::ErrorCode::NotFound => Ok(None),
+                Err(err) => Err(map_git_err(err)),
+            }
+        }) {
+            Ok(result) => Ok(result),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn build_tree(&self, envelope: &MessageEnvelope) -> Result<Tree<'_>, MessagePlaneError> {
+        let repo = self.repo();
+        let blob_oid = repo
+            .blob(&envelope.canonical_bytes)
+            .map_err(map_git_err)?;
+        let mut message_dir = repo.treebuilder(None).map_err(map_git_err)?;
+        message_dir
+            .insert("envelope.json", blob_oid, 0o100644)
+            .map_err(map_git_err)?;
+        let message_tree_oid = message_dir.write().map_err(map_git_err)?;
+        let mut root_builder = repo.treebuilder(None).map_err(map_git_err)?;
+        root_builder
+            .insert("message", message_tree_oid, git2::FileMode::Tree as u32)
+            .map_err(map_git_err)?;
+        let tree_oid = root_builder.write().map_err(map_git_err)?;
+        repo.find_tree(tree_oid).map_err(map_git_err)
+    }
+
+    fn build_commit_message(envelope: &MessageEnvelope) -> String {
+        format!(
+            "{}\n\nEvent-Id: ulid:{}\nContent-Id: {}\n",
+            envelope.event_type,
+            envelope.ulid,
+            envelope.content_id()
+        )
+    }
+
+    fn update_head(
+        &self,
+        topic: &TopicRef,
+        new_oid: Oid,
+        expected_old: Option<Oid>,
+    ) -> Result<(), MessagePlaneError> {
+        let head_ref = topic.head_ref()?;
+        match expected_old {
+            Some(old) => self
+                .repo()
+                .reference_matching(&head_ref, new_oid, true, old)
+                .map(|_| ())
+                .map_err(|err| {
+                    if err.code() == git2::ErrorCode::NotFound {
+                        MessagePlaneError::HeadConflict
+                    } else {
+                        map_git_err(err)
+                    }
+                }),
+            None => self
+                .repo()
+                .reference(&head_ref, new_oid, true, "init message topic")
+                .map(|_| ())
+                .map_err(map_git_err),
+        }
+    }
+}
+
+impl MessagePublisher for GitMessagePublisher {
+    fn publish(
+        &self,
+        topic: &TopicRef,
+        envelope: MessageEnvelope,
+    ) -> Result<PublishReceipt, MessagePlaneError> {
+        let tree = self.build_tree(&envelope)?;
+        let head_oid = self.read_head_oid(topic)?;
+        let mut parent_commits = Vec::new();
+        if let Some(oid) = head_oid {
+            parent_commits.push(
+                self.repo()
+                    .find_commit(oid)
+                    .map_err(map_git_err)?,
+            );
+        }
+        let parent_refs: Vec<&Commit<'_>> = parent_commits.iter().collect();
+        let message = Self::build_commit_message(&envelope);
+        let commit_oid = self
+            .repo()
+            .commit(
+                None,
+                &self.signature,
+                &self.signature,
+                &message,
+                &tree,
+                &parent_refs,
+            )
+            .map_err(map_git_err)?;
+        self.update_head(topic, commit_oid, head_oid)?;
+        Ok(PublishReceipt {
+            commit_id: commit_oid.to_string(),
+            content_id: envelope.content_id(),
+            ulid: envelope.ulid.clone(),
+        })
+    }
+}
+
 /// Validates that `input` is a 26-char ULID using uppercase Crockford base32.
 pub fn validate_ulid_str(input: &str) -> Result<(), MessagePlaneError> {
     if input.len() != 26 {
@@ -225,6 +362,30 @@ fn canonicalize_json(value: Value) -> Value {
         Value::Array(arr) => Value::Array(arr.into_iter().map(canonicalize_json).collect()),
         other => other,
     }
+}
+
+fn sanitize_topic(input: &str) -> Result<String, MessagePlaneError> {
+    if input.is_empty() {
+        return Err(MessagePlaneError::InvalidTopic("empty".into()));
+    }
+    let mut normalized = Vec::new();
+    for segment in input.split('/') {
+        if segment.is_empty()
+            || segment == "."
+            || segment == ".."
+            || !segment
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_'))
+        {
+            return Err(MessagePlaneError::InvalidTopic(input.into()));
+        }
+        normalized.push(segment);
+    }
+    Ok(normalized.join("/"))
+}
+
+fn map_git_err(err: git2::Error) -> MessagePlaneError {
+    MessagePlaneError::Repo(err.to_string())
 }
 
 #[cfg(test)]
@@ -281,5 +442,13 @@ mod tests {
             MessageEnvelope::from_value(broken),
             Err(MessagePlaneError::InvalidEnvelope(_))
         ));
+    }
+
+    #[test]
+    fn sanitize_topic_checks_segments() {
+        assert_eq!(sanitize_topic("jobs/pending").unwrap(), "jobs/pending");
+        assert!(sanitize_topic("../evil").is_err());
+        assert!(sanitize_topic("foo//bar").is_err());
+        assert!(sanitize_topic("bad*segment").is_err());
     }
 }
