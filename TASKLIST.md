@@ -14,6 +14,13 @@
   - *Test Plan*: Rust unit tests for envelope canonicalization + ULID validation; git-based integration tests that publish messages, enforce CAS ordering, verify checkpoint refs, and simulate rotation/pruning; end-to-end tests hitting the JSONL `messages.read` RPC.
   - *LLM Prompt*: “Implement a Git-backed message bus per ADR-0005: create a Rust module that writes message topics under `refs/gatos/messages/<topic>/<date>/<segment-ulid>` with rotation at 100k messages or 192MB and checkpoints under `refs/gatos/consumers/...`. Include daemon RPCs, CLI, and tests for publish, subscribe, rotation, and pruning.”
 
+- [ ] **gatos-ledger-git Resurrection (Ledger Kernel Compliance)**
+  - *Summary*: Recreate the `gatos-ledger-git` crate/backends by comparing the Ledger-Kernel spec to GATOS’s ledger requirements, then implementing a `git2`-backed append-only journal that satisfies ADR-0001 and SPEC §4.
+  - *Problem Statement*: The workspace references `crates/gatos-ledger-git`, but the crate has been removed; without it the project can’t build or provide the Git-backed ledger backend. We need a clear map of ledger-kernel vs. GATOS semantics before rebuilding.
+  - *Acceptance Criteria*: (1) `LEDGER-COMPARE.md` documents deltas/gaps; (2) New `crates/gatos-ledger-git` crate exists (core + std backend) with CAS journals, DAG-CBOR envelopes, policy_root metadata, and capability hooks; (3) Workspace builds/tests succeed; (4) ADR-0001 updated to note the Git backend implementation.
+  - *Test Plan*: Port ledger-kernel compliance tests (if compatible) plus new integration tests for append/deny flows, multi-writer CAS retries, journal replay, and policy binding; run cross-platform tests to ensure deterministic DAG-CBOR encoding.
+  - *LLM Prompt*: “Compare `ledger-kernel/SPEC.md` with GATOS SPEC §4 and ADR-0001. Summarize the differences and implement a `gatos-ledger-git` crate that writes `refs/gatos/journal/<ns>/<actor>` commits with DAG-CBOR event envelopes, CAS append, and policy metadata.”
+
 - [ ] **Job Plane + PoE Integration**
   - *Summary*: Wire ADR-0002’s Job Plane into `gatosd`, enabling CAS claims, worker loops, and Proof-of-Execution commits.
   - *Problem Statement*: The Job Plane is specified but not implemented; no CLI/daemon support exists for enqueuing, claiming, or attesting jobs.
