@@ -222,6 +222,57 @@ pub trait CheckpointStore {
     ) -> Result<(), MessagePlaneError>;
 }
 
+/// Git-backed implementation storing checkpoints under `refs/gatos/consumers/<group>/<topic>`.
+pub struct GitCheckpointStore {
+    repo: Repository,
+}
+
+impl GitCheckpointStore {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MessagePlaneError> {
+        let repo = Repository::open(path).map_err(map_git_err)?;
+        Ok(Self { repo })
+    }
+
+    fn ref_name(&self, group: &str, topic: &TopicRef) -> Result<String, MessagePlaneError> {
+        Ok(format!(
+            "refs/gatos/consumers/{}/{}",
+            sanitize_identifier(group)?,
+            topic.sanitized_name()?
+        ))
+    }
+}
+
+impl CheckpointStore for GitCheckpointStore {
+    fn persist_checkpoint(
+        &self,
+        group: &str,
+        topic: &TopicRef,
+        ulid: &str,
+        commit: &str,
+    ) -> Result<(), MessagePlaneError> {
+        validate_ulid_str(ulid)?;
+        let checkpoint = ConsumerCheckpoint {
+            version: 1,
+            group: group.to_string(),
+            topic: topic.sanitized_name()?,
+            ulid: ulid.to_string(),
+            commit: commit.to_string(),
+            updated_at_epoch: Utc::now().timestamp(),
+        };
+        let json = serde_json::to_string(&checkpoint)
+            .map_err(|e| MessagePlaneError::Checkpoint(e.to_string()))?;
+        let blob_oid = self
+            .repo
+            .blob(json.as_bytes())
+            .map_err(map_git_err)?;
+        let refname = self.ref_name(group, topic)?;
+        self.repo
+            .reference(&refname, blob_oid, true, "checkpoint update")
+            .map(|_| ())
+            .map_err(map_git_err)
+    }
+}
+
 /// Git-backed implementation of [`MessagePublisher`].
 pub struct GitMessagePublisher {
     repo: Repository,
@@ -513,6 +564,17 @@ fn sanitize_topic(input: &str) -> Result<String, MessagePlaneError> {
     Ok(normalized.join("/"))
 }
 
+fn sanitize_identifier(input: &str) -> Result<String, MessagePlaneError> {
+    if input.is_empty()
+        || !input
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '/'))
+    {
+        return Err(MessagePlaneError::InvalidTopic(input.into()));
+    }
+    Ok(input.to_string())
+}
+
 fn map_git_err(err: git2::Error) -> MessagePlaneError {
     MessagePlaneError::Repo(err.to_string())
 }
@@ -554,6 +616,16 @@ pub(crate) struct SegmentMeta {
     started_at_epoch: i64,
     message_count: u64,
     approximate_bytes: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ConsumerCheckpoint {
+    version: u32,
+    group: String,
+    topic: String,
+    ulid: String,
+    commit: String,
+    updated_at_epoch: i64,
 }
 
 impl SegmentMeta {
@@ -662,6 +734,28 @@ mod tests {
         assert!(sanitize_topic("../evil").is_err());
         assert!(sanitize_topic("foo//bar").is_err());
         assert!(sanitize_topic("bad*segment").is_err());
+    }
+
+    #[test]
+    fn checkpoint_store_writes_blob_ref() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let store = GitCheckpointStore::open(dir.path()).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+        store
+            .persist_checkpoint("workers", &topic, GOOD_ULID, "abc123")
+            .unwrap();
+
+        let repo = Repository::open(dir.path()).unwrap();
+        let refname = "refs/gatos/consumers/workers/jobs/pending";
+        let blob_oid = repo.refname_to_id(refname).unwrap();
+        let blob = repo.find_blob(blob_oid).unwrap();
+        let checkpoint: ConsumerCheckpoint = serde_json::from_slice(blob.content()).unwrap();
+        assert_eq!(checkpoint.ulid, GOOD_ULID);
+        assert_eq!(checkpoint.commit, "abc123");
+        assert_eq!(checkpoint.topic, "jobs/pending");
+        assert_eq!(checkpoint.group, "workers");
+        assert!(checkpoint.updated_at_epoch > 0);
     }
 
     #[test]
