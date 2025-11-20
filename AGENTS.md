@@ -25,3 +25,5 @@ Before closing any task:
 4. No disallowed git commands were used.
 
 Feel free to extend this document as our processes evolve.
+
+**IMPORTANT:** Do **NOT** run tests on the host machine. Tests touch git refs and could corrupt your working repo—use the Docker harness (which copies the repo and rewrites remotes) so you don't become 'that person' who clobbers origin.
