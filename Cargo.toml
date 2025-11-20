@@ -43,3 +43,4 @@ anyhow = "~1.0.100"
 smallvec = { version = "1.13.2", default-features = false }
 regex = "~1.11.0"
 jsonschema = "~0.17.1"
+chrono = { version = "0.4.38", default-features = false, features = ["clock"] }

@@ -8,7 +8,7 @@
 use std::path::{Path, PathBuf};
 
 use blake3::Hasher;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, Timelike, Utc};
 use git2::{Commit, Oid, Repository, Signature, Tree};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -333,6 +333,7 @@ impl MessagePublisher for GitMessagePublisher {
         let segment_prefix = topic.segment_prefix(&segment_time)?;
         let segment_ulid = envelope.ulid.clone();
         let metadata = SegmentMeta {
+            version: 1,
             message_count: 1,
             approximate_bytes: envelope.canonical_bytes.len() as u64,
             segment_ulid: segment_ulid.clone(),
@@ -423,6 +424,34 @@ fn sanitize_topic(input: &str) -> Result<String, MessagePlaneError> {
 
 fn map_git_err(err: git2::Error) -> MessagePlaneError {
     MessagePlaneError::Repo(err.to_string())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SegmentMeta {
+    version: u32,
+    message_count: u64,
+    approximate_bytes: u64,
+    segment_ulid: String,
+    started_at: String,
+}
+
+#[derive(Debug, Clone)]
+struct SegmentTime {
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+}
+
+impl SegmentTime {
+    fn from_datetime(dt: &DateTime<Utc>) -> Self {
+        Self {
+            year: dt.year(),
+            month: dt.month(),
+            day: dt.day(),
+            hour: dt.hour(),
+        }
+    }
 }
 
 #[cfg(test)]
