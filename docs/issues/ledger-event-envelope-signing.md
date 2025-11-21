@@ -1,6 +1,6 @@
 # Ledger: Event Envelope Canonicalization & Signing
 
-- **Status:** TODO
+- **Status:** In Progress
 - **Area:** gatos-ledger-core / crypto
 - **Owner:** Triage
 - **Context:** SPEC §4.1 requires DAG-CBOR canonicalization, `Event-CID`, and signature handling (ed25519 at minimum). No implementation exists to build/verify envelopes end-to-end.
@@ -16,3 +16,6 @@
 - Library functions produce stable canonical bytes/`Event-CID` across platforms.
 - Sign/verify passes reference vectors; invalid signatures rejected.
 - Docs explain canonicalization and trailer usage.
+
+## Progress Log
+- 2025-11-21: Added failing tests in `gatos-ledger-git` for canonical bytes, CID, and sign/verify; stub implementations still TODO.
