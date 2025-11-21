@@ -46,5 +46,5 @@ jsonschema = "~0.17.1"
 chrono = { version = "0.4.38", default-features = false, features = ["clock"] }
 ed25519-dalek = { version = "2.1.1", default-features = false, features = ["alloc"] }
 serde_ipld_dagcbor = "0.6.1"
-cid = { version = "0.11.1", default-features = false, features = ["serde", "std", "blake3"] }
-multihash = { version = "0.18.1", default-features = false, features = ["blake3", "std"] }
+cid = { version = "0.10.1", default-features = false, features = ["serde", "std"] }
+multihash = { version = "0.18.1", default-features = false, features = ["std", "multihash-impl", "blake3"] }

@@ -18,8 +18,8 @@ mod tests {
     use crate::event::{sign_event, verify_event, EventEnvelope};
     use serde_json::json;
 
-    // Known test data from SPEC examples (placeholder CID until implementation)
-    const EXPECTED_CID: &str = "bafyplaceholdercid";
+    // Known test vector (dag-cbor + blake3-256)
+    const EXPECTED_CID: &str = "bafyr4ifveoisniytx6etpqt7jnxjd6hbqul5utgfzvokn4rk3zdt5tgacu";
 
     fn sample_envelope() -> EventEnvelope {
         EventEnvelope {

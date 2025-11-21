@@ -15,3 +15,6 @@ path = "src/lib.rs"
 ed25519-dalek = { workspace = true }
 serde = { workspace = true, features = ["std"] }
 serde_json = { workspace = true, features = ["std"] }
+serde_ipld_dagcbor = { workspace = true }
+cid = { workspace = true }
+multihash = { workspace = true }
