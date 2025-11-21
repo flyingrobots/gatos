@@ -331,6 +331,14 @@ These are explicit non-goals until after the core truth machine is working:
 
 **Status:** 🟠 In Progress — ADR-0005/ADR-0017 approved; core publish/subscriber/pruner logic shipped. Remaining wiring and polish tracked below.
 
+**Blocking dependency (Ledger Plane) — tracked in `docs/issues/`:**
+- [ledger-event-envelope-signing](./issues/ledger-event-envelope-signing.md)
+- [ledger-git-append-cas](./issues/ledger-git-append-cas.md)
+- [ledger-read-windowing](./issues/ledger-read-windowing.md)
+- [ledger-policy-gate-integration](./issues/ledger-policy-gate-integration.md)
+- [ledger-observability](./issues/ledger-observability.md)
+- [ledger-test-harness](./issues/ledger-test-harness.md)
+
 ### Goals
 
 <a id="goals-3"></a>
