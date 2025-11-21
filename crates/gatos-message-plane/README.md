@@ -64,7 +64,10 @@ The crate currently exports lightweight traits and structs so downstream crates 
 
 - `TopicRef` — identifies the repository + logical topic (`refs/gatos/messages/<topic>`).
 - `MessageEnvelope` — holds the canonical JSON bytes (per `schemas/v1/message-plane/event_envelope.schema.json`) and can be built via `MessageEnvelope::from_json_str` to enforce canonicalization/validation.
-- `MessagePublisher`, `MessageSubscriber`, `CheckpointStore` — traits implemented by `gatosd` once the Message Plane RPC lands. They expose `publish`, `read`, and checkpoint persistence hooks mapped to ADR-0005’s `messages.read` contract.
+- `GitMessagePublisher` — appends canonical envelopes, rotating segments hourly or when message/byte thresholds are exceeded. Commits store `message/envelope.json` plus `meta/meta.json` with segment metadata.
+- `GitMessageSubscriber` — walks a topic head parent chain, returning canonical envelopes (ordered oldest→newest) while honoring `since_ulid` and `limit` per ADR-0005.
+- `GitCheckpointStore` — persists consumer checkpoints under `refs/gatos/consumers/<group>/<topic>` (JSON blob containing `ulid` + optional `commit`) and can list/load checkpoints to coordinate pruning.
+- `SegmentPruner` — finds/deletes aged segment refs only when all consumer checkpoints are at/after the segment’s newest ULID (TTL-safe pruning scaffold).
 
 These types intentionally omit concrete transport plumbing; they document the expected shape so ADR work and downstream SDKs can evolve in parallel.
 

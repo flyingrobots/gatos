@@ -329,7 +329,7 @@ These are explicit non-goals until after the core truth machine is working:
 <a id="m3-message-bus-commit-backed-pubsub"></a>
 **3–5 weeks**
 
-**Status:** 🟠 Proposed — ADR-0005 documents the Message Plane but remains Proposed; crates, daemons, and tests still need to land.
+**Status:** 🟠 In Progress — ADR-0005/ADR-0017 approved; core publish/subscriber/pruner logic shipped. Remaining wiring and polish tracked below.
 
 ### Goals
 
@@ -363,6 +363,15 @@ These are explicit non-goals until after the core truth machine is working:
 - Summary commits: Merkle root, counts, offsets.
 
 - Metrics: segment size, rotation hints.
+
+**Open follow-ups (tracked in `docs/issues/` until mirrored to GitHub):**
+- [message-plane-rpc-wiring](./issues/message-plane-rpc-wiring.md)
+- [message-plane-publish-path](./issues/message-plane-publish-path.md)
+- [message-plane-pagination-cursors](./issues/message-plane-pagination-cursors.md)
+- [message-plane-backpressure-concurrency](./issues/message-plane-backpressure-concurrency.md)
+- [message-plane-observability](./issues/message-plane-observability.md)
+- [message-plane-ledger-core-port](./issues/message-plane-ledger-core-port.md)
+- [message-plane-docs-sdks](./issues/message-plane-docs-sdks.md)
 
 ### Done When
 

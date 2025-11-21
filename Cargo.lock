@@ -568,12 +568,16 @@ name = "gatosd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
+ "chrono",
  "clap",
  "gatos-echo",
  "gatos-ledger",
  "gatos-message-plane",
  "gatos-policy",
+ "git2",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",

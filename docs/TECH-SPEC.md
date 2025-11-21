@@ -850,12 +850,23 @@ The daemon exposes `messages.read` over the JSONL RPC channel so workers and bri
   - `messages`: ordered list (oldest→newest). Each entry contains `ulid`, `commit`, `content_id`, `envelope_path` (always `message/envelope.json` unless overridden), and `canonical_json` (base64 of the canonical envelope bytes).
   - `next_since`: ULID to use for the next page (empty array when fewer than `limit` rows remain).
   - `checkpoint_hint` (optional): `{ "group": <string>, "topic": <string> }` so automated consumers can persist progress without issuing a second RPC.
+  - Implemented CLI: `gatosd messages-read --topic <t> [--since <ulid>] [--limit N] [--checkpoint-group <g>] --repo <path>`.
 - **Errors**
   - `topic_not_found` (404) — topic ref missing.
   - `invalid_ulid` (400) — malformed resume cursor.
   - `limit_out_of_range` (409) — `limit < 1`.
 
 `gatos-message-plane` is responsible for translating RPC calls to actual Git ref walks and enforcing ULID monotonicity per ADR-0005.
+
+**Pruning & TTL (implemented scaffold)**
+
+- Default retention: 30 days (profile-dependent). Segments older than `now - retention` MAY be pruned **only if** every consumer checkpoint for the topic is ahead of the segment's newest ULID.
+- CLI helper: `gatosd messages-prune --topic <t> --repo <path> [--retention-days 30]` deletes eligible `refs/gatos/messages/<topic>/<segment>` refs; skips segments when checkpoints lag.
+- Pruning MUST log deleted segment prefixes and SHOULD emit audit summaries when configured (see ADR-0005 observability addendum).
+
+**Ledger-core alignment (design sketch)**
+
+- The `GitMessagePublisher` logic decomposes cleanly into the `gatos-ledger-core` traits: use `ObjectStore::put_object` for blobs, construct `CommitCore { parent, tree, message, timestamp }`, and rely on the backend to append via CAS (`compare-and-swap` on topic head ref). This lets a future `LedgerMessagePublisher<T: LedgerBackend>` reuse rotation/meta logic without direct `git2` calls, with the git backend supplying append/read primitives that expose CAS semantics and tree building.
 
 ---
 

@@ -96,6 +96,7 @@ Content-Id: blake3:
   - `envelope_path` (string) — repository-relative path to `message/envelope.json` (default `message/envelope.json`).
   - `canonical_json` (string) — base64-encoded canonical JSON bytes for clients that cannot read from Git directly.
   - `checkpoint_hint` (object) — `{ "group": <consumer-group>, "topic": <topic> }` when the server auto-advances checkpoints; MAY be `null` otherwise.
+  - `next_since` (string, optional) — newest ULID in the page for fast resume.
 - **Errors:**
   - `404 topic_not_found` when the requested ref does not exist.
   - `400 invalid_ulid` when `since_ulid` is malformed.
@@ -106,6 +107,22 @@ Servers SHOULD include the newest `ulid` in the response metadata (`next_since`)
 6. **Interaction with Ledger**
 - Ledger events MAY be mirrored into the Message Plane automatically.
 - Governance transitions (ADR‑0003) SHOULD emit Message Plane events in the `governance` topic.
+
+### Observability & Safety (added 2025-11-21)
+
+- **Metrics** (Prometheus-style) SHOULD include:
+  - `gmp_publish_total{topic,result}`
+  - `gmp_segment_rotations_total{topic,reason="hour|max_messages|max_bytes"}`
+  - `gmp_checkpoint_writes_total{topic,group,result}`
+  - `gmp_prune_segments_total{topic}` and `gmp_prune_skipped_total{topic,reason="young|checkpoint_lag"}`
+  - Gauges: `gmp_head_age_seconds{topic}`, `gmp_min_checkpoint_ulid{topic}`
+- **Logs**: rotation/prune actions MUST log topic, segment prefix, ULID range, message_count, approximate_bytes; pruning logs SHOULD include the min checkpoint ULID that gated deletion.
+- **Audit refs**: optional `refs/gatos/audit/message-plane/<ulid>` summary commits MAY record prune windows (counts, Merkle root, last ULID) to preserve verifiability after TTL.
+
+### Atomic ref updates (multi-writer safety)
+
+- Writers MUST use compare-and-swap (`git update-ref <ref> <new> <old>` or libgit2 `reference_matching`) when advancing segment refs and topic heads. A mismatch MUST raise `HeadConflict` so callers retry with the new head.
+- Update order: write commit → CAS update segment ref → CAS update topic head. This prevents lost updates if multiple publishers race.
 
 ### Consequences
 

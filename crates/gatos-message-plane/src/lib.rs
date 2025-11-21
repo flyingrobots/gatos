@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use blake3::Hasher;
-use chrono::{DateTime, Datelike, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
 use git2::{Commit, Oid, Repository, Signature, Tree};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -20,6 +20,11 @@ use serde_json::{Map, Value};
 pub const fn hello_message_plane() -> &'static str {
     "Hello from gatos-message-plane!"
 }
+
+/// Maximum page size enforced by `messages.read` and `MessageSubscriber` implementations.
+pub const MAX_PAGE_SIZE: usize = 512;
+/// Default path to the canonical envelope blob within a message commit.
+pub const DEFAULT_ENVELOPE_PATH: &str = "message/envelope.json";
 
 /// Canonical reference to a message topic.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -44,13 +49,20 @@ impl TopicRef {
     }
 
     pub fn head_ref(&self) -> Result<String, MessagePlaneError> {
-        Ok(format!("refs/gatos/messages/{}/head", self.sanitized_name()?))
+        Ok(format!(
+            "refs/gatos/messages/{}/head",
+            self.sanitized_name()?
+        ))
     }
 
     fn segment_prefix(&self, ts: &SegmentTime) -> Result<String, MessagePlaneError> {
         Ok(format!(
             "{}/{:04}/{:02}/{:02}/{:02}",
-            self.sanitized_name()?, ts.year, ts.month, ts.day, ts.hour
+            self.sanitized_name()?,
+            ts.year,
+            ts.month,
+            ts.day,
+            ts.hour
         ))
     }
 }
@@ -128,9 +140,7 @@ impl MessageEnvelope {
 
     /// Returns `blake3:<hex>` digest of the canonical bytes.
     pub fn content_id(&self) -> String {
-        let mut hasher = Hasher::new();
-        hasher.update(&self.canonical_bytes);
-        format!("blake3:{}", hex::encode(hasher.finalize().as_bytes()))
+        compute_content_id(&self.canonical_bytes)
     }
 }
 
@@ -165,6 +175,8 @@ pub struct MessageRecord {
 pub enum MessagePlaneError {
     /// Repository IO or libgit2 failure.
     Repo(String),
+    /// Requested topic ref was not found.
+    TopicNotFound,
     /// Provided envelope failed schema/canonical validation.
     InvalidEnvelope(String),
     /// CAS violation while appending to a topic.
@@ -181,6 +193,7 @@ impl std::fmt::Display for MessagePlaneError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Repo(e) => write!(f, "repository error: {}", e),
+            Self::TopicNotFound => write!(f, "topic not found"),
             Self::InvalidEnvelope(e) => write!(f, "invalid envelope: {}", e),
             Self::HeadConflict => write!(f, "topic head moved while publishing"),
             Self::Checkpoint(e) => write!(f, "checkpoint error: {}", e),
@@ -195,8 +208,11 @@ impl std::error::Error for MessagePlaneError {}
 /// Publish interface implemented by the daemon.
 pub trait MessagePublisher {
     /// Append a message to `topic`, returning the resulting commit + content ids.
-    fn publish(&self, topic: &TopicRef, envelope: MessageEnvelope)
-        -> Result<PublishReceipt, MessagePlaneError>;
+    fn publish(
+        &self,
+        topic: &TopicRef,
+        envelope: MessageEnvelope,
+    ) -> Result<PublishReceipt, MessagePlaneError>;
 }
 
 /// Subscriber interface for streaming messages off a topic.
@@ -208,6 +224,39 @@ pub trait MessageSubscriber {
         since_ulid: Option<&str>,
         limit: usize,
     ) -> Result<Vec<MessageRecord>, MessagePlaneError>;
+}
+
+/// Git-backed implementation for reading messages from a topic.
+pub struct GitMessageSubscriber {
+    repo: Repository,
+}
+
+impl GitMessageSubscriber {
+    /// Open a repository at `path` for reads.
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MessagePlaneError> {
+        let repo = Repository::open(path).map_err(map_git_err)?;
+        Ok(Self { repo })
+    }
+
+    fn repo(&self) -> &Repository {
+        &self.repo
+    }
+
+    fn head_commit(&self, topic: &TopicRef) -> Result<Commit<'_>, MessagePlaneError> {
+        let head_ref = topic.head_ref()?;
+        let oid = self.repo().refname_to_id(&head_ref).map_err(|err| {
+            if err.code() == git2::ErrorCode::NotFound {
+                MessagePlaneError::TopicNotFound
+            } else {
+                map_git_err(err)
+            }
+        })?;
+        self.repo().find_commit(oid).map_err(map_git_err)
+    }
+
+    fn record_from_commit(&self, commit: &Commit) -> Result<MessageRecord, MessagePlaneError> {
+        read_message_record(self.repo(), commit)
+    }
 }
 
 /// Persistence for consumer checkpoints (refs/gatos/consumers/**).
@@ -240,6 +289,78 @@ impl GitCheckpointStore {
             topic.sanitized_name()?
         ))
     }
+
+    pub fn load_checkpoint(
+        &self,
+        group: &str,
+        topic: &TopicRef,
+    ) -> Result<Option<ConsumerCheckpoint>, MessagePlaneError> {
+        let refname = self.ref_name(group, topic)?;
+        let topic_name = topic.sanitized_name()?;
+        match self.repo.find_reference(&refname) {
+            Ok(reference) => self.read_checkpoint(reference, group.to_string(), topic_name),
+            Err(err) if err.code() == git2::ErrorCode::NotFound => Ok(None),
+            Err(err) => Err(map_git_err(err)),
+        }
+    }
+
+    pub fn list_checkpoints(
+        &self,
+        topic: &TopicRef,
+    ) -> Result<Vec<ConsumerCheckpoint>, MessagePlaneError> {
+        let target_topic = topic.sanitized_name()?;
+        let mut entries = Vec::new();
+        let mut iter = self.repo.references().map_err(map_git_err)?;
+        while let Some(reference) = iter.next().transpose().map_err(map_git_err)? {
+            let name = match reference.name() {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            if !name.starts_with("refs/gatos/consumers/") {
+                continue;
+            }
+            if let Some(rest) = name.strip_prefix("refs/gatos/consumers/") {
+                let mut parts = rest.splitn(2, '/');
+                let group = match parts.next() {
+                    Some(g) => g.to_string(),
+                    None => continue,
+                };
+                let topic_part = match parts.next() {
+                    Some(t) => t.to_string(),
+                    None => continue,
+                };
+                if topic_part != target_topic {
+                    continue;
+                }
+                if let Some(cp) = self.read_checkpoint(reference, group, topic_part)? {
+                    entries.push(cp);
+                }
+            }
+        }
+        Ok(entries)
+    }
+
+    fn read_checkpoint(
+        &self,
+        reference: git2::Reference<'_>,
+        group: String,
+        topic: String,
+    ) -> Result<Option<ConsumerCheckpoint>, MessagePlaneError> {
+        let oid = match reference.target() {
+            Some(oid) => oid,
+            None => return Ok(None),
+        };
+        let blob = self.repo.find_blob(oid).map_err(map_git_err)?;
+        let payload: CheckpointPayload = serde_json::from_slice(blob.content())
+            .map_err(|e| MessagePlaneError::Checkpoint(e.to_string()))?;
+        validate_ulid_str(&payload.ulid)?;
+        Ok(Some(ConsumerCheckpoint {
+            group,
+            topic,
+            ulid: payload.ulid,
+            commit: payload.commit,
+        }))
+    }
 }
 
 impl CheckpointStore for GitCheckpointStore {
@@ -251,20 +372,13 @@ impl CheckpointStore for GitCheckpointStore {
         commit: &str,
     ) -> Result<(), MessagePlaneError> {
         validate_ulid_str(ulid)?;
-        let checkpoint = ConsumerCheckpoint {
-            version: 1,
-            group: group.to_string(),
-            topic: topic.sanitized_name()?,
+        let checkpoint = CheckpointPayload {
             ulid: ulid.to_string(),
-            commit: commit.to_string(),
-            updated_at_epoch: Utc::now().timestamp(),
+            commit: Some(commit.to_string()),
         };
         let json = serde_json::to_string(&checkpoint)
             .map_err(|e| MessagePlaneError::Checkpoint(e.to_string()))?;
-        let blob_oid = self
-            .repo
-            .blob(json.as_bytes())
-            .map_err(map_git_err)?;
+        let blob_oid = self.repo.blob(json.as_bytes()).map_err(map_git_err)?;
         let refname = self.ref_name(group, topic)?;
         self.repo
             .reference(&refname, blob_oid, true, "checkpoint update")
@@ -308,7 +422,10 @@ impl GitMessagePublisher {
         &self.repo
     }
 
-    fn read_head(&self, topic: &TopicRef) -> Result<Option<git2::Reference<'_>>, MessagePlaneError> {
+    fn read_head(
+        &self,
+        topic: &TopicRef,
+    ) -> Result<Option<git2::Reference<'_>>, MessagePlaneError> {
         let head_ref = topic.head_ref()?;
         match self.repo().find_reference(&head_ref) {
             Ok(reference) => Ok(Some(reference)),
@@ -317,12 +434,15 @@ impl GitMessagePublisher {
         }
     }
 
-    fn build_tree(&self, envelope: &MessageEnvelope, meta: &SegmentMeta) -> Result<Tree<'_>, MessagePlaneError> {
+    fn build_tree(
+        &self,
+        envelope: &MessageEnvelope,
+        meta: &SegmentMeta,
+    ) -> Result<Tree<'_>, MessagePlaneError> {
         let repo = self.repo();
-        let meta_bytes = serde_json::to_vec(meta).map_err(|e| MessagePlaneError::Repo(e.to_string()))?;
-        let blob_oid = repo
-            .blob(&envelope.canonical_bytes)
-            .map_err(map_git_err)?;
+        let meta_bytes =
+            serde_json::to_vec(meta).map_err(|e| MessagePlaneError::Repo(e.to_string()))?;
+        let blob_oid = repo.blob(&envelope.canonical_bytes).map_err(map_git_err)?;
         let mut message_dir = repo.treebuilder(None).map_err(map_git_err)?;
         message_dir
             .insert("envelope.json", blob_oid, 0o100644)
@@ -410,12 +530,7 @@ impl GitMessagePublisher {
     }
 
     fn read_segment_meta(&self, commit: &Commit) -> Option<SegmentMeta> {
-        let tree = commit.tree().ok()?;
-        let meta_tree_entry = tree.get_name("meta")?;
-        let meta_tree = self.repo().find_tree(meta_tree_entry.id()).ok()?;
-        let meta_blob_entry = meta_tree.get_name("meta.json")?;
-        let blob = self.repo().find_blob(meta_blob_entry.id()).ok()?;
-        serde_json::from_slice(blob.content()).ok()
+        read_segment_meta(self.repo(), commit)
     }
 
     fn derive_segment_meta(
@@ -446,12 +561,7 @@ impl GitMessagePublisher {
         ))
     }
 
-    fn should_rotate(
-        &self,
-        existing: &SegmentMeta,
-        new_prefix: &str,
-        payload_len: usize,
-    ) -> bool {
+    fn should_rotate(&self, existing: &SegmentMeta, new_prefix: &str, payload_len: usize) -> bool {
         if existing.segment_prefix != new_prefix {
             return true;
         }
@@ -459,6 +569,122 @@ impl GitMessagePublisher {
             return true;
         }
         existing.approximate_bytes + payload_len as u64 > self.max_bytes_per_segment
+    }
+}
+
+impl MessageSubscriber for GitMessageSubscriber {
+    fn read(
+        &self,
+        topic: &TopicRef,
+        since_ulid: Option<&str>,
+        limit: usize,
+    ) -> Result<Vec<MessageRecord>, MessagePlaneError> {
+        if let Some(cursor) = since_ulid {
+            validate_ulid_str(cursor)?;
+        }
+        if limit == 0 {
+            return Err(MessagePlaneError::InvalidLimit);
+        }
+        let limit = limit.min(MAX_PAGE_SIZE);
+
+        let mut commit = self.head_commit(topic)?;
+        let mut records_desc = Vec::new();
+        loop {
+            records_desc.push(self.record_from_commit(&commit)?);
+            if commit.parent_count() == 0 {
+                break;
+            }
+            commit = commit.parent(0).map_err(map_git_err)?;
+        }
+
+        let slice = if let Some(cursor) = since_ulid {
+            if let Some(pos) = records_desc.iter().position(|r| r.ulid == cursor) {
+                &records_desc[..pos]
+            } else {
+                &records_desc[..]
+            }
+        } else {
+            &records_desc[..]
+        };
+
+        let mut ordered: Vec<MessageRecord> = slice.iter().rev().cloned().collect();
+        if ordered.len() > limit {
+            ordered.truncate(limit);
+        }
+        Ok(ordered)
+    }
+}
+
+/// Determines which segments are eligible for TTL pruning.
+pub struct SegmentPruner {
+    repo: Repository,
+}
+
+impl SegmentPruner {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, MessagePlaneError> {
+        let repo = Repository::open(path).map_err(map_git_err)?;
+        Ok(Self { repo })
+    }
+
+    pub fn find_prunable_segments(
+        &self,
+        topic: &TopicRef,
+        now: DateTime<Utc>,
+        retention: Duration,
+        checkpoints: &[ConsumerCheckpoint],
+    ) -> Result<Vec<String>, MessagePlaneError> {
+        let topic_name = topic.sanitized_name()?;
+        let prefix = format!("refs/gatos/messages/{}/", topic_name);
+        let mut refs = self.repo.references().map_err(map_git_err)?;
+        let mut prunable = Vec::new();
+        while let Some(reference) = refs.next().transpose().map_err(map_git_err)? {
+            let name = match reference.name() {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            if !name.starts_with(&prefix) || name.ends_with("/head") {
+                continue;
+            }
+            let oid = match reference.target() {
+                Some(oid) => oid,
+                None => continue,
+            };
+            let commit = self.repo.find_commit(oid).map_err(map_git_err)?;
+            let meta = match read_segment_meta(&self.repo, &commit) {
+                Some(m) => m,
+                None => continue,
+            };
+            let age = now.timestamp() - meta.started_at_epoch;
+            if age < retention.num_seconds() {
+                continue;
+            }
+            let record = read_message_record(&self.repo, &commit)?;
+            if checkpoints
+                .iter()
+                .filter(|cp| cp.topic == topic_name)
+                .any(|cp| cp.ulid < record.ulid)
+            {
+                continue;
+            }
+            prunable.push(name);
+        }
+        Ok(prunable)
+    }
+
+    pub fn prune(
+        &self,
+        topic: &TopicRef,
+        now: DateTime<Utc>,
+        retention: Duration,
+        checkpoints: &[ConsumerCheckpoint],
+    ) -> Result<Vec<String>, MessagePlaneError> {
+        let candidates = self.find_prunable_segments(topic, now, retention, checkpoints)?;
+        for refname in &candidates {
+            if let Ok(mut r) = self.repo.find_reference(refname) {
+                r.delete().map_err(map_git_err)?;
+            }
+        }
+        Ok(candidates)
     }
 }
 
@@ -517,15 +743,66 @@ impl MessagePublisher for GitMessagePublisher {
 /// Validates that `input` is a 26-char ULID using uppercase Crockford base32.
 pub fn validate_ulid_str(input: &str) -> Result<(), MessagePlaneError> {
     if input.len() != 26 {
-        return Err(MessagePlaneError::InvalidEnvelope("ulid must be 26 chars".into()));
+        return Err(MessagePlaneError::InvalidEnvelope(
+            "ulid must be 26 chars".into(),
+        ));
     }
-    if !input.chars().all(|c| matches!(c, '0'..='9' | 'A'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='Z'))
+    if !input
+        .chars()
+        .all(|c| matches!(c, '0'..='9' | 'A'..='H' | 'J'..='N' | 'P'..='T' | 'V'..='Z'))
     {
         return Err(MessagePlaneError::InvalidEnvelope(
             "ulid must be uppercase Crockford base32".into(),
         ));
     }
     Ok(())
+}
+
+fn compute_content_id(bytes: &[u8]) -> String {
+    let mut hasher = Hasher::new();
+    hasher.update(bytes);
+    format!("blake3:{}", hex::encode(hasher.finalize().as_bytes()))
+}
+
+fn read_message_record(
+    repo: &Repository,
+    commit: &Commit,
+) -> Result<MessageRecord, MessagePlaneError> {
+    let tree = commit.tree().map_err(map_git_err)?;
+    let message_tree = tree
+        .get_name("message")
+        .ok_or_else(|| MessagePlaneError::Repo("message tree missing".into()))?;
+    let message_tree = repo.find_tree(message_tree.id()).map_err(map_git_err)?;
+    let envelope = message_tree
+        .get_name("envelope.json")
+        .ok_or_else(|| MessagePlaneError::Repo("envelope.json missing".into()))?;
+    let blob = repo.find_blob(envelope.id()).map_err(map_git_err)?;
+    let canonical = blob.content().to_vec();
+    let envelope_json: Value = serde_json::from_slice(&canonical)
+        .map_err(|e| MessagePlaneError::Repo(format!("parse envelope: {e}")))?;
+    let ulid = envelope_json
+        .get("ulid")
+        .and_then(Value::as_str)
+        .ok_or_else(|| MessagePlaneError::Repo("envelope missing ulid".into()))?
+        .to_string();
+    validate_ulid_str(&ulid)?;
+
+    Ok(MessageRecord {
+        commit_id: commit.id().to_string(),
+        content_id: compute_content_id(&canonical),
+        envelope_path: DEFAULT_ENVELOPE_PATH.to_string(),
+        canonical_envelope: canonical,
+        ulid,
+    })
+}
+
+fn read_segment_meta(repo: &Repository, commit: &Commit) -> Option<SegmentMeta> {
+    let tree = commit.tree().ok()?;
+    let meta_tree_entry = tree.get_name("meta")?;
+    let meta_tree = repo.find_tree(meta_tree_entry.id()).ok()?;
+    let meta_blob_entry = meta_tree.get_name("meta.json")?;
+    let blob = repo.find_blob(meta_blob_entry.id()).ok()?;
+    serde_json::from_slice(blob.content()).ok()
 }
 
 fn canonicalize_json(value: Value) -> Value {
@@ -618,14 +895,19 @@ pub(crate) struct SegmentMeta {
     approximate_bytes: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct ConsumerCheckpoint {
-    version: u32,
-    group: String,
-    topic: String,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+struct CheckpointPayload {
     ulid: String,
-    commit: String,
-    updated_at_epoch: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    commit: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConsumerCheckpoint {
+    pub group: String,
+    pub topic: String,
+    pub ulid: String,
+    pub commit: Option<String>,
 }
 
 impl SegmentMeta {
@@ -672,7 +954,7 @@ impl SegmentTime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{TimeZone, Utc};
+    use chrono::{Duration, TimeZone, Utc};
     use serde_json::json;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
@@ -750,12 +1032,22 @@ mod tests {
         let refname = "refs/gatos/consumers/workers/jobs/pending";
         let blob_oid = repo.refname_to_id(refname).unwrap();
         let blob = repo.find_blob(blob_oid).unwrap();
-        let checkpoint: ConsumerCheckpoint = serde_json::from_slice(blob.content()).unwrap();
-        assert_eq!(checkpoint.ulid, GOOD_ULID);
-        assert_eq!(checkpoint.commit, "abc123");
-        assert_eq!(checkpoint.topic, "jobs/pending");
-        assert_eq!(checkpoint.group, "workers");
-        assert!(checkpoint.updated_at_epoch > 0);
+        let checkpoint: serde_json::Value = serde_json::from_slice(blob.content()).unwrap();
+        assert_eq!(checkpoint.get("ulid").unwrap().as_str().unwrap(), GOOD_ULID);
+        assert_eq!(
+            checkpoint.get("commit").unwrap().as_str().unwrap(),
+            "abc123"
+        );
+        assert_eq!(checkpoint.as_object().unwrap().len(), 2);
+
+        let loaded = store
+            .load_checkpoint("workers", &topic)
+            .unwrap()
+            .expect("checkpoint exists");
+        assert_eq!(loaded.group, "workers");
+        assert_eq!(loaded.topic, "jobs/pending");
+        assert_eq!(loaded.ulid, GOOD_ULID);
+        assert_eq!(loaded.commit.as_deref(), Some("abc123"));
     }
 
     #[test]
@@ -767,7 +1059,10 @@ mod tests {
             dt(2025, 11, 20, 13),
             dt(2025, 11, 20, 14),
         ]));
-        let config = GitMessagePublisherConfig { clock, ..Default::default() };
+        let config = GitMessagePublisherConfig {
+            clock,
+            ..Default::default()
+        };
         let publisher = GitMessagePublisher::with_config(dir.path(), config).unwrap();
         let topic = TopicRef::new(dir.path(), "jobs/pending");
         publish(&publisher, &topic, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
@@ -833,6 +1128,163 @@ mod tests {
         assert_eq!(second_meta.message_count, 2);
         assert_eq!(second_meta.segment_prefix, latest_meta.segment_prefix);
         assert_ne!(second_meta.segment_ulid, latest_meta.segment_ulid);
+    }
+
+    #[test]
+    fn subscriber_reads_canonical_json_in_order() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let publisher = GitMessagePublisher::open(dir.path()).unwrap();
+        let subscriber = GitMessageSubscriber::open(dir.path()).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+
+        let ulids = [
+            "01ARZ3NDEKTSV4RRFFQ69G5FBG",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBH",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBJ",
+        ];
+        let envelopes: Vec<_> = ulids.iter().map(|u| make_envelope(u)).collect();
+        for env in &envelopes {
+            publisher.publish(&topic, env.clone()).unwrap();
+        }
+
+        let records = subscriber.read(&topic, None, 10).unwrap();
+        assert_eq!(records.len(), envelopes.len());
+        let returned_ulids: Vec<_> = records.iter().map(|r| r.ulid.as_str()).collect();
+        assert_eq!(returned_ulids, ulids);
+        for (record, env) in records.iter().zip(envelopes.iter()) {
+            assert_eq!(record.envelope_path, "message/envelope.json");
+            assert_eq!(record.canonical_envelope, env.canonical_bytes);
+            assert_eq!(record.content_id, env.content_id());
+        }
+    }
+
+    #[test]
+    fn subscriber_respects_since_ulid_and_limit() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let publisher = GitMessagePublisher::open(dir.path()).unwrap();
+        let subscriber = GitMessageSubscriber::open(dir.path()).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+
+        let ulids = [
+            "01ARZ3NDEKTSV4RRFFQ69G5FBK",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBL",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBM",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBN",
+        ];
+        for u in &ulids {
+            publish(&publisher, &topic, u);
+        }
+
+        let records = subscriber
+            .read(&topic, Some(ulids[1]), 2)
+            .expect("read succeeds");
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0].ulid, ulids[2]);
+        assert_eq!(records[1].ulid, ulids[3]);
+
+        let limited = subscriber.read(&topic, None, 1).expect("limit clamped");
+        assert_eq!(limited.len(), 1);
+        assert_eq!(limited[0].ulid, ulids[0]);
+    }
+
+    #[test]
+    fn pruner_skips_when_checkpoint_lags() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let clock = Arc::new(MockClock::new(vec![
+            dt(2025, 11, 20, 9),
+            dt(2025, 11, 20, 9),
+            dt(2025, 11, 20, 11),
+        ]));
+        let config = GitMessagePublisherConfig {
+            clock,
+            ..Default::default()
+        };
+        let publisher = GitMessagePublisher::with_config(dir.path(), config).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+        let ulids = [
+            "01ARZ3NDEKTSV4RRFFQ69G5FBD",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBE",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBF",
+        ];
+        for u in &ulids {
+            publish(&publisher, &topic, u);
+        }
+
+        let store = GitCheckpointStore::open(dir.path()).unwrap();
+        // Checkpoint behind the last ULID in the first segment -> should block pruning.
+        store
+            .persist_checkpoint("workers", &topic, ulids[0], "deadbeef")
+            .unwrap();
+        let checkpoints = store.list_checkpoints(&topic).unwrap();
+        let pruner = SegmentPruner::open(dir.path()).unwrap();
+        let candidates = pruner
+            .find_prunable_segments(
+                &topic,
+                dt(2025, 11, 20, 13),
+                Duration::hours(3),
+                &checkpoints,
+            )
+            .unwrap();
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn pruner_allows_old_segment_once_checkpoints_advance() {
+        let dir = tempdir().unwrap();
+        Repository::init(dir.path()).unwrap();
+        let clock = Arc::new(MockClock::new(vec![
+            dt(2025, 11, 20, 9),
+            dt(2025, 11, 20, 9),
+            dt(2025, 11, 20, 11),
+        ]));
+        let config = GitMessagePublisherConfig {
+            clock,
+            ..Default::default()
+        };
+        let publisher = GitMessagePublisher::with_config(dir.path(), config).unwrap();
+        let topic = TopicRef::new(dir.path(), "jobs/pending");
+        let ulids = [
+            "01ARZ3NDEKTSV4RRFFQ69G5FBG",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBH",
+            "01ARZ3NDEKTSV4RRFFQ69G5FBJ",
+        ];
+        for u in &ulids {
+            publish(&publisher, &topic, u);
+        }
+
+        let store = GitCheckpointStore::open(dir.path()).unwrap();
+        // Advance checkpoint past the first segment's last ULID.
+        store
+            .persist_checkpoint("workers", &topic, ulids[2], "cafebabe")
+            .unwrap();
+        let checkpoints = store.list_checkpoints(&topic).unwrap();
+        let pruner = SegmentPruner::open(dir.path()).unwrap();
+        let candidates = pruner
+            .find_prunable_segments(
+                &topic,
+                dt(2025, 11, 20, 13),
+                Duration::hours(3),
+                &checkpoints,
+            )
+            .unwrap();
+
+        assert_eq!(candidates.len(), 1);
+        assert!(candidates[0].contains(ulids[0]));
+        // Perform the prune and ensure the ref disappears.
+        let deleted = pruner
+            .prune(
+                &topic,
+                dt(2025, 11, 20, 13),
+                Duration::hours(3),
+                &checkpoints,
+            )
+            .unwrap();
+        assert_eq!(deleted, candidates);
+        let repo = Repository::open(dir.path()).unwrap();
+        assert!(repo.find_reference(&deleted[0]).is_err());
     }
 
     fn publish(publisher: &GitMessagePublisher, topic: &TopicRef, ulid: &str) {

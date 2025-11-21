@@ -28,19 +28,20 @@ Each ADR will have a status, typically one of the following:
 
 | ID | Title | Status | Date |
 |:---|:---|:---|:---|
-| [ADR-0001](./ADR-0001/DECISION.md) | Split gatos-ledger into no_std Core and std Backends | Accepted | 2025-11-08 |
-| [ADR-0002](./ADR-0002/DECISION.md) | Distributed Compute via a Job Plane | Accepted | 2025-11-08 |
-| [ADR-0003](./ADR-0003/DECISION.md) | Consensus Governance for Gated Actions | Accepted | 2025-11-08 |
-| [ADR-0004](./ADR-0004/DECISION.md) | Hybrid Privacy Model (Public Projection + Private Overlay) | Accepted | 2025-11-09 |
-| [ADR-0005](./ADR-0005/DECISION.md) | Message Plane — A Git-Native, Commit-Backed Message Bus | Proposed | 2025-11-09 |
-| [ADR-0006](./ADR-0006/DECISION.md) | Local Enforcement — Watcher Daemon & Git Hooks | Accepted | 2025-11-09 |
-| [ADR-0007](./ADR-0007/DECISION.md) | GraphQL State API (Read-Only) | Accepted | 2025-11-09 |
-| [ADR-0008](./ADR-0008/DECISION.md) | REST Commands & Webhooks | Draft | 2025-11-09 |
-| [ADR-0009](./ADR-0009/DECISION.md) | Real-Time Streams & Ref Subscriptions | Draft | 2025-11-09 |
-| [ADR-0010](./ADR-0010/DECISION.md) | First-Class GitHub App Integration | Draft | 2025-11-09 |
-| [ADR-0011](./ADR-0011/DECISION.md) | GATOS-to-SQL/Parquet Exporter | Draft | 2025-11-09 |
-| [ADR-0012](./ADR-0012/DECISION.md) | Federated Repositories & Mounts | Draft | 2025-11-09 |
-| [ADR-0013](./ADR-0013/DECISION.md) | Partial & Lazy Folds | Draft | 2025-11-09 |
-| [ADR-0014](./ADR-0014/DECISION.md) | Proof-Of-Fold (Attestation of State) | Draft | 2025-11-09 |
-| [ADR-0015](./ADR-0015/DECISION.md) | Sessions (Ephemeral Working Branches) | Draft | 2025-11-18 |
-| [ADR-0016](./ADR-0016/DECISION.md) | Proof-of-Experiment (PoX) | Draft | 2025-11-18 |
+| [ADR-0001](./ADR-0001/DECISION.md) | Split gatos-ledger into no_std Core and std Backends | Approved | 2025-11-08 |
+| [ADR-0002](./ADR-0002/DECISION.md) | Distributed Compute via a Job Plane | Approved | 2025-11-08 |
+| [ADR-0003](./ADR-0003/DECISION.md) | Consensus Governance for Gated Actions | Approved | 2025-11-08 |
+| [ADR-0004](./ADR-0004/DECISION.md) | Hybrid Privacy Model (Public Projection + Private Overlay) | Approved | 2025-11-09 |
+| [ADR-0005](./ADR-0005/DECISION.md) | Message Plane — A Git-Native, Commit-Backed Message Bus | Approved | 2025-11-09 |
+| [ADR-0006](./ADR-0006/DECISION.md) | Local Enforcement — Watcher Daemon & Git Hooks | Approved | 2025-11-09 |
+| [ADR-0007](./ADR-0007/DECISION.md) | GraphQL State API (Read-Only) | Approved | 2025-11-09 |
+| [ADR-0008](./ADR-0008/DECISION.md) | REST Commands & Webhooks | Approved | 2025-11-09 |
+| [ADR-0009](./ADR-0009/DECISION.md) | Real-Time Streams & Ref Subscriptions | Approved | 2025-11-09 |
+| [ADR-0010](./ADR-0010/DECISION.md) | First-Class GitHub App Integration | Approved | 2025-11-09 |
+| [ADR-0011](./ADR-0011/DECISION.md) | GATOS-to-SQL/Parquet Exporter | Approved | 2025-11-09 |
+| [ADR-0012](./ADR-0012/DECISION.md) | Federated Repositories & Mounts | Approved | 2025-11-09 |
+| [ADR-0013](./ADR-0013/DECISION.md) | Partial & Lazy Folds | Approved | 2025-11-09 |
+| [ADR-0014](./ADR-0014/DECISION.md) | Proof-Of-Fold (Attestation of State) | Approved | 2025-11-09 |
+| [ADR-0015](./ADR-0015/DECISION.md) | Sessions (Ephemeral Working Branches) | Approved | 2025-11-18 |
+| [ADR-0016](./ADR-0016/DECISION.md) | Proof-of-Experiment (PoX) | Approved | 2025-11-18 |
+| [ADR-0017](./ADR-0017/DECISION.md) | Message Plane on Ledger-Core Ports (No Direct git2) | Approved | 2025-11-21 |
