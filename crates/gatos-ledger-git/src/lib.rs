@@ -19,6 +19,14 @@ mod tests {
     use crate::event::{sign_event, verify_event, EventEnvelope};
     use serde_json::json;
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)"
+        );
+    }
+
     // Known test vector (dag-cbor + blake3-256)
     const EXPECTED_CID: &str = "bafyr4ifveoisniytx6etpqt7jnxjd6hbqul5utgfzvokn4rk3zdt5tgacu";
 
@@ -37,11 +45,13 @@ mod tests {
 
     #[test]
     fn stub_notice_mentions_backend() {
+        require_docker();
         assert!(stub_notice().contains("backend"));
     }
 
     #[test]
     fn canonical_bytes_are_stable() {
+        require_docker();
         let env = sample_envelope();
         let bytes1 = env.canonical_bytes().expect("bytes");
         let bytes2 = env.canonical_bytes().expect("bytes");
@@ -50,6 +60,7 @@ mod tests {
 
     #[test]
     fn event_cid_matches_expected_placeholder() {
+        require_docker();
         let env = sample_envelope();
         let cid = env.event_cid().expect("cid");
         assert_eq!(cid, EXPECTED_CID, "CID should match spec vector");
@@ -57,6 +68,7 @@ mod tests {
 
     #[test]
     fn signing_and_verification_round_trip() {
+        require_docker();
         let env = sample_envelope();
         let kp = ed25519_dalek::SigningKey::from_bytes(&[1u8; 32]);
         let sig = sign_event(&env, &kp).expect("sign");

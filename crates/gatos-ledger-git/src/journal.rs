@@ -229,6 +229,14 @@ mod tests {
     use serde_json::json;
     use tempfile::tempdir;
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     fn envelope(ulid: &str) -> EventEnvelope {
         EventEnvelope {
             event_type: "event.append".into(),
@@ -244,6 +252,7 @@ mod tests {
 
     #[test]
     fn append_sets_journal_head_and_trailers() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         let cid = append_event(
@@ -262,6 +271,7 @@ mod tests {
 
     #[test]
     fn append_is_linear_with_cas() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         let a = append_event(
@@ -289,6 +299,7 @@ mod tests {
 
     #[test]
     fn read_window_returns_ordered_events() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         append_event(
@@ -313,6 +324,7 @@ mod tests {
 
     #[test]
     fn read_window_honors_start_and_end() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         append_event(
@@ -373,6 +385,7 @@ mod tests {
 
     #[test]
     fn pagination_returns_next_cursor() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         append_event(
@@ -418,6 +431,7 @@ mod tests {
 
     #[test]
     fn read_window_unknown_start_returns_error() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         append_event(
@@ -434,6 +448,7 @@ mod tests {
 
     #[test]
     fn append_conflict_returns_error_after_retries() {
+        require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
         // First append to create head
@@ -465,7 +480,7 @@ mod tests {
 
     fn make_dummy_commit(repo: &Repository, parent: Option<Oid>) -> Oid {
         let sig = Signature::now("gatos-ledger", "ledger@gatos.local").unwrap();
-        let mut tb = repo.treebuilder(None).unwrap();
+        let tb = repo.treebuilder(None).unwrap();
         let tree_oid = tb.write().unwrap();
         let tree = repo.find_tree(tree_oid).unwrap();
         let parents = if let Some(p) = parent {
