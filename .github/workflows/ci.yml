@@ -57,6 +57,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      GATOS_TEST_IN_DOCKER: "1"
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
@@ -91,6 +93,8 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     name: MSRV check (1.81.0)
+    env:
+      GATOS_TEST_IN_DOCKER: "1"
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
