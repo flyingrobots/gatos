@@ -9,6 +9,8 @@ Guidelines for contributors/agents working inside this repository.
 - **Frequent, small commits**: Each slice of work (e.g., adding a test, wiring a module) should be committed separately to keep history reviewable.
 - **Forbidden git-fu**: Do **not** rebase, squash, amend, or force-push branches in this repo. Use linear commits only.
 
+- **Timestamps**: Use POSIX epoch seconds for all internal metadata and commit-related timestamps to avoid timezone/locale ambiguity. No local timezones, ever.
+
 ## Technical Conventions
 
 - Use POSIX timestamps (epoch seconds) for internal metadata to avoid timezone ambiguity.
