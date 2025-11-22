@@ -86,8 +86,8 @@ pub fn read_window(
     repo: &Repository,
     ns: &str,
     actor: Option<&str>,
-    _start: Option<&str>,
-    _end: Option<&str>,
+    start: Option<&str>,
+    end: Option<&str>,
 ) -> Result<Vec<EventEnvelope>, String> {
     let target_ref = match actor {
         Some(a) => format!("refs/gatos/journal/{}/{}", ns, a),
@@ -127,14 +127,37 @@ pub fn read_window(
             .map_err(|e| e.message().to_string())?;
         let env: EventEnvelope =
             serde_json::from_slice(blob.content()).map_err(|e| e.to_string())?;
-        events.push(env);
+        events.push((commit.id(), env));
         if commit.parent_count() == 0 {
             break;
         }
         commit = commit.parent(0).map_err(|e| e.message().to_string())?;
     }
     events.reverse();
-    Ok(events)
+
+    let mut filtered = Vec::new();
+    let mut seen_start = start.is_none();
+    for (cid, env) in events {
+        if !seen_start {
+            if let Some(s) = start {
+                if cid.to_string() == s {
+                    seen_start = true;
+                    continue; // exclusive start
+                }
+            }
+        } else {
+            filtered.push((cid, env));
+            if let Some(e) = end {
+                if cid.to_string() == e {
+                    break; // inclusive end
+                }
+            }
+        }
+    }
+    if !seen_start && start.is_some() {
+        return Err("start commit not found".into());
+    }
+    Ok(filtered.into_iter().map(|(_, env)| env).collect())
 }
 
 fn write_envelope_tree(repo: &Repository, env: &EventEnvelope) -> Result<Oid, String> {
@@ -240,6 +263,66 @@ mod tests {
         )
         .unwrap();
         let events = read_window(&repo, "default", None, None, None).expect("read");
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        assert_eq!(events[1].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
+    }
+
+    #[test]
+    fn read_window_honors_start_and_end() {
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBA"),
+        )
+        .unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBB"),
+        )
+        .unwrap();
+
+        let head = repo
+            .refname_to_id("refs/gatos/journal/default/alice")
+            .unwrap();
+        let head_commit = repo.find_commit(head).unwrap();
+        let mid_commit = head_commit.parent(0).unwrap();
+        let first_commit = mid_commit.parent(0).unwrap();
+
+        // start at first (exclusive) should return mid+head
+        let events = read_window(
+            &repo,
+            "default",
+            Some("alice"),
+            Some(&first_commit.id().to_string()),
+            None,
+        )
+        .expect("read window");
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
+        assert_eq!(events[1].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBB");
+
+        // end at mid (inclusive) should return first+mid
+        let events = read_window(
+            &repo,
+            "default",
+            Some("alice"),
+            None,
+            Some(&mid_commit.id().to_string()),
+        )
+        .expect("read window");
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
         assert_eq!(events[1].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
