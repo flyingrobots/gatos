@@ -31,3 +31,19 @@ services:
       "--config",
       ".markdownlint.json",
     ]
+
+  ci-tests:
+    image: rust:1.82-slim-bullseye
+    working_dir: /work
+    environment:
+      GATOS_TEST_IN_DOCKER: "1"
+      CARGO_TERM_COLOR: always
+    volumes:
+      - .:/work
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/work/target
+    command: ["cargo", "test", "--workspace", "--locked"]
+
+volumes:
+  cargo-cache:
+  target-cache:
