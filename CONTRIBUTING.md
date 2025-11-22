@@ -144,7 +144,7 @@ Prerequisites
 
 Common commands
 
-- Build/tests: `cargo test --workspace --locked`
+- Build/tests: run `./scripts/test.sh` (auto-spawns Docker Compose `ci-tests` with `GATOS_TEST_IN_DOCKER=1`). Direct host runs are forbidden because tests mutate git refs.
 - Schemas (AJV compile/validate/negative via Docker): `cargo run -p xtask -- schemas`
 - Link check (lychee): `cargo run -p xtask -- links`
   - To avoid GitHub rate limiting locally, export `LYCHEE_GITHUB_TOKEN` (you can also use `export LYCHEE_GITHUB_TOKEN=$GITHUB_TOKEN` in CI).
