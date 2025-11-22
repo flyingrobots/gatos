@@ -1,9 +1,8 @@
-//! Git-backed ledger journal append/read (tests first, impl pending).
+//! Git-backed ledger journal append/read with CAS semantics.
 
 use git2::Oid;
 use git2::Repository;
 use git2::Signature;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::event::EventEnvelope;
 
@@ -16,35 +15,70 @@ pub fn append_event(
 ) -> Result<String, String> {
     let sig = Signature::now("gatos-ledger", "ledger@gatos.local")
         .map_err(|e| e.message().to_string())?;
-    let tree_oid = write_envelope_tree(repo, envelope)?;
     let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
-    let parent = repo
-        .find_reference(&head_ref)
-        .ok()
-        .and_then(|r| r.target())
-        .and_then(|oid| repo.find_commit(oid).ok());
-    let parents: Vec<&git2::Commit> = parent.iter().collect();
-    let message = format!(
-        "{}\n\nEvent-CID: {}\n",
-        envelope.event_type,
-        envelope.event_cid().map_err(|e| e.to_string())?
-    );
-    let commit_oid = repo
-        .commit(
-            None,
-            &sig,
-            &sig,
-            &message,
-            &repo
-                .find_tree(tree_oid)
-                .map_err(|e| e.message().to_string())?,
-            &parents,
-        )
-        .map_err(|e| e.message().to_string())?;
-    // CAS update (best-effort; not atomic yet)
-    repo.reference(&head_ref, commit_oid, true, "journal append")
-        .map_err(|e| e.message().to_string())?;
-    Ok(commit_oid.to_string())
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        let current = repo
+            .find_reference(&head_ref)
+            .ok()
+            .and_then(|r| r.target())
+            .and_then(|oid| repo.find_commit(oid).ok());
+        let parents: Vec<&git2::Commit> = current.iter().collect();
+        let tree_oid = write_envelope_tree(repo, envelope)?;
+        let message = format!(
+            "{}\n\nEvent-CID: {}\n",
+            envelope.event_type,
+            envelope.event_cid().map_err(|e| e.to_string())?
+        );
+        let commit_oid = repo
+            .commit(
+                None,
+                &sig,
+                &sig,
+                &message,
+                &repo
+                    .find_tree(tree_oid)
+                    .map_err(|e| e.message().to_string())?,
+                &parents,
+            )
+            .map_err(|e| e.message().to_string())?;
+
+        let cas_result = if let Some(parent_commit) = current {
+            repo.reference_matching(
+                &head_ref,
+                commit_oid,
+                true,
+                parent_commit.id(),
+                "journal append",
+            )
+        } else {
+            repo.reference(&head_ref, commit_oid, true, "journal append")
+        };
+
+        match cas_result {
+            Ok(_) => return Ok(commit_oid.to_string()),
+            Err(err)
+                if err.class() == git2::ErrorClass::Reference
+                    && err.code() == git2::ErrorCode::Locked =>
+            {
+                if attempts >= 3 {
+                    return Err("HeadConflict".into());
+                }
+                continue;
+            }
+            Err(err)
+                if err.class() == git2::ErrorClass::Reference
+                    && err.code() == git2::ErrorCode::NotFound =>
+            {
+                if attempts >= 3 {
+                    return Err("HeadConflict".into());
+                }
+                continue;
+            }
+            Err(err) => return Err(err.message().to_string()),
+        }
+    }
 }
 
 /// Read events between optional start/end commits (inclusive end).
