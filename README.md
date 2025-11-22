@@ -41,10 +41,15 @@ If there's more you want to know, follow the links below:
 88   8 88   8   88  8    8 e   88
 88eee8 88   8   88  8eeee8 8eee88
 
-  Git As The Operating Surface™  
+Git As The Operating Surface™  
 ```
 
 </details>
+
+## Developing & Running Tests
+
+- Use `./scripts/test.sh` to run the test suite. It re-execs inside the Docker Compose service `ci-tests` and sets `GATOS_TEST_IN_DOCKER=1` so Git-munging tests stay isolated.
+- Running `cargo test` directly on the host will fail fast with a message pointing back to `./scripts/test.sh` (host runs are disallowed).
 
 ## Git As The Operating Surface
 

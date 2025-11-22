@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(
             std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
             Ok("1"),
-            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1); use ./scripts/test.sh",
         );
     }
 
