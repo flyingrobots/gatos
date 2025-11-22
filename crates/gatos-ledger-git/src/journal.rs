@@ -89,6 +89,17 @@ pub fn read_window(
     start: Option<&str>,
     end: Option<&str>,
 ) -> Result<Vec<EventEnvelope>, String> {
+    let with_ids = read_window_with_ids(repo, ns, actor, start, end)?;
+    Ok(with_ids.into_iter().map(|(_, env)| env).collect())
+}
+
+fn read_window_with_ids(
+    repo: &Repository,
+    ns: &str,
+    actor: Option<&str>,
+    start: Option<&str>,
+    end: Option<&str>,
+) -> Result<Vec<(Oid, EventEnvelope)>, String> {
     let target_ref = match actor {
         Some(a) => format!("refs/gatos/journal/{}/{}", ns, a),
         None => {
@@ -157,7 +168,26 @@ pub fn read_window(
     if !seen_start && start.is_some() {
         return Err("start commit not found".into());
     }
-    Ok(filtered.into_iter().map(|(_, env)| env).collect())
+    Ok(filtered)
+}
+
+/// Read with limit and return next cursor (commit id) for pagination.
+pub fn read_window_paginated(
+    repo: &Repository,
+    ns: &str,
+    actor: Option<&str>,
+    start: Option<&str>,
+    end: Option<&str>,
+    limit: usize,
+) -> Result<(Vec<EventEnvelope>, Option<String>), String> {
+    let mut events = read_window_with_ids(repo, ns, actor, start, end)?;
+    if events.len() > limit {
+        let cursor = events[limit - 1].0.to_string();
+        events.truncate(limit);
+        let page = events.into_iter().map(|(_, env)| env).collect();
+        return Ok((page, Some(cursor)));
+    }
+    Ok((events.into_iter().map(|(_, env)| env).collect(), None))
 }
 
 fn write_envelope_tree(repo: &Repository, env: &EventEnvelope) -> Result<Oid, String> {
@@ -326,5 +356,50 @@ mod tests {
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
         assert_eq!(events[1].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBA");
+    }
+
+    #[test]
+    fn pagination_returns_next_cursor() {
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBA"),
+        )
+        .unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBB"),
+        )
+        .unwrap();
+
+        let head_oid = repo
+            .refname_to_id("refs/gatos/journal/default/alice")
+            .unwrap();
+        let mid_oid = repo.find_commit(head_oid).unwrap().parent(0).unwrap().id();
+
+        let (page1, cursor) =
+            read_window_paginated(&repo, "default", Some("alice"), None, None, 2).unwrap();
+        assert_eq!(page1.len(), 2);
+        assert_eq!(page1[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        assert_eq!(cursor, Some(mid_oid.to_string()));
+
+        let (page2, cursor2) =
+            read_window_paginated(&repo, "default", Some("alice"), cursor.as_deref(), None, 2)
+                .unwrap();
+        assert_eq!(page2.len(), 1);
+        assert_eq!(page2[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBB");
+        assert_eq!(cursor2, None);
     }
 }
