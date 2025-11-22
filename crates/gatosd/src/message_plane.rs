@@ -137,8 +137,17 @@ mod tests {
         "01ARZ3NDEKTSV4RRFFQ69G5FCC",
     ];
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     #[test]
     fn messages_read_returns_base64_and_next_since() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let publisher = GitMessagePublisher::open(dir.path()).unwrap();
@@ -162,6 +171,7 @@ mod tests {
 
     #[test]
     fn messages_read_respects_since_and_limit() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let publisher = GitMessagePublisher::open(dir.path()).unwrap();
@@ -181,6 +191,7 @@ mod tests {
 
     #[test]
     fn messages_read_persists_checkpoint_when_group_supplied() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let publisher = GitMessagePublisher::open(dir.path()).unwrap();

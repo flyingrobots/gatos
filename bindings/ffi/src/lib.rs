@@ -165,8 +165,17 @@ pub unsafe extern "C" fn gatos_compute_content_id_hex_v2(
 mod tests {
     use super::*;
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     #[test]
     fn hello_and_free_roundtrip() {
+        require_docker();
         // Calling `hello_ffi` is safe; freeing requires `unsafe` below.
         let p = hello_ffi();
         assert!(!p.is_null());

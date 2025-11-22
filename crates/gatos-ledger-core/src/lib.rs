@@ -148,6 +148,14 @@ mod tests {
     use smallvec::smallvec;
     use std::string::ToString;
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     fn fixed_core() -> CommitCore {
         CommitCore {
             parent: Some([0x11; 32]),
@@ -162,6 +170,7 @@ mod tests {
 
     #[test]
     fn test_compute_commit_id_invariant_under_signatures() {
+        require_docker();
         let core = fixed_core();
         let id_core = compute_content_id(&core).unwrap();
 
@@ -213,6 +222,7 @@ mod tests {
 
     #[test]
     fn test_compute_content_id_stability() {
+        require_docker();
         let core = fixed_core();
         let id1 = compute_content_id(&core).unwrap();
         let id2 = compute_content_id(&core).unwrap();

@@ -86,8 +86,17 @@ fn validate_and_build_core(
 mod tests {
     use super::*;
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     #[test]
     fn hello_wasm_returns_static_str() {
+        require_docker();
         assert_eq!(hello_wasm(), "Hello from gatos-wasm-bindings!");
         // Also sanity check the JS wrapper compiles and returns the same string
         assert_eq!(hello_wasm_js(), "Hello from gatos-wasm-bindings!");

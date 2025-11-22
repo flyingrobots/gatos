@@ -966,13 +966,23 @@ mod tests {
 
     const GOOD_ULID: &str = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
+    fn require_docker() {
+        assert_eq!(
+            std::env::var("GATOS_TEST_IN_DOCKER").as_deref(),
+            Ok("1"),
+            "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1)",
+        );
+    }
+
     #[test]
     fn ulid_validation_accepts_uppercase_crockford() {
+        require_docker();
         assert!(validate_ulid_str(GOOD_ULID).is_ok());
     }
 
     #[test]
     fn ulid_validation_rejects_bad_values() {
+        require_docker();
         assert!(matches!(
             validate_ulid_str("short"),
             Err(MessagePlaneError::InvalidEnvelope(_))
@@ -985,6 +995,7 @@ mod tests {
 
     #[test]
     fn envelope_canonicalization_sorts_keys() {
+        require_docker();
         let envelope_json = json!({
             "payload": {"b": 1, "a": 2},
             "type": "demo",
@@ -1004,6 +1015,7 @@ mod tests {
 
     #[test]
     fn envelope_requires_payload() {
+        require_docker();
         let broken = json!({
             "type": "demo",
             "ns": "tests",
@@ -1017,6 +1029,7 @@ mod tests {
 
     #[test]
     fn sanitize_topic_checks_segments() {
+        require_docker();
         assert_eq!(sanitize_topic("jobs/pending").unwrap(), "jobs/pending");
         assert!(sanitize_topic("../evil").is_err());
         assert!(sanitize_topic("foo//bar").is_err());
@@ -1025,6 +1038,7 @@ mod tests {
 
     #[test]
     fn checkpoint_store_writes_blob_ref() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let store = GitCheckpointStore::open(dir.path()).unwrap();
@@ -1057,6 +1071,7 @@ mod tests {
 
     #[test]
     fn rotates_when_hour_changes() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let clock = Arc::new(MockClock::new(vec![
@@ -1103,6 +1118,7 @@ mod tests {
 
     #[test]
     fn rotates_when_message_limit_exceeded() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let clock = Arc::new(MockClock::new(vec![
@@ -1137,6 +1153,7 @@ mod tests {
 
     #[test]
     fn subscriber_reads_canonical_json_in_order() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let publisher = GitMessagePublisher::open(dir.path()).unwrap();
@@ -1166,6 +1183,7 @@ mod tests {
 
     #[test]
     fn subscriber_respects_since_ulid_and_limit() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let publisher = GitMessagePublisher::open(dir.path()).unwrap();
@@ -1196,6 +1214,7 @@ mod tests {
 
     #[test]
     fn pruner_skips_when_checkpoint_lags() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let clock = Arc::new(MockClock::new(vec![
@@ -1238,6 +1257,7 @@ mod tests {
 
     #[test]
     fn pruner_allows_old_segment_once_checkpoints_advance() {
+        require_docker();
         let dir = tempdir().unwrap();
         Repository::init(dir.path()).unwrap();
         let clock = Arc::new(MockClock::new(vec![
