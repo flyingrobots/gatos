@@ -17,4 +17,6 @@ serde = { workspace = true, features = ["std"] }
 serde_json = { workspace = true, features = ["std"] }
 serde_ipld_dagcbor = { workspace = true }
 cid = { workspace = true }
+git2 = { workspace = true }
+tempfile = "3"
 multihash = { workspace = true }

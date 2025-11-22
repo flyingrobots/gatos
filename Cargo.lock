@@ -749,10 +749,12 @@ version = "0.1.0"
 dependencies = [
  "cid 0.10.1",
  "ed25519-dalek",
+ "git2",
  "multihash 0.18.1",
  "serde",
  "serde_ipld_dagcbor",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]

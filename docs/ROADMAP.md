@@ -381,6 +381,8 @@ These are explicit non-goals until after the core truth machine is working:
 - [message-plane-ledger-core-port](./issues/message-plane-ledger-core-port.md)
 - [message-plane-docs-sdks](./issues/message-plane-docs-sdks.md)
 
+**Ledger Plane follow-ups:** see `docs/issues/ledger-*.md` (append/CAS, read windowing, gate integration, observability, test harness).
+
 ### Done When
 
 <a id="done-when-3"></a>

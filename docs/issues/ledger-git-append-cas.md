@@ -1,6 +1,6 @@
 # Ledger: Git Backend Append + CAS Journals
 
-- **Status:** TODO
+- **Status:** In Progress
 - **Area:** gatos-ledger-git
 - **Owner:** Triage
 - **Context:** `gatos-ledger-git` is a stub. Need a git2-backed backend that appends event commits under `refs/gatos/journal/<ns>/<actor>` with atomic compare-and-swap per SPEC §4.2.
@@ -16,3 +16,6 @@
 - Integration test: append N events concurrently → single linear history with expected head; retries logged.
 - Commit layout matches SPEC; references updated atomically.
 - Error types mapped for callers (conflict vs IO).
+
+## Progress Log
+- 2025-11-21: Added git2-backed append/read_window with envelope tree layout and tests; CAS still best-effort (reference_matching not wired yet).
