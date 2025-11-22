@@ -13,17 +13,30 @@ pub fn append_event(
     actor: &str,
     envelope: &EventEnvelope,
 ) -> Result<String, String> {
+    append_event_with_expected(repo, ns, actor, envelope, None)
+}
+
+fn append_event_with_expected(
+    repo: &Repository,
+    ns: &str,
+    actor: &str,
+    envelope: &EventEnvelope,
+    expected_head: Option<Oid>,
+) -> Result<String, String> {
     let sig = Signature::now("gatos-ledger", "ledger@gatos.local")
         .map_err(|e| e.message().to_string())?;
     let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let current = repo
-            .find_reference(&head_ref)
-            .ok()
-            .and_then(|r| r.target())
-            .and_then(|oid| repo.find_commit(oid).ok());
+        let current = if let Some(expected) = expected_head {
+            repo.find_commit(expected).ok()
+        } else {
+            repo.find_reference(&head_ref)
+                .ok()
+                .and_then(|r| r.target())
+                .and_then(|oid| repo.find_commit(oid).ok())
+        };
         let parents: Vec<&git2::Commit> = current.iter().collect();
         let tree_oid = write_envelope_tree(repo, envelope)?;
         let message = format!(
@@ -63,7 +76,7 @@ pub fn append_event(
                     && err.code() == git2::ErrorCode::Locked =>
             {
                 if attempts >= 3 {
-                    return Err("HeadConflict".into());
+                    return Err("head_conflict".into());
                 }
                 continue;
             }
@@ -72,7 +85,7 @@ pub fn append_event(
                     && err.code() == git2::ErrorCode::NotFound =>
             {
                 if attempts >= 3 {
-                    return Err("HeadConflict".into());
+                    return Err("head_conflict".into());
                 }
                 continue;
             }
@@ -401,5 +414,67 @@ mod tests {
         assert_eq!(page2.len(), 1);
         assert_eq!(page2[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FBB");
         assert_eq!(cursor2, None);
+    }
+
+    #[test]
+    fn read_window_unknown_start_returns_error() {
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .unwrap();
+
+        let result = read_window(&repo, "default", Some("alice"), Some("deadbeef"), None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn append_conflict_returns_error_after_retries() {
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        // First append to create head
+        append_event(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .unwrap();
+
+        // Advance head with an out-of-band commit to trigger CAS conflict
+        let stale_head = repo
+            .refname_to_id("refs/gatos/journal/default/alice")
+            .unwrap();
+        let new_head = make_dummy_commit(&repo, Some(stale_head));
+        repo.reference("refs/gatos/journal/default/alice", new_head, true, "race")
+            .unwrap();
+
+        let result = append_event_with_expected(
+            &repo,
+            "default",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBA"),
+            Some(stale_head),
+        );
+        assert!(result.is_err());
+    }
+
+    fn make_dummy_commit(repo: &Repository, parent: Option<Oid>) -> Oid {
+        let sig = Signature::now("gatos-ledger", "ledger@gatos.local").unwrap();
+        let mut tb = repo.treebuilder(None).unwrap();
+        let tree_oid = tb.write().unwrap();
+        let tree = repo.find_tree(tree_oid).unwrap();
+        let parents = if let Some(p) = parent {
+            vec![repo.find_commit(p).unwrap()]
+        } else {
+            Vec::new()
+        };
+        let parent_refs: Vec<&git2::Commit> = parents.iter().collect();
+        repo.commit(None, &sig, &sig, "dummy", &tree, &parent_refs)
+            .unwrap()
     }
 }
