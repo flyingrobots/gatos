@@ -1,6 +1,6 @@
 # Ledger: Event Read/Windowing for Folds & Jobs
 
-- **Status:** TODO
+- **Status:** In Progress
 - **Area:** gatos-ledger-core / gatos-ledger-git
 - **Owner:** Triage
 - **Context:** Echo folds and Job Plane need to stream events between commit ranges. No API yet to read a window (start/end commits), filter by ns/actor, or return canonical payloads.
@@ -15,3 +15,6 @@
 ## Definition of Done
 - Stable interface to stream events for folding and job claim logic.
 - Resume tokens/cursors work across restarts; tests cover pagination.
+
+## Progress Log
+- 2025-11-21: Added start/end filtering support in git backend `read_window` with tests; pagination/cursors still TODO.
