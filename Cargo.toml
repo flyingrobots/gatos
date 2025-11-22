@@ -8,6 +8,7 @@ members = [
     "crates/gatos-message-plane",
     "crates/gatos-graphql",
     "crates/gatos-echo",
+    "crates/gatos-ports",
     "crates/gatos-policy",
     "crates/gatos-kv",
     "crates/gatosd",
