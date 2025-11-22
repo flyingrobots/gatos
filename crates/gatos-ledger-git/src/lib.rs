@@ -6,6 +6,7 @@
 #![deny(unsafe_code)]
 
 pub mod event;
+pub mod journal;
 
 /// Returns a static string explaining that the backend is still landing.
 pub fn stub_notice() -> &'static str {

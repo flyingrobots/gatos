@@ -25,6 +25,9 @@ pub const fn hello_message_plane() -> &'static str {
 pub const MAX_PAGE_SIZE: usize = 512;
 /// Default path to the canonical envelope blob within a message commit.
 pub const DEFAULT_ENVELOPE_PATH: &str = "message/envelope.json";
+/// Ref prefixes used across the Message Plane.
+pub const REFS_MESSAGES_PREFIX: &str = "refs/gatos/messages";
+pub const REFS_CONSUMERS_PREFIX: &str = "refs/gatos/consumers";
 
 /// Canonical reference to a message topic.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -50,7 +53,8 @@ impl TopicRef {
 
     pub fn head_ref(&self) -> Result<String, MessagePlaneError> {
         Ok(format!(
-            "refs/gatos/messages/{}/head",
+            "{}/{}/head",
+            REFS_MESSAGES_PREFIX,
             self.sanitized_name()?
         ))
     }
@@ -284,7 +288,8 @@ impl GitCheckpointStore {
 
     fn ref_name(&self, group: &str, topic: &TopicRef) -> Result<String, MessagePlaneError> {
         Ok(format!(
-            "refs/gatos/consumers/{}/{}",
+            "{}/{}/{}",
+            REFS_CONSUMERS_PREFIX,
             sanitize_identifier(group)?,
             topic.sanitized_name()?
         ))

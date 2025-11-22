@@ -1,6 +1,6 @@
 use cid::Cid;
+use ed25519_dalek::{SignatureError, Signer, SigningKey, VerifyingKey};
 use multihash::{Code, MultihashDigest};
-use ed25519_dalek::{SignatureError, SigningKey, VerifyingKey, Signer};
 use serde::{Deserialize, Serialize};
 use serde_ipld_dagcbor::to_vec;
 use serde_json::Value;
