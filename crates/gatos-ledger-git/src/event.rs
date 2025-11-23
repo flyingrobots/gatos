@@ -87,7 +87,19 @@ impl EventEnvelope {
 
     /// Validate payload size to prevent storage DoS.
     fn validate_size(&self) -> Result<(), String> {
-        todo!("validate payload size")
+        const MAX_PAYLOAD_BYTES: usize = 1024 * 1024; // 1MB
+        let size = serde_json::to_vec(&self.payload)
+            .map_err(|e| format!("failed to serialize payload: {}", e))?
+            .len();
+
+        if size > MAX_PAYLOAD_BYTES {
+            return Err(format!(
+                "payload size {} bytes exceeds maximum {} bytes",
+                size, MAX_PAYLOAD_BYTES
+            ));
+        }
+
+        Ok(())
     }
 }
 

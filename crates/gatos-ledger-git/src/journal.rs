@@ -368,6 +368,16 @@ pub fn read_window(
     end: Option<&str>,
 ) -> Result<Vec<EventEnvelope>, String> {
     let with_ids = read_window_with_ids(repo, ns, actor, start, end)?;
+
+    // Enforce MAX_EVENTS limit to prevent memory exhaustion
+    if with_ids.len() > MAX_EVENTS {
+        return Err(format!(
+            "result set {} events exceeds maximum {} - use pagination with read_window_paginated",
+            with_ids.len(),
+            MAX_EVENTS
+        ));
+    }
+
     Ok(with_ids.into_iter().map(|(_, env)| env).collect())
 }
 
@@ -421,7 +431,16 @@ fn read_window_with_ids(
         .find_commit(head)
         .map_err(|e| e.message().to_string())?;
     let mut events = Vec::new();
+    let mut walked = 0;
     loop {
+        walked += 1;
+        if walked > MAX_HISTORY_WALK {
+            return Err(format!(
+                "history walk exceeded maximum {} commits",
+                MAX_HISTORY_WALK
+            ));
+        }
+
         let tree = commit.tree().map_err(|e| e.message().to_string())?;
         let msg_tree = tree
             .get_name("message")
