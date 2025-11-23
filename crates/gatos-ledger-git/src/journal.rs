@@ -162,6 +162,9 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
     envelope: &EventEnvelope,
     expected_head: Option<Oid>,
 ) -> Result<String, String> {
+    // Validate envelope fields to prevent injection attacks
+    envelope.validate()?;
+
     let sig = Signature::now("gatos-ledger", "ledger@gatos.local")
         .map_err(|e| e.message().to_string())?;
     let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
@@ -270,6 +273,9 @@ fn append_event_with_expected(
     envelope: &EventEnvelope,
     expected_head: Option<Oid>,
 ) -> Result<String, String> {
+    // Validate envelope fields to prevent injection attacks
+    envelope.validate()?;
+
     let sig = Signature::now("gatos-ledger", "ledger@gatos.local")
         .map_err(|e| e.message().to_string())?;
     let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
