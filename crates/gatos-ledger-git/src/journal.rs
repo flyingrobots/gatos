@@ -6,6 +6,28 @@ use git2::Signature;
 
 use crate::event::EventEnvelope;
 
+/// Validate namespace parameter to prevent git reference injection.
+///
+/// Rules:
+/// - Length: 1-64 characters
+/// - Allowed: alphanumeric, hyphen, underscore
+/// - Rejected: path traversal (`.`, `..`, `/`, `\`)
+/// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
+fn validate_namespace(ns: &str) -> Result<(), String> {
+    todo!("validate namespace")
+}
+
+/// Validate actor parameter to prevent git reference injection.
+///
+/// Rules:
+/// - Length: 1-128 characters
+/// - Allowed: alphanumeric, hyphen, underscore
+/// - Rejected: path traversal (`.`, `..`, `/`, `\`)
+/// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
+fn validate_actor(actor: &str) -> Result<(), String> {
+    todo!("validate actor")
+}
+
 /// Git-backed implementation of JournalStore using refs/gatos/journal/<ns>/<actor>.
 pub struct GitJournalStore<'r> {
     repo: &'r Repository,
