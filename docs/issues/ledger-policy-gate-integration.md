@@ -1,6 +1,6 @@
 # Ledger: Policy Gate Integration
 
-- **Status:** TODO
+- **Status:** In Progress
 - **Area:** gatosd / Policy / Ledger
 - **Owner:** Triage
 - **Context:** SPEC §6 requires policy gates to evaluate intents before ledger append and to log DENY decisions. The daemon lacks a gate-aware ledger service.
@@ -14,3 +14,6 @@
 
 ## Definition of Done
 - gatosd exposes a gate-checked append path; DENY writes audit entries; errors are spec-compliant.
+
+## Progress Log
+- 2025-11-22: Implemented `append_with_policy` in gatos-ledger-git with policy guard, audit logging to git refs, and tests for allow/deny flows. Still need to wire into gatosd RPC layer.
