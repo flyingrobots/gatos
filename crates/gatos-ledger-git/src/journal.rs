@@ -14,7 +14,33 @@ use crate::event::EventEnvelope;
 /// - Rejected: path traversal (`.`, `..`, `/`, `\`)
 /// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
 fn validate_namespace(ns: &str) -> Result<(), String> {
-    todo!("validate namespace")
+    const MAX_NS_LEN: usize = 64;
+
+    if ns.is_empty() {
+        return Err("namespace cannot be empty".into());
+    }
+
+    if ns.len() > MAX_NS_LEN {
+        return Err(format!("namespace exceeds max length {}", MAX_NS_LEN));
+    }
+
+    // Reject path traversal sequences
+    if ns.contains("..") || ns.contains('/') || ns.contains('\\') || ns.contains('.') {
+        return Err(format!("invalid namespace '{}': path traversal not allowed", ns));
+    }
+
+    // Reject git special characters
+    const GIT_SPECIAL_CHARS: &[char] = &[':', '*', '?', '[', '~', '^', '@', '{', '}', ']'];
+    if ns.chars().any(|c| GIT_SPECIAL_CHARS.contains(&c)) {
+        return Err(format!("invalid namespace '{}': contains git special characters", ns));
+    }
+
+    // Only allow alphanumeric, hyphen, underscore
+    if !ns.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_')) {
+        return Err(format!("invalid namespace '{}': only alphanumeric, hyphen, underscore allowed", ns));
+    }
+
+    Ok(())
 }
 
 /// Validate actor parameter to prevent git reference injection.
@@ -25,7 +51,33 @@ fn validate_namespace(ns: &str) -> Result<(), String> {
 /// - Rejected: path traversal (`.`, `..`, `/`, `\`)
 /// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
 fn validate_actor(actor: &str) -> Result<(), String> {
-    todo!("validate actor")
+    const MAX_ACTOR_LEN: usize = 128;
+
+    if actor.is_empty() {
+        return Err("actor cannot be empty".into());
+    }
+
+    if actor.len() > MAX_ACTOR_LEN {
+        return Err(format!("actor exceeds max length {}", MAX_ACTOR_LEN));
+    }
+
+    // Reject path traversal sequences
+    if actor.contains("..") || actor.contains('/') || actor.contains('\\') || actor.contains('.') {
+        return Err(format!("invalid actor '{}': path traversal not allowed", actor));
+    }
+
+    // Reject git special characters
+    const GIT_SPECIAL_CHARS: &[char] = &[':', '*', '?', '[', '~', '^', '@', '{', '}', ']'];
+    if actor.chars().any(|c| GIT_SPECIAL_CHARS.contains(&c)) {
+        return Err(format!("invalid actor '{}': contains git special characters", actor));
+    }
+
+    // Only allow alphanumeric, hyphen, underscore
+    if !actor.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_')) {
+        return Err(format!("invalid actor '{}': only alphanumeric, hyphen, underscore allowed", actor));
+    }
+
+    Ok(())
 }
 
 /// Git-backed implementation of JournalStore using refs/gatos/journal/<ns>/<actor>.
