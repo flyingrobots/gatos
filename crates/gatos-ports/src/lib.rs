@@ -102,6 +102,57 @@ pub trait Metrics {
     fn observe_seconds(&self, name: &'static str, value: f64, labels: &[(&'static str, &str)]);
 }
 
+/// Port for journal storage operations (append-only event log).
+///
+/// This trait abstracts the underlying storage backend (e.g., Git refs, database)
+/// and allows different event types and error handling strategies.
+pub trait JournalStore {
+    /// The event type stored in this journal.
+    type Event;
+    /// Error type returned by journal operations.
+    type Error;
+
+    /// Append an event to the journal for a given namespace and actor.
+    ///
+    /// Returns a commit identifier (opaque string) on success.
+    ///
+    /// # Errors
+    /// Returns `Self::Error` if the append fails (e.g., CAS conflict, I/O error).
+    fn append(&mut self, ns: &str, actor: &str, event: Self::Event) -> Result<String, Self::Error>;
+
+    /// Read a window of events from the journal.
+    ///
+    /// - `start`: Optional commit ID to start from (exclusive)
+    /// - `end`: Optional commit ID to end at (inclusive)
+    ///
+    /// Returns events in chronological order.
+    ///
+    /// # Errors
+    /// Returns `Self::Error` if the read fails or if start/end commits are invalid.
+    fn read_window(
+        &self,
+        ns: &str,
+        actor: Option<&str>,
+        start: Option<&str>,
+        end: Option<&str>,
+    ) -> Result<Vec<Self::Event>, Self::Error>;
+
+    /// Read a window of events with pagination support.
+    ///
+    /// Returns `(events, next_cursor)` where `next_cursor` is `Some` if there are more events.
+    ///
+    /// # Errors
+    /// Returns `Self::Error` if the read fails or if start/end commits are invalid.
+    fn read_window_paginated(
+        &self,
+        ns: &str,
+        actor: Option<&str>,
+        start: Option<&str>,
+        end: Option<&str>,
+        limit: usize,
+    ) -> Result<(Vec<Self::Event>, Option<String>), Self::Error>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
