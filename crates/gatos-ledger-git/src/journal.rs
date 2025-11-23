@@ -227,6 +227,8 @@ mod tests {
     use crate::event::EventEnvelope;
     use git2::Repository;
     use serde_json::json;
+    use std::cell::RefCell;
+    use std::collections::HashMap;
     use tempfile::tempdir;
 
     fn require_docker() {
@@ -235,6 +237,41 @@ mod tests {
             Ok("1"),
             "Tests must run inside the Docker harness (set GATOS_TEST_IN_DOCKER=1); use ./scripts/test.sh",
         );
+    }
+
+    #[derive(Default, Clone)]
+    struct TestMetrics {
+        counters: RefCell<HashMap<(String, Vec<(String, String)>), u64>>,
+    }
+
+    impl gatos_ports::Metrics for TestMetrics {
+        fn incr_counter(&self, name: &'static str, labels: &[(&'static str, &str)]) {
+            let key = (
+                name.to_string(),
+                labels
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
+            );
+            *self.counters.borrow_mut().entry(key).or_insert(0) += 1;
+        }
+
+        fn observe_seconds(&self, _name: &'static str, _value: f64, _labels: &[(&'static str, &str)]) {
+            // no-op for counter tests
+        }
+    }
+
+    impl TestMetrics {
+        fn get_counter(&self, name: &str, labels: &[(&str, &str)]) -> u64 {
+            let key = (
+                name.to_string(),
+                labels
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
+            );
+            self.counters.borrow().get(&key).copied().unwrap_or(0)
+        }
     }
 
     fn envelope(ulid: &str) -> EventEnvelope {
@@ -491,5 +528,79 @@ mod tests {
         let parent_refs: Vec<&git2::Commit> = parents.iter().collect();
         repo.commit(None, &sig, &sig, "dummy", &tree, &parent_refs)
             .unwrap()
+    }
+
+    #[test]
+    fn append_increments_success_metric() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        let metrics = TestMetrics::default();
+
+        append_event_with_metrics(
+            &repo,
+            &metrics,
+            "ns1",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .expect("append");
+
+        assert_eq!(
+            metrics.get_counter("ledger_appends_total", &[("ns", "ns1"), ("actor", "alice"), ("result", "ok")]),
+            1
+        );
+    }
+
+    #[test]
+    fn append_cas_conflict_increments_conflict_metric() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        let metrics = TestMetrics::default();
+
+        // Create initial commit
+        append_event_with_metrics(
+            &repo,
+            &metrics,
+            "ns1",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .unwrap();
+
+        // Simulate CAS conflict by appending with stale expected head
+        let stale_head = repo.refname_to_id("refs/gatos/journal/ns1/alice").unwrap();
+        let new_head = make_dummy_commit(&repo, Some(stale_head));
+        repo.reference("refs/gatos/journal/ns1/alice", new_head, true, "race")
+            .unwrap();
+
+        let _ = append_event_with_expected_and_metrics(
+            &repo,
+            &metrics,
+            "ns1",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FBA"),
+            Some(stale_head),
+        );
+
+        assert!(metrics.get_counter("ledger_cas_conflicts_total", &[]) >= 1);
+    }
+
+    #[test]
+    fn read_window_increments_read_metric() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        let metrics = TestMetrics::default();
+
+        append_event(&repo, "ns1", "alice", &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV")).unwrap();
+
+        read_window_with_metrics(&repo, &metrics, "ns1", Some("alice"), None, None).expect("read");
+
+        assert_eq!(
+            metrics.get_counter("ledger_reads_total", &[("ns", "ns1")]),
+            1
+        );
     }
 }
