@@ -14,6 +14,18 @@ use git2::Signature;
 
 use crate::event::EventEnvelope;
 
+/// Maximum number of commits to walk when reading journal history.
+/// Prevents unbounded iteration DoS attacks.
+const MAX_HISTORY_WALK: usize = 10_000;
+
+/// Maximum number of events to return in a single read_window call.
+/// Prevents memory exhaustion DoS attacks.
+const MAX_EVENTS: usize = 10_000;
+
+/// Maximum payload size in bytes (1MB).
+/// Prevents storage DoS attacks.
+const MAX_PAYLOAD_BYTES: usize = 1024 * 1024;
+
 /// Validate namespace parameter to prevent git reference injection.
 ///
 /// Rules:

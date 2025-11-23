@@ -81,7 +81,13 @@ impl EventEnvelope {
     pub fn validate(&self) -> Result<(), String> {
         validate_ulid(&self.ulid)?;
         validate_event_type(&self.event_type)?;
+        self.validate_size()?;
         Ok(())
+    }
+
+    /// Validate payload size to prevent storage DoS.
+    fn validate_size(&self) -> Result<(), String> {
+        todo!("validate payload size")
     }
 }
 
