@@ -63,6 +63,21 @@ impl EventEnvelope {
         let cid = Cid::new_v1(DAG_CBOR_CODEC, mh);
         Ok(cid.to_string())
     }
+
+    /// Validate envelope fields to prevent injection attacks.
+    pub fn validate(&self) -> Result<(), String> {
+        todo!("validate ULID and event_type")
+    }
+}
+
+/// Validate ULID format to prevent commit message injection.
+fn validate_ulid(ulid: &str) -> Result<(), String> {
+    todo!("validate ULID is exactly 26 chars uppercase Crockford base32")
+}
+
+/// Validate event type to prevent commit message injection.
+fn validate_event_type(event_type: &str) -> Result<(), String> {
+    todo!("validate event_type allows alphanumeric, '.', '-', '_' only")
 }
 
 /// Sign an event envelope (over canonical bytes).
