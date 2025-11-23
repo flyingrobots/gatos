@@ -80,3 +80,88 @@ pub fn verify_event(
     let bytes = env.canonical_bytes()?;
     Ok(key.verify_strict(&bytes, sig).is_ok())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn envelope(ulid: &str) -> EventEnvelope {
+        EventEnvelope {
+            event_type: "event.test".into(),
+            ulid: ulid.into(),
+            actor: "user:alice".into(),
+            caps: vec![],
+            payload: json!({"x": 1}),
+            policy_root: "deadbeef".into(),
+            sig_alg: None,
+            ts: None,
+        }
+    }
+
+    #[test]
+    fn validate_ulid_rejects_newline_injection() {
+        let env = envelope("01ARZ3\nMalicious: evil");
+        assert!(env.validate().is_err());
+    }
+
+    #[test]
+    fn validate_ulid_rejects_invalid_chars() {
+        let env = envelope("01ARZ3NDEKTSV4RRFFQ69G5F@V");
+        assert!(env.validate().is_err());
+
+        let env2 = envelope("01ARZ3NDEKTSV4RRFFQ69G5F+V");
+        assert!(env2.validate().is_err());
+    }
+
+    #[test]
+    fn validate_ulid_rejects_wrong_length() {
+        let env = envelope("01ARZ3");
+        assert!(env.validate().is_err());
+
+        let env2 = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAVEXTRA");
+        assert!(env2.validate().is_err());
+
+        let env3 = envelope("");
+        assert!(env3.validate().is_err());
+    }
+
+    #[test]
+    fn validate_ulid_accepts_valid_ulid() {
+        let env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        assert!(env.validate().is_ok());
+    }
+
+    #[test]
+    fn validate_event_type_rejects_newline_injection() {
+        let mut env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env.event_type = "event.append\nSigned-off-by: evil".into();
+        assert!(env.validate().is_err());
+    }
+
+    #[test]
+    fn validate_event_type_rejects_control_chars() {
+        let mut env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env.event_type = "event\x00null".into();
+        assert!(env.validate().is_err());
+
+        let mut env2 = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env2.event_type = "event\ttype".into();
+        assert!(env2.validate().is_err());
+    }
+
+    #[test]
+    fn validate_event_type_accepts_valid_type() {
+        let mut env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env.event_type = "event.append".into();
+        assert!(env.validate().is_ok());
+
+        let mut env2 = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env2.event_type = "user.login-v2".into();
+        assert!(env2.validate().is_ok());
+
+        let mut env3 = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        env3.event_type = "app_event_123".into();
+        assert!(env3.validate().is_ok());
+    }
+}
