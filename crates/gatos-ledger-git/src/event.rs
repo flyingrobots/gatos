@@ -1,3 +1,16 @@
+//! Event envelope types and validation for the git-backed ledger.
+//!
+//! ## Security
+//!
+//! Event envelopes are validated before being committed to prevent injection attacks:
+//!
+//! - **ULID validation**: Must be exactly 26 uppercase Crockford base32 characters
+//!   to prevent newline injection in git commit messages
+//! - **Event type validation**: Only allows alphanumeric, '.', '-', '_' characters
+//!   to prevent newline and control character injection in git commit messages
+//!
+//! See [`EventEnvelope::validate`] for details.
+
 use cid::Cid;
 use ed25519_dalek::{SignatureError, Signer, SigningKey, VerifyingKey};
 use multihash::{Code, MultihashDigest};

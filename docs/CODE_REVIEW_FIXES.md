@@ -44,45 +44,45 @@
 
 ### 1.2 ULID Validation (Commit Message Injection)
 
-- [ ] **Add `validate_ulid()` function** in `crates/gatos-ledger-git/src/event.rs`
+- [x] **Add `validate_ulid()` function** in `crates/gatos-ledger-git/src/event.rs`
   - Length must be exactly 26 chars
   - Must be uppercase Crockford base32 (`0-9A-HJKMNP-TV-Z`)
   - File: `event.rs`
 
-- [ ] **Add `EventEnvelope::validate()` method**
+- [x] **Add `EventEnvelope::validate()` method**
   - Call `validate_ulid()` on `self.ulid`
   - File: `event.rs`, after line 50
 
-- [ ] **Call validation in append functions**
+- [x] **Call validation in append functions**
   - `append_event_with_expected()`: before line 189
   - `append_event_with_expected_and_metrics()`: before line 71
   - File: `journal.rs`
 
-- [ ] **Write failing test for ULID injection**
+- [x] **Write failing test for ULID injection**
   - Test newline injection: `"01ARZ3\nMalicious: evil"`
   - Test invalid chars: `"01ARZ3NDEKTSV4RRFFQ69G5F@V"`
   - Test wrong length: `"01ARZ3"`
   - File: `event.rs` test module
 
-- [ ] **Verify tests pass**
+- [x] **Verify tests pass**
 
 ### 1.3 Event Type Validation
 
-- [ ] **Add `validate_event_type()` function** in `crates/gatos-ledger-git/src/event.rs`
+- [x] **Add `validate_event_type()` function** in `crates/gatos-ledger-git/src/event.rs`
   - Allow alphanumeric, `.`, `-`, `_` only
   - Max length: 64 chars
   - Reject newlines/control chars explicitly
   - File: `event.rs`
 
-- [ ] **Call from `EventEnvelope::validate()`**
+- [x] **Call from `EventEnvelope::validate()`**
   - File: `event.rs`
 
-- [ ] **Write failing test for event type injection**
+- [x] **Write failing test for event type injection**
   - Test newline: `"event.append\nSigned-off-by: evil"`
   - Test control chars
   - File: `event.rs` test module
 
-- [ ] **Verify tests pass**
+- [x] **Verify tests pass**
 
 ### 1.4 Resource Limits (DoS Prevention)
 
