@@ -1,6 +1,6 @@
 # Ledger: Observability & Metrics
 
-- **Status:** TODO
+- **Status:** Done
 - **Area:** Metrics / Logs / Audit
 - **Owner:** Triage
 - **Context:** No metrics/logging around ledger append/read/CAS retries. SPEC/ops guidance expects visibility for gates and journals.
@@ -15,3 +15,10 @@
 ## Definition of Done
 - Metrics exported via gatosd; sampled in tests or manual scrape.
 - Logs include enough context to debug conflicts and verification failures.
+
+## Progress Log
+- 2025-11-22: Implemented metrics tracking in journal module with TDD approach. Added `*_with_metrics` functions that emit:
+  - ledger_appends_total{ns, actor, result} - tracks successful and failed appends
+  - ledger_cas_conflicts_total - incremented on every CAS retry (Reference class errors)
+  - ledger_reads_total{ns} - tracks successful read_window calls
+  All tests passing. Ready for gatosd integration to expose metrics endpoint.
