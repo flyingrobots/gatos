@@ -994,4 +994,56 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("actor"));
     }
+
+    #[test]
+    fn read_window_rejects_unbounded_history_walk() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+
+        // Create a very long history chain
+        for i in 0..15000 {
+            let ulid = format!("01ARZ3NDEKTSV4RRFFQ69G{:04X}", i);
+            append_event(&repo, "ns", "actor", &envelope(&ulid)).unwrap();
+        }
+
+        // Reading without limits should fail after MAX_HISTORY_WALK
+        let result = read_window(&repo, "ns", Some("actor"), None, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("history walk"));
+    }
+
+    #[test]
+    fn read_window_rejects_too_many_events() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+
+        // Create more than MAX_EVENTS
+        for i in 0..12000 {
+            let ulid = format!("01ARZ3NDEKTSV4RRFFQ69G{:04X}", i);
+            append_event(&repo, "ns", "actor", &envelope(&ulid)).unwrap();
+        }
+
+        // Reading without pagination should fail
+        let result = read_window(&repo, "ns", Some("actor"), None, None);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("event"));
+    }
+
+    #[test]
+    fn append_with_large_payload_fails() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+
+        use serde_json::json;
+        let mut env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        // Create a payload > 1MB
+        env.payload = json!({"data": "x".repeat(2_000_000)});
+
+        let result = append_event(&repo, "ns", "actor", &env);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("payload"));
+    }
 }

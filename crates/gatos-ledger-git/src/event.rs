@@ -251,4 +251,12 @@ mod tests {
         env3.event_type = "app_event_123".into();
         assert!(env3.validate().is_ok());
     }
+
+    #[test]
+    fn validate_rejects_oversized_payload() {
+        let mut env = envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        // Create a payload > 1MB
+        env.payload = json!({"data": "x".repeat(2_000_000)});
+        assert!(env.validate().is_err());
+    }
 }
