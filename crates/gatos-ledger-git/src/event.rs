@@ -66,18 +66,77 @@ impl EventEnvelope {
 
     /// Validate envelope fields to prevent injection attacks.
     pub fn validate(&self) -> Result<(), String> {
-        todo!("validate ULID and event_type")
+        validate_ulid(&self.ulid)?;
+        validate_event_type(&self.event_type)?;
+        Ok(())
     }
 }
 
 /// Validate ULID format to prevent commit message injection.
+///
+/// ULIDs must be exactly 26 characters of uppercase Crockford base32 (0-9A-HJKMNP-TV-Z).
+/// This prevents newline injection in git commit messages.
 fn validate_ulid(ulid: &str) -> Result<(), String> {
-    todo!("validate ULID is exactly 26 chars uppercase Crockford base32")
+    const ULID_LEN: usize = 26;
+    const CROCKFORD_BASE32: &str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+    if ulid.len() != ULID_LEN {
+        return Err(format!(
+            "invalid ulid '{}': must be exactly {} characters",
+            ulid, ULID_LEN
+        ));
+    }
+
+    if !ulid.chars().all(|c| CROCKFORD_BASE32.contains(c)) {
+        return Err(format!(
+            "invalid ulid '{}': must be uppercase Crockford base32 (0-9A-HJKMNP-TV-Z)",
+            ulid
+        ));
+    }
+
+    Ok(())
 }
 
 /// Validate event type to prevent commit message injection.
+///
+/// Event types must:
+/// - Allow only alphanumeric, '.', '-', '_'
+/// - Max length: 64 chars
+/// - Reject newlines and control characters
 fn validate_event_type(event_type: &str) -> Result<(), String> {
-    todo!("validate event_type allows alphanumeric, '.', '-', '_' only")
+    const MAX_EVENT_TYPE_LEN: usize = 64;
+
+    if event_type.is_empty() {
+        return Err("event_type cannot be empty".into());
+    }
+
+    if event_type.len() > MAX_EVENT_TYPE_LEN {
+        return Err(format!(
+            "event_type exceeds max length {}",
+            MAX_EVENT_TYPE_LEN
+        ));
+    }
+
+    // Explicitly reject newlines and control characters
+    if event_type.chars().any(|c| c == '\n' || c == '\r' || c.is_control()) {
+        return Err(format!(
+            "invalid event_type '{}': contains newlines or control characters",
+            event_type
+        ));
+    }
+
+    // Only allow alphanumeric, '.', '-', '_'
+    if !event_type
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    {
+        return Err(format!(
+            "invalid event_type '{}': only alphanumeric, '.', '-', '_' allowed",
+            event_type
+        ));
+    }
+
+    Ok(())
 }
 
 /// Sign an event envelope (over canonical bytes).
