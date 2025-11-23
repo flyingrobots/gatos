@@ -806,4 +806,95 @@ mod tests {
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
     }
+
+    // Security: Input validation tests
+    #[test]
+    fn validate_namespace_rejects_path_traversal() {
+        require_docker();
+        assert!(validate_namespace("../../../heads").is_err());
+        assert!(validate_namespace("ns/../audit").is_err());
+        assert!(validate_namespace("./local").is_err());
+        assert!(validate_namespace("ns/subdir").is_err());
+        assert!(validate_namespace(r"ns\windows").is_err());
+    }
+
+    #[test]
+    fn validate_namespace_rejects_git_special_chars() {
+        require_docker();
+        assert!(validate_namespace("ns:evil").is_err());
+        assert!(validate_namespace("ns*glob").is_err());
+        assert!(validate_namespace("ns?query").is_err());
+        assert!(validate_namespace("ns[bracket").is_err());
+        assert!(validate_namespace("ns~1").is_err());
+        assert!(validate_namespace("ns^caret").is_err());
+        assert!(validate_namespace("ns@at").is_err());
+        assert!(validate_namespace("ns{brace").is_err());
+    }
+
+    #[test]
+    fn validate_namespace_rejects_empty_and_too_long() {
+        require_docker();
+        assert!(validate_namespace("").is_err());
+        assert!(validate_namespace(&"a".repeat(65)).is_err());
+    }
+
+    #[test]
+    fn validate_namespace_accepts_valid_names() {
+        require_docker();
+        assert!(validate_namespace("ns1").is_ok());
+        assert!(validate_namespace("my-namespace").is_ok());
+        assert!(validate_namespace("my_namespace").is_ok());
+        assert!(validate_namespace("MyNamespace123").is_ok());
+        assert!(validate_namespace(&"a".repeat(64)).is_ok());
+    }
+
+    #[test]
+    fn validate_actor_rejects_invalid_input() {
+        require_docker();
+        assert!(validate_actor("../../../admin").is_err());
+        assert!(validate_actor("actor~1").is_err());
+        assert!(validate_actor("").is_err());
+        assert!(validate_actor(&"a".repeat(129)).is_err());
+    }
+
+    #[test]
+    fn validate_actor_accepts_valid_names() {
+        require_docker();
+        assert!(validate_actor("alice").is_ok());
+        assert!(validate_actor("user-123").is_ok());
+        assert!(validate_actor("my_actor").is_ok());
+        assert!(validate_actor(&"a".repeat(128)).is_ok());
+    }
+
+    #[test]
+    fn append_with_invalid_namespace_fails() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+
+        let result = append_event(
+            &repo,
+            "../../../heads/main",
+            "alice",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("namespace"));
+    }
+
+    #[test]
+    fn append_with_invalid_actor_fails() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+
+        let result = append_event(
+            &repo,
+            "ns1",
+            "actor~1",
+            &envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        );
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("actor"));
+    }
 }
