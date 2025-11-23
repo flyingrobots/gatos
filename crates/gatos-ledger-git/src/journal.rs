@@ -1,4 +1,12 @@
 //! Git-backed ledger journal append/read with CAS semantics.
+//!
+//! ## Security
+//!
+//! All entry points validate namespace and actor parameters to prevent git reference
+//! injection attacks. Invalid inputs (path traversal, git special chars) are rejected
+//! before any git operations.
+//!
+//! See [`validate_namespace`] and [`validate_actor`] for validation rules.
 
 use git2::Oid;
 use git2::Repository;

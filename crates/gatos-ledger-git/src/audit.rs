@@ -1,3 +1,12 @@
+//! Git-backed audit sink for policy decisions.
+//!
+//! Writes audit entries to `refs/gatos/audit/policy/<ns>/<actor>` with CAS semantics.
+//!
+//! ## Security
+//!
+//! Validates namespace and actor parameters on construction to prevent git reference
+//! injection. See [`crate::journal::validate_namespace`] for rules.
+
 use gatos_ports::{AuditError, AuditSink, PolicyAuditEntry};
 use git2::{Repository, Signature};
 use serde::Serialize;

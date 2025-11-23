@@ -10,7 +10,7 @@
 
 ### 1.1 Input Validation for Git Reference Injection
 
-- [ ] **Add `validate_namespace()` function** in `crates/gatos-ledger-git/src/journal.rs`
+- [x] **Add `validate_namespace()` function** in `crates/gatos-ledger-git/src/journal.rs`
   - Reject path traversal (`..`, `/`, `\`)
   - Reject git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
   - Max length: 64 chars
@@ -18,29 +18,29 @@
   - File: `journal.rs`
   - Lines affected: 81, 189, 294, 297
 
-- [ ] **Add `validate_actor()` function** in `crates/gatos-ledger-git/src/journal.rs`
+- [x] **Add `validate_actor()` function** in `crates/gatos-ledger-git/src/journal.rs`
   - Same rules as namespace
   - Max length: 128 chars
   - File: `journal.rs`
   - Lines affected: 81, 189, 294, 297
 
-- [ ] **Apply validation at entry points**
+- [x] **Apply validation at entry points**
   - `append_event()`: validate `ns` and `actor` before line 81
   - `append_event_with_expected()`: validate before line 189
   - `read_window_with_ids()`: validate before lines 294, 297
   - File: `journal.rs`
 
-- [ ] **Apply validation in audit module**
+- [x] **Apply validation in audit module**
   - `GitPolicyAudit::new()`: validate `ns` and `actor`
   - File: `audit.rs`, line 14-20
 
-- [ ] **Write failing tests for validation**
+- [x] **Write failing tests for validation**
   - Test path traversal rejection (`../../../heads/main`)
   - Test special char rejection (`ns:evil`, `actor~1`)
   - Test empty/too-long rejection
   - File: `journal.rs` test module
 
-- [ ] **Verify tests pass after implementation**
+- [x] **Verify tests pass after implementation**
 
 ### 1.2 ULID Validation (Commit Message Injection)
 
