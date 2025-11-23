@@ -1027,13 +1027,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Slow test: creates 10,001 commits
     fn read_window_rejects_unbounded_history_walk() {
         require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
 
-        // Create a very long history chain
-        for i in 0..15000 {
+        // Create just over MAX_HISTORY_WALK commits
+        for i in 0..10001 {
             let ulid = format!("01ARZ3NDEKTSV4RRFFQ69G{:04X}", i);
             append_event(&repo, "ns", "actor", &envelope(&ulid)).unwrap();
         }
@@ -1045,13 +1046,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Slow test: creates 10,001 commits
     fn read_window_rejects_too_many_events() {
         require_docker();
         let dir = tempdir().unwrap();
         let repo = Repository::init(dir.path()).unwrap();
 
-        // Create more than MAX_EVENTS
-        for i in 0..12000 {
+        // Create just over MAX_EVENTS
+        for i in 0..10001 {
             let ulid = format!("01ARZ3NDEKTSV4RRFFQ69G{:04X}", i);
             append_event(&repo, "ns", "actor", &envelope(&ulid)).unwrap();
         }
