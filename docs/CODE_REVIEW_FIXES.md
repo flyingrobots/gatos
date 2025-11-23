@@ -86,7 +86,7 @@
 
 ### 1.4 Resource Limits (DoS Prevention)
 
-- [ ] **Add constants to `journal.rs`**
+- [x] **Add constants to `journal.rs`**
   ```rust
   const MAX_HISTORY_WALK: usize = 10_000;
   const MAX_EVENTS: usize = 10_000;
@@ -94,28 +94,28 @@
   ```
   - File: `journal.rs`, near top
 
-- [ ] **Add counter to `read_window_with_ids()` loop**
+- [x] **Add counter to `read_window_with_ids()` loop**
   - Track `walked` count
   - Error if `walked > MAX_HISTORY_WALK`
   - File: `journal.rs`, lines 314-336
 
-- [ ] **Enforce MAX_EVENTS in `read_window()` trait impl**
+- [x] **Enforce MAX_EVENTS in `read_window()` trait impl**
   - Lines 28-36 in `journal.rs`
   - Return error if result exceeds limit
   - Suggest pagination in error message
 
-- [ ] **Add payload size validation**
+- [x] **Add payload size validation**
   - New method in `event.rs`: `validate_size()`
   - Check `serde_json::to_vec(&self.payload).len() <= MAX_PAYLOAD_BYTES`
   - Call from `EventEnvelope::validate()`
 
-- [ ] **Write tests for limits**
+- [x] **Write tests for limits**
   - Test large history rejection
   - Test large event set rejection
   - Test large payload rejection
   - Files: `journal.rs`, `event.rs` test modules
 
-- [ ] **Verify all limit tests pass**
+- [x] **Verify all limit tests pass**
 
 ### 1.5 CAS Retry Backoff
 

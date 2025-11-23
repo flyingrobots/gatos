@@ -7,6 +7,16 @@
 //! before any git operations.
 //!
 //! See [`validate_namespace`] and [`validate_actor`] for validation rules.
+//!
+//! ## Resource Limits
+//!
+//! DoS prevention limits are enforced:
+//!
+//! - **History walk**: Maximum 10,000 commits traversed per read operation
+//! - **Result set size**: Maximum 10,000 events returned (use pagination for more)
+//! - **Payload size**: Maximum 1MB per event envelope
+//!
+//! These limits prevent unbounded iteration, memory exhaustion, and storage abuse.
 
 use git2::Oid;
 use git2::Repository;
