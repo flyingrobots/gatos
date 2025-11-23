@@ -142,4 +142,56 @@ mod tests {
         let decision = client.evaluate_append(&ctx).unwrap();
         assert_eq!(decision.outcome, PolicyOutcome::Allow);
     }
+
+    // Test that JournalStore trait exists and can be implemented
+    #[test]
+    fn journal_store_trait_can_append() {
+        require_docker();
+        struct TestEvent {
+            data: String,
+        }
+
+        struct InMemoryJournal {
+            events: alloc::vec::Vec<TestEvent>,
+        }
+
+        impl JournalStore for InMemoryJournal {
+            type Event = TestEvent;
+            type Error = String;
+
+            fn append(&mut self, _ns: &str, _actor: &str, event: Self::Event) -> Result<String, Self::Error> {
+                self.events.push(event);
+                Ok("commit123".into())
+            }
+
+            fn read_window(
+                &self,
+                _ns: &str,
+                _actor: Option<&str>,
+                _start: Option<&str>,
+                _end: Option<&str>,
+            ) -> Result<alloc::vec::Vec<Self::Event>, Self::Error> {
+                Err("not implemented".into())
+            }
+
+            fn read_window_paginated(
+                &self,
+                _ns: &str,
+                _actor: Option<&str>,
+                _start: Option<&str>,
+                _end: Option<&str>,
+                _limit: usize,
+            ) -> Result<(alloc::vec::Vec<Self::Event>, Option<String>), Self::Error> {
+                Err("not implemented".into())
+            }
+        }
+
+        let mut journal = InMemoryJournal {
+            events: alloc::vec::Vec::new(),
+        };
+
+        let commit_id = journal.append("ns", "alice", TestEvent { data: "test".into() }).unwrap();
+        assert_eq!(commit_id, "commit123");
+        assert_eq!(journal.events.len(), 1);
+    }
 }
