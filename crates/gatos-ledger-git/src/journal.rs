@@ -6,6 +6,47 @@ use git2::Signature;
 
 use crate::event::EventEnvelope;
 
+/// Git-backed implementation of JournalStore using refs/gatos/journal/<ns>/<actor>.
+pub struct GitJournalStore<'r> {
+    repo: &'r Repository,
+}
+
+impl<'r> GitJournalStore<'r> {
+    pub fn new(repo: &'r Repository) -> Self {
+        Self { repo }
+    }
+}
+
+impl gatos_ports::JournalStore for GitJournalStore<'_> {
+    type Event = EventEnvelope;
+    type Error = String;
+
+    fn append(&mut self, ns: &str, actor: &str, event: Self::Event) -> Result<String, Self::Error> {
+        append_event(self.repo, ns, actor, &event)
+    }
+
+    fn read_window(
+        &self,
+        ns: &str,
+        actor: Option<&str>,
+        start: Option<&str>,
+        end: Option<&str>,
+    ) -> Result<Vec<Self::Event>, Self::Error> {
+        read_window(self.repo, ns, actor, start, end)
+    }
+
+    fn read_window_paginated(
+        &self,
+        ns: &str,
+        actor: Option<&str>,
+        start: Option<&str>,
+        end: Option<&str>,
+        limit: usize,
+    ) -> Result<(Vec<Self::Event>, Option<String>), Self::Error> {
+        read_window_paginated(self.repo, ns, actor, start, end, limit)
+    }
+}
+
 /// Append an event to refs/gatos/journal/<ns>/<actor> with CAS.
 pub fn append_event(
     repo: &Repository,
@@ -740,5 +781,29 @@ mod tests {
             metrics.get_counter("ledger_reads_total", &[("ns", "ns1")]),
             1
         );
+    }
+
+    #[test]
+    fn git_journal_store_implements_trait() {
+        require_docker();
+        let dir = tempdir().unwrap();
+        let repo = Repository::init(dir.path()).unwrap();
+        let mut store = GitJournalStore::new(&repo);
+
+        // Test append via trait
+        let commit_id = gatos_ports::JournalStore::append(
+            &mut store,
+            "ns1",
+            "alice",
+            envelope("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+        )
+        .expect("append");
+        assert!(!commit_id.is_empty());
+
+        // Test read via trait
+        let events = gatos_ports::JournalStore::read_window(&store, "ns1", Some("alice"), None, None)
+            .expect("read");
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
     }
 }
