@@ -42,7 +42,7 @@ services:
       - .:/work
       - cargo-cache:/usr/local/cargo/registry
       - target-cache:/work/target
-    command: ["bash", "-lc", "apt-get update && apt-get install -y pkg-config libssl-dev && cargo test --workspace --locked"]
+    command: ["bash", "-c", "set -euo pipefail; apt-get update && apt-get install -y pkg-config libssl-dev && cargo test --workspace --locked"]
 
 volumes:
   cargo-cache:

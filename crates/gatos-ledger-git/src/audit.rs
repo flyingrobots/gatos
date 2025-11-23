@@ -1,5 +1,5 @@
 use gatos_ports::{AuditError, AuditSink, PolicyAuditEntry};
-use git2::{Oid, Repository, Signature};
+use git2::{Repository, Signature};
 use serde::Serialize;
 
 /// Git-backed audit sink writing policy decisions under

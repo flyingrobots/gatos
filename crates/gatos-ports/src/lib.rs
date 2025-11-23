@@ -9,6 +9,11 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "serde")]
+extern crate serde_bytes;
+
 /// Clock returning POSIX seconds since Unix epoch (UTC).
 pub trait Clock {
     fn now(&self) -> u64;
@@ -16,6 +21,7 @@ pub trait Clock {
 
 /// Outcome of a policy evaluation.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum PolicyOutcome {
     Allow,
     Deny,
@@ -23,6 +29,7 @@ pub enum PolicyOutcome {
 
 /// Policy decision metadata.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PolicyDecision {
     pub outcome: PolicyOutcome,
     /// Optional policy version/hash that produced this decision.
@@ -33,6 +40,7 @@ pub struct PolicyDecision {
 
 /// Context for evaluating an append into the ledger/message journal.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AppendContext {
     /// Logical topic/stream name.
     pub topic: String,
@@ -43,11 +51,13 @@ pub struct AppendContext {
     /// Caller identity (opaque to the ledger plane).
     pub caller: Caller,
     /// Arbitrary metadata the policy plane may inspect (serialized JSON, CBOR, etc.).
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     pub metadata: Vec<u8>,
 }
 
 /// Minimal caller identity for policy decisions.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Caller {
     pub subject: String,
     pub groups: Vec<String>,
