@@ -82,7 +82,7 @@ mod tests {
         let repo = Repository::init(dir.path()).unwrap();
         let clock = FixedClock;
         let policy = AllowPolicy;
-        let audit = GitPolicyAudit::new(&repo, "ns", "actor");
+        let audit = GitPolicyAudit::new(&repo, "ns", "actor").unwrap();
         let caller = Caller {
             subject: "alice".into(),
             groups: vec!["ops".into()],
@@ -126,7 +126,7 @@ mod tests {
         let repo = Repository::init(dir.path()).unwrap();
         let clock = FixedClock;
         let policy = DenyPolicy;
-        let audit = GitPolicyAudit::new(&repo, "ns", "actor");
+        let audit = GitPolicyAudit::new(&repo, "ns", "actor").unwrap();
         let caller = Caller {
             subject: "alice".into(),
             groups: vec!["ops".into()],

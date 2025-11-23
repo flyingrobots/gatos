@@ -13,7 +13,7 @@ use crate::event::EventEnvelope;
 /// - Allowed: alphanumeric, hyphen, underscore
 /// - Rejected: path traversal (`.`, `..`, `/`, `\`)
 /// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
-fn validate_namespace(ns: &str) -> Result<(), String> {
+pub(crate) fn validate_namespace(ns: &str) -> Result<(), String> {
     const MAX_NS_LEN: usize = 64;
 
     if ns.is_empty() {
@@ -50,7 +50,7 @@ fn validate_namespace(ns: &str) -> Result<(), String> {
 /// - Allowed: alphanumeric, hyphen, underscore
 /// - Rejected: path traversal (`.`, `..`, `/`, `\`)
 /// - Rejected: git special chars (`:`, `*`, `?`, `[`, `~`, `^`, `@`, `{`)
-fn validate_actor(actor: &str) -> Result<(), String> {
+pub(crate) fn validate_actor(actor: &str) -> Result<(), String> {
     const MAX_ACTOR_LEN: usize = 128;
 
     if actor.is_empty() {
@@ -128,6 +128,8 @@ pub fn append_event(
     actor: &str,
     envelope: &EventEnvelope,
 ) -> Result<String, String> {
+    validate_namespace(ns)?;
+    validate_actor(actor)?;
     append_event_with_expected(repo, ns, actor, envelope, None)
 }
 
@@ -139,6 +141,8 @@ pub fn append_event_with_metrics<M: gatos_ports::Metrics>(
     actor: &str,
     envelope: &EventEnvelope,
 ) -> Result<String, String> {
+    validate_namespace(ns)?;
+    validate_actor(actor)?;
     append_event_with_expected_and_metrics(repo, metrics, ns, actor, envelope, None)
 }
 
@@ -364,6 +368,11 @@ fn read_window_with_ids(
     start: Option<&str>,
     end: Option<&str>,
 ) -> Result<Vec<(Oid, EventEnvelope)>, String> {
+    validate_namespace(ns)?;
+    if let Some(a) = actor {
+        validate_actor(a)?;
+    }
+
     let target_ref = match actor {
         Some(a) => format!("refs/gatos/journal/{}/{}", ns, a),
         None => {

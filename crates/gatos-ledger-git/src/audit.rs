@@ -2,6 +2,8 @@ use gatos_ports::{AuditError, AuditSink, PolicyAuditEntry};
 use git2::{Repository, Signature};
 use serde::Serialize;
 
+use crate::journal::{validate_actor, validate_namespace};
+
 /// Git-backed audit sink writing policy decisions under
 /// `refs/gatos/audit/policy/<ns>/<actor>`.
 pub struct GitPolicyAudit<'r> {
@@ -11,12 +13,14 @@ pub struct GitPolicyAudit<'r> {
 }
 
 impl<'r> GitPolicyAudit<'r> {
-    pub fn new(repo: &'r Repository, ns: &str, actor: &str) -> Self {
-        Self {
+    pub fn new(repo: &'r Repository, ns: &str, actor: &str) -> Result<Self, String> {
+        validate_namespace(ns)?;
+        validate_actor(actor)?;
+        Ok(Self {
             repo,
             ns: ns.to_string(),
             actor: actor.to_string(),
-        }
+        })
     }
 
     fn refname(&self) -> String {
