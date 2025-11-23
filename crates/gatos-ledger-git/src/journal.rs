@@ -39,7 +39,6 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
         .map_err(|e| e.message().to_string())?;
     let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
     let mut attempts = 0;
-    let mut cas_conflicts = 0;
 
     loop {
         attempts += 1;
@@ -85,12 +84,6 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
 
         match cas_result {
             Ok(_) => {
-                // Track CAS conflicts if any occurred
-                if cas_conflicts > 0 {
-                    for _ in 0..cas_conflicts {
-                        metrics.incr_counter("ledger_cas_conflicts_total", &[]);
-                    }
-                }
                 // Track successful append
                 metrics.incr_counter(
                     "ledger_appends_total",
@@ -102,7 +95,8 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
                 if err.class() == git2::ErrorClass::Reference
                     && err.code() == git2::ErrorCode::Locked =>
             {
-                cas_conflicts += 1;
+                // Track conflict immediately
+                metrics.incr_counter("ledger_cas_conflicts_total", &[]);
                 if attempts >= 3 {
                     metrics.incr_counter(
                         "ledger_appends_total",
@@ -116,7 +110,8 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
                 if err.class() == git2::ErrorClass::Reference
                     && err.code() == git2::ErrorCode::NotFound =>
             {
-                cas_conflicts += 1;
+                // Track conflict immediately
+                metrics.incr_counter("ledger_cas_conflicts_total", &[]);
                 if attempts >= 3 {
                     metrics.incr_counter(
                         "ledger_appends_total",
@@ -127,6 +122,10 @@ fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
                 continue;
             }
             Err(err) => {
+                // Check if this is a CAS conflict we didn't catch
+                if err.class() == git2::ErrorClass::Reference {
+                    metrics.incr_counter("ledger_cas_conflicts_total", &[]);
+                }
                 metrics.incr_counter(
                     "ledger_appends_total",
                     &[("ns", ns), ("actor", actor), ("result", "error")],
@@ -712,7 +711,7 @@ mod tests {
         repo.reference("refs/gatos/journal/ns1/alice", new_head, true, "race")
             .unwrap();
 
-        let _ = append_event_with_expected_and_metrics(
+        let result = append_event_with_expected_and_metrics(
             &repo,
             &metrics,
             "ns1",
@@ -721,6 +720,8 @@ mod tests {
             Some(stale_head),
         );
 
+        // Should fail due to CAS conflict
+        assert!(result.is_err(), "Expected CAS conflict error, got: {:?}", result);
         assert!(metrics.get_counter("ledger_cas_conflicts_total", &[]) >= 1);
     }
 
