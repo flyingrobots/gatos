@@ -5,8 +5,10 @@
 
 #![deny(unsafe_code)]
 
+pub mod audit;
 pub mod event;
 pub mod journal;
+pub mod policy_guard;
 
 /// Returns a static string explaining that the backend is still landing.
 pub fn stub_notice() -> &'static str {

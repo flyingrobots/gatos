@@ -20,3 +20,5 @@ cid = { workspace = true }
 git2 = { workspace = true }
 tempfile = "3"
 multihash = { workspace = true }
+gatos-ports = { path = "../gatos-ports" }
+thiserror = "1.0"
