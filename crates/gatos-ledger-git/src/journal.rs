@@ -29,14 +29,112 @@ pub fn append_event_with_metrics<M: gatos_ports::Metrics>(
 
 fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
     repo: &Repository,
-    _metrics: &M,
+    metrics: &M,
     ns: &str,
     actor: &str,
     envelope: &EventEnvelope,
     expected_head: Option<Oid>,
 ) -> Result<String, String> {
-    // TODO: Add metrics tracking
-    append_event_with_expected(repo, ns, actor, envelope, expected_head)
+    let sig = Signature::now("gatos-ledger", "ledger@gatos.local")
+        .map_err(|e| e.message().to_string())?;
+    let head_ref = format!("refs/gatos/journal/{}/{}", ns, actor);
+    let mut attempts = 0;
+    let mut cas_conflicts = 0;
+
+    loop {
+        attempts += 1;
+        let current = if let Some(expected) = expected_head {
+            repo.find_commit(expected).ok()
+        } else {
+            repo.find_reference(&head_ref)
+                .ok()
+                .and_then(|r| r.target())
+                .and_then(|oid| repo.find_commit(oid).ok())
+        };
+        let parents: Vec<&git2::Commit> = current.iter().collect();
+        let tree_oid = write_envelope_tree(repo, envelope)?;
+        let message = format!(
+            "{}\n\nEvent-CID: {}\n",
+            envelope.event_type,
+            envelope.event_cid().map_err(|e| e.to_string())?
+        );
+        let commit_oid = repo
+            .commit(
+                None,
+                &sig,
+                &sig,
+                &message,
+                &repo
+                    .find_tree(tree_oid)
+                    .map_err(|e| e.message().to_string())?,
+                &parents,
+            )
+            .map_err(|e| e.message().to_string())?;
+
+        let cas_result = if let Some(parent_commit) = current {
+            repo.reference_matching(
+                &head_ref,
+                commit_oid,
+                true,
+                parent_commit.id(),
+                "journal append",
+            )
+        } else {
+            repo.reference(&head_ref, commit_oid, true, "journal append")
+        };
+
+        match cas_result {
+            Ok(_) => {
+                // Track CAS conflicts if any occurred
+                if cas_conflicts > 0 {
+                    for _ in 0..cas_conflicts {
+                        metrics.incr_counter("ledger_cas_conflicts_total", &[]);
+                    }
+                }
+                // Track successful append
+                metrics.incr_counter(
+                    "ledger_appends_total",
+                    &[("ns", ns), ("actor", actor), ("result", "ok")],
+                );
+                return Ok(commit_oid.to_string());
+            }
+            Err(err)
+                if err.class() == git2::ErrorClass::Reference
+                    && err.code() == git2::ErrorCode::Locked =>
+            {
+                cas_conflicts += 1;
+                if attempts >= 3 {
+                    metrics.incr_counter(
+                        "ledger_appends_total",
+                        &[("ns", ns), ("actor", actor), ("result", "error")],
+                    );
+                    return Err("head_conflict".into());
+                }
+                continue;
+            }
+            Err(err)
+                if err.class() == git2::ErrorClass::Reference
+                    && err.code() == git2::ErrorCode::NotFound =>
+            {
+                cas_conflicts += 1;
+                if attempts >= 3 {
+                    metrics.incr_counter(
+                        "ledger_appends_total",
+                        &[("ns", ns), ("actor", actor), ("result", "error")],
+                    );
+                    return Err("head_conflict".into());
+                }
+                continue;
+            }
+            Err(err) => {
+                metrics.incr_counter(
+                    "ledger_appends_total",
+                    &[("ns", ns), ("actor", actor), ("result", "error")],
+                );
+                return Err(err.message().to_string());
+            }
+        }
+    }
 }
 
 fn append_event_with_expected(
@@ -132,14 +230,17 @@ pub fn read_window(
 /// Read window with metrics tracking.
 pub fn read_window_with_metrics<M: gatos_ports::Metrics>(
     repo: &Repository,
-    _metrics: &M,
+    metrics: &M,
     ns: &str,
     actor: Option<&str>,
     start: Option<&str>,
     end: Option<&str>,
 ) -> Result<Vec<EventEnvelope>, String> {
-    // TODO: Add metrics tracking
-    read_window(repo, ns, actor, start, end)
+    let result = read_window(repo, ns, actor, start, end);
+    if result.is_ok() {
+        metrics.incr_counter("ledger_reads_total", &[("ns", ns)]);
+    }
+    result
 }
 
 fn read_window_with_ids(
