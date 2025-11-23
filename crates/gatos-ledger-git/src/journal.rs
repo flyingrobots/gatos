@@ -16,6 +16,29 @@ pub fn append_event(
     append_event_with_expected(repo, ns, actor, envelope, None)
 }
 
+/// Append with metrics tracking.
+pub fn append_event_with_metrics<M: gatos_ports::Metrics>(
+    repo: &Repository,
+    metrics: &M,
+    ns: &str,
+    actor: &str,
+    envelope: &EventEnvelope,
+) -> Result<String, String> {
+    append_event_with_expected_and_metrics(repo, metrics, ns, actor, envelope, None)
+}
+
+fn append_event_with_expected_and_metrics<M: gatos_ports::Metrics>(
+    repo: &Repository,
+    _metrics: &M,
+    ns: &str,
+    actor: &str,
+    envelope: &EventEnvelope,
+    expected_head: Option<Oid>,
+) -> Result<String, String> {
+    // TODO: Add metrics tracking
+    append_event_with_expected(repo, ns, actor, envelope, expected_head)
+}
+
 fn append_event_with_expected(
     repo: &Repository,
     ns: &str,
@@ -104,6 +127,19 @@ pub fn read_window(
 ) -> Result<Vec<EventEnvelope>, String> {
     let with_ids = read_window_with_ids(repo, ns, actor, start, end)?;
     Ok(with_ids.into_iter().map(|(_, env)| env).collect())
+}
+
+/// Read window with metrics tracking.
+pub fn read_window_with_metrics<M: gatos_ports::Metrics>(
+    repo: &Repository,
+    _metrics: &M,
+    ns: &str,
+    actor: Option<&str>,
+    start: Option<&str>,
+    end: Option<&str>,
+) -> Result<Vec<EventEnvelope>, String> {
+    // TODO: Add metrics tracking
+    read_window(repo, ns, actor, start, end)
 }
 
 fn read_window_with_ids(
